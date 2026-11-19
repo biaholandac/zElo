@@ -235,7 +235,6 @@
       { id: "visual", rotulo: "Defici\xEAncia visual" },
       { id: "auditiva", rotulo: "Defici\xEAncia auditiva" },
       { id: "tea", rotulo: "Transtorno do espectro autista (TEA)" },
-      { id: "multipla", rotulo: "Defici\xEAncia m\xFAltipla" },
       { id: "nao-sei", rotulo: "Ainda n\xE3o sei" },
     ],
     El = [
@@ -1160,7 +1159,7 @@
           "aria-hidden": "true",
           children: [
             (0, r.jsx)("img", { src: "logo-claro.png", alt: "", width: "1132", height: "665" }),
-            (0, r.jsx)("p", { children: "Voc\xEA n\xE3o est\xE1 s\xF3." }),
+            (0, r.jsx)("p", { children: "Voc\xEA n\xE3o est\xE1 s\xF3" }),
           ],
         }),
         (0, r.jsx)("h1", {
@@ -1183,6 +1182,27 @@
                       className: "opcao-sub",
                       children:
                         "Cuido de uma pessoa com defici\xEAncia e quero dire\xE7\xE3o e apoio.",
+                    }),
+                  ],
+                }),
+                (0, r.jsx)("span", {
+                  className: "opcao-estado",
+                  children: (0, r.jsx)(la, { n: "avancar", size: 28 }),
+                }),
+              ],
+            }),
+            (0, r.jsxs)("button", {
+              type: "button",
+              className: "opcao",
+              onClick: () => a("pcd"),
+              children: [
+                (0, r.jsxs)("span", {
+                  children: [
+                    "Sou a pessoa com defici\xEAncia",
+                    (0, r.jsx)("span", {
+                      className: "opcao-sub",
+                      children:
+                        "Uso o zElo por conta pr\xF3pria para cuidar da minha sa\xFAde.",
                     }),
                   ],
                 }),
@@ -1242,7 +1262,7 @@
       },
       vol = pp === "voluntario",
       titulos = {
-        entrar: vol ? "Entre na sua conta de volunt\xE1rio" : "Que bom ter voc\xEA aqui.",
+        entrar: vol ? "Entre na sua conta de volunt\xE1rio" : "Que bom ter voc\xEA aqui",
         criar: "Crie sua conta",
         esqueci: "Esqueceu a senha?",
       },
@@ -1400,9 +1420,11 @@
     {
       campo: "tipo",
       titulo: "Qual \xE9 o tipo de defici\xEAncia?",
+      ajuda:
+        "Pode escolher mais de uma. Se ainda n\xE3o h\xE1 diagn\xF3stico, escolha Ainda n\xE3o sei.",
       itens: Em,
-      multi: !1,
-      aviso: "Escolha uma op\xE7\xE3o para continuar.",
+      multi: !0,
+      aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar.",
     },
     {
       campo: "direcionamento",
@@ -1436,9 +1458,10 @@
       m = (I) => {
         if (!s.multi) return t({ ...e, [s.campo]: I });
         let f;
-        if (I === "nenhuma") f = i.includes("nenhuma") ? [] : ["nenhuma"];
+        let excl = ["nenhuma", "nao-sei"];
+        if (excl.includes(I)) f = i.includes(I) ? [] : [I];
         else {
-          let u = i.filter((g) => g !== "nenhuma");
+          let u = i.filter((g) => !excl.includes(g));
           f = u.includes(I) ? u.filter((g) => g !== I) : [...u, I];
         }
         t({ ...e, [s.campo]: f });
@@ -1712,7 +1735,7 @@
           style: { marginBottom: 32 },
           children: (0, r.jsxs)("h1", {
             tabIndex: -1,
-            children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0], "."],
+            children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0]],
           }),
         }),
         (0, r.jsx)(Do, {
@@ -1798,7 +1821,7 @@
         (e.direcionamento.forEach((d) => {
           (zAreas[d] || []).includes(f.area) && (k += 2);
         }),
-          e.tipo === "tea" && /TEA/.test(f.foco) && (k += 2),
+          (e.tipo || []).includes("tea") && /TEA/.test(f.foco) && (k += 2),
           (e.especificidades || []).includes("engolir") &&
             /engasg|alimenta/.test(f.foco) &&
             (k += 1));
@@ -1890,14 +1913,16 @@
             (0, r.jsx)("h1", {
               className: "display",
               tabIndex: -1,
-              children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}.` : "Ol\xE1!",
+              children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}` : "Ol\xE1",
             }),
             (0, r.jsx)("p", {
               className: "lead",
               children:
                 o === "voluntario"
                   ? "Veja onde a sua resposta pode ajudar hoje."
-                  : "Como a sa\xFAde de voc\xEAs est\xE1 hoje? Comece por um destes caminhos.",
+                  : o === "pcd"
+                    ? "Como est\xE1 a sua sa\xFAde hoje? Comece por um destes caminhos."
+                    : "Como a sa\xFAde de voc\xEAs est\xE1 hoje? Comece por um destes caminhos.",
             }),
             !a.nome &&
               (0, r.jsxs)("p", {
@@ -2207,7 +2232,7 @@
                   readOnly: !0,
                   "aria-readonly": "true",
                   ajuda:
-                    "Para trocar o e-mail, fale com a Ana (apoio) no chat.",
+                    "Para trocar o e-mail, pe\xE7a pelo chat. A equipe confere e faz a troca.",
                 }),
                 I &&
                   (0, r.jsx)("div", {
@@ -2225,7 +2250,7 @@
             }),
           ],
         }),
-        t === "responsavel" &&
+        t !== "voluntario" &&
           (0, r.jsxs)("div", {
             className: "perfil-bloco",
             children: [
@@ -2240,8 +2265,7 @@
                       (0, r.jsx)("dt", { children: "Tipo de defici\xEAncia" }),
                       (0, r.jsx)("dd", {
                         children:
-                          Em.find((y) => y.id === e.tipo)?.rotulo ||
-                          "N\xE3o informado",
+                          A(Em, e.tipo || []),
                       }),
                     ],
                   }),
@@ -2382,21 +2406,30 @@
         .replace(/[̀-ͯ]/g, "");
   var zPedidoResposta = {
     texto:
-      "Recebi seu pedido de ajuda e estou aqui com voc\xEA. Me conte em poucas palavras o que est\xE1 acontecendo agora. Se algu\xE9m corre risco de vida, ligue 192.",
+      "Seu pedido foi para a equipe de acolhimento do zElo, que responde aqui no chat. Enquanto isso, me conte em poucas palavras o que est\xE1 acontecendo. Se algu\xE9m corre risco de vida, ligue 192.",
     links: [zLink192],
     opcoes: [],
     ctx: { f: "conversa", n: 0 },
   };
+  var zRotuloTela = {
+    atendimentos: "Abrir Atendimentos",
+    forum: "Abrir F\xF3rum",
+    dicas: "Abrir Dicas",
+    ajuda: "Ver telefones de emerg\xEAncia",
+    perfil: "Abrir Perfil",
+  };
+  function zLinks(l) {
+    return (l || []).map((t) => ({ rotulo: zRotuloTela[t], tela: t }));
+  }
+  function zPrimeira(p) {
+    return p.charAt(0).toUpperCase() + p.slice(1) + (/[?]$/.test(p) ? "" : /^(como|qual|quais|o que|onde|quando|quem|posso|tem|ele|a |os |meu|precisa|e |\xE9 )/i.test(p) ? "?" : "");
+  }
   function YS(a, o) {
     let e = Ll(a),
       conversa = o && o.f === "conversa",
-      t = {
-        texto: "Tudo bem. Quando quiser, escolha uma das op\xE7\xF5es ou escreva do seu jeito.",
-        opcoes: xr,
-        ctx: null,
-      };
+      ctxC = conversa ? { f: "conversa", n: o.n + 1 } : null;
     if (
-      /suicid|me matar|quero morrer|nao respira|sem respirar|convuls|desmai|sangr|engasgou|roxo|machucou|caiu/.test(
+      /suicid|me matar|quero morrer|nao respira|sem respirar|convulsionando|esta convulsionando|desmaiou|sangrando muito|engasgou|ficou roxo/.test(
         e,
       )
     )
@@ -2414,129 +2447,69 @@
         opcoes: [],
         ctx: { f: "conversa", n: 0 },
       };
-    if (/agora nao|^entendi|voltar ao inicio|nao quero/.test(e)) return t;
-    if (/laudo|escola|bpc|inss|beneficio|documento|cras|matricula/.test(e))
+    if (/^(oi+|ola|bom dia|boa tarde|boa noite|e ai|opa|hey)[\s!.]*$/.test(e))
       return {
-        texto:
-          "O zElo cuida de quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, o caminho \xE9 o CRAS ou a pr\xF3pria escola. Posso ajudar com algo de sa\xFAde?",
+        texto: "Oi. Pode me perguntar sobre o cuidado do dia a dia ou sobre como usar o zElo. Se preferir, a gente s\xF3 conversa.",
         opcoes: xr,
         ctx: null,
       };
-    if (o && O2[o.f] && /(mostrar|passo|sim|pode|proximo|continuar)/.test(e)) {
-      let n = O2[o.f],
-        l = o.i;
-      if (l < n.length) {
-        let s = l === n.length - 1;
-        return {
-          texto: n[l],
-          opcoes: s ? ["Voltar ao in\xEDcio"] : ["Pr\xF3ximo passo", "Agora n\xE3o"],
-          ctx: s ? null : { f: o.f, i: l + 1 },
-          extra: s
-            ? "Esse \xE9 o \xFAltimo passo. Voc\xEA tamb\xE9m encontra dicas escritas por profissionais em Dicas."
-            : null,
-          links: s ? [zLinkDicas, zLinkAtend] : void 0,
-        };
-      }
-    }
-    if (/explicar/.test(e))
+    if (/^(agora nao|entendi|ok|voltar ao inicio|nao quero)$/.test(e))
       return {
-        texto:
-          "S\xE3o dois passos curtos: escolher o dia e o hor\xE1rio e depois confirmar. O atendimento \xE9 gratuito e feito por volunt\xE1rios verificados.",
-        links: [zLinkAtend],
-        opcoes: ["Entendi"],
+        texto: "Tudo bem. Quando quiser, escolha uma op\xE7\xE3o ou escreva do seu jeito.",
+        opcoes: xr,
         ctx: null,
       };
-    if (/profissional|consulta|terapeut|psicolog|fisio|fono|agendar|atendimento/.test(e))
+    let r = zAna.buscar(a),
+      m = r.melhor;
+    if (m && m.pts >= (conversa ? 0.5 : 0.4))
+      return {
+        texto: m.e.resposta,
+        links: zLinks(m.e.links),
+        opcoes: m.e.sugestoes || (conversa ? [] : []),
+        ctx: m.e.id === "so-conversar" ? { f: "conversa", n: 0 } : ctxC,
+      };
+    if (conversa) {
+      let n = o.n + 1,
+        oferecer = n >= 2,
+        resp =
+          /cansad|exaust|sem energia|nao aguento|esgotad/.test(e)
+            ? "Cuidar o tempo todo cansa mesmo, e faz sentido voc\xEA estar assim. Teve algum momento hoje s\xF3 para voc\xEA, nem que seja curto?"
+            : /trist|chor|deprimid|desanim/.test(e)
+              ? "Sinto muito que hoje esteja pesado. Chorar tamb\xE9m \xE9 um jeito de aliviar. O que deixou o dia mais dif\xEDcil?"
+              : /medo|preocup|ansios|nervos|insegur/.test(e)
+                ? "\xC9 natural sentir medo quando a gente cuida de algu\xE9m que ama. O que mais te preocupa agora?"
+                : /sozinh|ninguem|abandon/.test(e)
+                  ? "Voc\xEA n\xE3o est\xE1 s\xF3. Aqui no zElo h\xE1 outras fam\xEDlias que passam por coisas parecidas. Quer me contar mais?"
+                  : /grit|crise|agressiv|bate|se joga|birra/.test(e)
+                    ? "Isso \xE9 dif\xEDcil de viver, e voc\xEA n\xE3o est\xE1 fazendo nada errado por n\xE3o saber. Na hora, ajuda falar pouco e levar a pessoa para um lugar mais quieto. Quer continuar me contando?"
+                    : n === 1
+                      ? "Obrigada por me contar. Estou ouvindo. Quer falar mais sobre isso?"
+                      : "Entendo. Isso \xE9 muita coisa para carregar. Estou aqui com voc\xEA.";
+      return {
+        texto: resp,
+        opcoes: oferecer
+          ? ["Continuar conversando", "Quero falar com um profissional", "Ver dicas para quem cuida"]
+          : [],
+        ctx: { f: "conversa", n },
+        extra: oferecer
+          ? "Se quiser, posso te mostrar outros caminhos. Ou podemos continuar s\xF3 conversando."
+          : null,
+      };
+    }
+    let perto = r.lista.filter((x) => x.pts >= 0.3).slice(0, 3);
+    if (perto.length)
       return {
         texto:
-          "Em Atendimentos voc\xEA v\xEA quem est\xE1 online agora, escolhe o profissional e marca o hor\xE1rio. Quer que eu explique como funciona?",
-        links: [zLinkAtend],
-        opcoes: ["Explicar", "Entendi"],
+          "N\xE3o tenho certeza se entendi. Voc\xEA quis perguntar alguma destas?",
+        opcoes: perto.map((x) => zPrimeira(x.e.perguntas[0])),
         ctx: null,
       };
-    if (/so quero conversar|^conversar|quero conversar|desabafar/.test(e))
-      return {
-        texto: "Estou aqui. O que pesou mais hoje?",
-        opcoes: [],
-        ctx: { f: "conversa", n: 0 },
-      };
-    if (!conversa) {
-      if (/sono|dormir|dorm|noite|acorda/.test(e))
-        return {
-          texto: "O sono pesa em tudo. Posso te mostrar tr\xEAs passos, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "sono", i: 0 },
-        };
-      if (/aliment|engasg|engolir|comer|refeic/.test(e))
-        return {
-          texto: "Entendo. Posso te mostrar tr\xEAs passos para as refei\xE7\xF5es, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "alimentacao", i: 0 },
-        };
-      if (/crise|comportament|agressiv|agita|birra/.test(e))
-        return {
-          texto: "Crises cansam muito quem cuida. Posso te mostrar tr\xEAs passos, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "crises", i: 0 },
-        };
-      if (/comunica|fala|falar pouco|nao fala|prancha/.test(e))
-        return {
-          texto: "Comunicar \xE9 mais do que falar. Posso te mostrar tr\xEAs passos para come\xE7ar, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "comunicacao", i: 0 },
-        };
-      if (/dor|postura|mobilidade|movimento/.test(e))
-        return {
-          texto: "Dor nem sempre aparece em palavras. Posso te mostrar tr\xEAs passos para observar, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "dor", i: 0 },
-        };
-      if (/terapia/.test(e))
-        return {
-          texto:
-            "Em Atendimentos h\xE1 terapeutas ocupacionais, fisioterapeutas e fonoaudi\xF3logos volunt\xE1rios. Voc\xEA tamb\xE9m pode perguntar a outras fam\xEDlias no F\xF3rum.",
-          links: [zLinkAtend, { rotulo: "Abrir F\xF3rum", tela: "forum" }],
-          opcoes: xr,
-          ctx: null,
-        };
-      if (/sem energia|cansad|exaust|nao aguento/.test(e))
-        return {
-          texto:
-            "Voc\xEA n\xE3o precisa dar conta disso sozinha ou sozinho. Quer pedir ajuda agora ou s\xF3 conversar?",
-          opcoes: ["Pedir ajuda agora", "S\xF3 quero conversar"],
-          ctx: null,
-        };
-    }
-    let n = conversa ? o.n + 1 : 1,
-      oferecer = n >= 2,
-      resp;
-    resp = /cansad|exaust|sem energia|nao aguento|esgotad/.test(e)
-      ? "Cuidar o tempo todo cansa mesmo, e faz sentido voc\xEA estar assim. Teve algum momento hoje s\xF3 para voc\xEA, nem que seja curto?"
-      : /trist|chor|deprimid|desanim/.test(e)
-        ? "Sinto muito que hoje esteja pesado. Chorar tamb\xE9m \xE9 um jeito de aliviar. O que deixou o dia mais dif\xEDcil?"
-        : /medo|preocup|ansios|nervos|insegur/.test(e)
-          ? "\xC9 natural sentir medo quando a gente cuida de algu\xE9m que ama. O que mais te preocupa agora?"
-          : /sozinh|ninguem|abandon/.test(e)
-            ? "Voc\xEA n\xE3o est\xE1 s\xF3. Aqui no zElo h\xE1 outras fam\xEDlias que passam por coisas parecidas. Quer me contar mais?"
-            : /grit|crise|agressiv|bate|se joga|birra/.test(e)
-              ? "Isso \xE9 dif\xEDcil de viver, e voc\xEA n\xE3o est\xE1 fazendo nada errado por n\xE3o saber. Na hora, ajuda falar pouco e levar a pessoa para um lugar mais quieto. Quer continuar me contando? Se preferir, a dica abaixo explica o que fazer antes, durante e depois."
-            : /raiva|irritad|brig/.test(e)
-              ? "Raiva tamb\xE9m faz parte de cuidar. N\xE3o te faz uma pessoa pior. O que aconteceu?"
-              : /obrigad|valeu|melhor/.test(e)
-                ? "Fico feliz em ajudar. Estou por aqui quando precisar."
-                : n === 1
-                  ? "Obrigada por me contar. Estou ouvindo. Quer falar mais sobre isso?"
-                  : "Entendo. Isso \xE9 muita coisa para carregar. Estou aqui com voc\xEA.";
     return {
-      texto: resp,
-      opcoes: oferecer
-        ? ["Continuar conversando", "Quero falar com um profissional", "Ver dicas para quem cuida"]
-        : [],
-      ctx: { f: "conversa", n },
-      extra: oferecer
-        ? "Se quiser, posso te mostrar outros caminhos. Ou podemos continuar s\xF3 conversando."
-        : null,
-      links: /grit|crise|agressiv|bate|se joga|birra/.test(e) ? [zLinkDicas] : void 0,
+      texto:
+        "Ainda n\xE3o sei responder isso. Eu s\xF3 sei o que est\xE1 na base do zElo, e essa pergunta n\xE3o est\xE1 l\xE1. Voc\xEA pode perguntar no F\xF3rum ou falar com um profissional.",
+      links: zLinks(["forum", "atendimentos"]),
+      opcoes: xr,
+      ctx: null,
     };
   }
   function Mm(a) {
@@ -2577,10 +2550,10 @@
             (0, r.jsx)("span", { className: "avatar avatar--ana", "aria-hidden": "true", children: "A" }),
             (0, r.jsxs)("div", {
               children: [
-                (0, r.jsx)("h1", { tabIndex: -1, children: "Ana (apoio)" }),
+                (0, r.jsx)("h1", { tabIndex: -1, children: "Ana" }),
                 (0, r.jsxs)("p", {
                   className: "apoio",
-                  children: [(0, r.jsx)("span", { className: "online-ponto", children: "Online" }), " \xB7 Equipe de acolhimento do zElo"],
+                  children: "Assistente do zElo. Responde com a base de perguntas revisada pela equipe."
                 }),
               ],
             }),
@@ -2607,7 +2580,7 @@
               className: "chat-fluxo",
               role: "log",
               "aria-live": "polite",
-              "aria-label": "Conversa com Ana (apoio)",
+              "aria-label": "Conversa com a Ana",
               children: [
                 o.msgs.map((I, f) =>
                   (0, r.jsxs)(
@@ -2635,7 +2608,7 @@
                         (0, r.jsxs)("span", {
                           className: "apoio msg-meta",
                           children: [
-                            I.de === "ana" ? "Ana (apoio)" : "Voc\xEA",
+                            I.de === "ana" ? "Ana" : "Voc\xEA",
                             " \xB7 ",
                             I.hora,
                             I.de === "voce" && o.msgs[f + 1] ? " \xB7 Lida" : "",
@@ -2651,7 +2624,7 @@
                     className: "msg msg--ana",
                     children: (0, r.jsx)("div", {
                       className: "balao balao--digitando",
-                      children: "Ana est\xE1 escrevendo...",
+                      children: "Ana est\xE1 procurando a resposta",
                     }),
                   }),
                 (0, r.jsx)("div", { ref: i }),
@@ -2746,13 +2719,13 @@
               children: [
                 (0, r.jsx)("h1", {
                   tabIndex: -1,
-                  children: "F\xF3rum de respons\xE1veis",
+                  children: "F\xF3rum",
                 }),
                 (0, r.jsx)("p", {
                   className: "lead",
                   style: { fontSize: 18 },
                   children:
-                    "Conversas entre fam\xEDlias e profissionais, em ordem de atividade.",
+                    "Conversas entre fam\xEDlias, pessoas com defici\xEAncia e profissionais, das mais recentes para as mais antigas.",
                 }),
               ],
             }),
@@ -2931,7 +2904,8 @@
                             " ",
                             (0, r.jsx)(Bo, {
                               forte: !0,
-                              children: "Profissional",
+                              icone: "elo",
+                              children: "Verificado",
                             }),
                           ],
                         }),
@@ -3220,7 +3194,7 @@
           : (0, r.jsxs)("div", {
               className: "vazio",
               children: [
-                (0, r.jsx)("h3", { children: "Nenhuma dica encontrada." }),
+                (0, r.jsx)("h3", { children: "Nenhuma dica encontrada" }),
                 (0, r.jsx)("p", {
                   children:
                     t === "Todas"
@@ -3428,7 +3402,7 @@
                                             className: "etiquetas",
                                             children: [
                                               (0, r.jsx)(Bo, {
-                                                icone: "confirmar",
+                                                icone: "elo",
                                                 children: "Verificado",
                                               }),
                                               f.agora &&
@@ -3513,7 +3487,7 @@
                           className: "vazio",
                           children: [
                             (0, r.jsx)("h3", {
-                              children: "Nenhum profissional encontrado.",
+                              children: "Nenhum profissional encontrado",
                             }),
                             (0, r.jsx)("p", {
                               children:
@@ -3590,7 +3564,7 @@
                     children: [
                       (0, r.jsx)("h3", {
                         children:
-                          "Voc\xEA ainda n\xE3o tem atendimentos marcados.",
+                          "Voc\xEA ainda n\xE3o tem atendimentos marcados",
                       }),
                       (0, r.jsx)("p", {
                         children:
@@ -3871,7 +3845,7 @@
             (0, r.jsxs)("span", {
               className: "cartao-acao-texto",
               children: [
-                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia m\xE9dica? Fale com a Ana no chat" }),
+                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia m\xE9dica? Pe\xE7a apoio pelo chat" }),
                 (0, r.jsxs)("span", {
                   className: "apoio",
                   children: [
@@ -3980,19 +3954,19 @@
           }),
           (0, r.jsx)("p", {
             className: "splash-frase",
-            children: "Dire\xE7\xE3o, ajuda e apoio para quem cuida.",
+            children: "Dire\xE7\xE3o, ajuda e apoio para quem cuida",
           }),
         ],
       })
     );
   }
-  var R2 = { tipo: null, direcionamento: [], especificidades: [], quem: null },
+  var R2 = { tipo: [], direcionamento: [], especificidades: [], quem: null },
     z2 = {
       msgs: [
         {
           de: "ana",
           texto:
-            "Oi, eu sou a Ana, da equipe de acolhimento do zElo. Pode me contar o que precisa, tirar uma d\xFAvida ou s\xF3 conversar.",
+            "Oi, eu sou a Ana, a assistente do zElo. Posso responder d\xFAvidas do dia a dia de cuidado e sobre o app. Escreva do seu jeito, mesmo com erro de digita\xE7\xE3o.",
           hora: "09:12",
         },
       ],
@@ -4010,11 +3984,11 @@
       },
     ],
     zFrases = {
-      objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3.",
-      login: "Que bom ter voc\xEA aqui.",
-      cadastro: "Obrigado por querer ajudar.",
-      "status-voluntario": "Falta pouco para voc\xEA come\xE7ar.",
-      diagnostico: "Leva menos de 2 minutos.",
+      objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3",
+      login: "Que bom ter voc\xEA aqui",
+      cadastro: "Obrigado por querer ajudar",
+      "status-voluntario": "Falta pouco para voc\xEA come\xE7ar",
+      diagnostico: "Leva menos de 2 minutos",
     };
   function Dm() {
     let [a, o] = (0, L.useState)("objetivo"),
@@ -4148,7 +4122,7 @@
       case "objetivo":
         xa = (0, r.jsx)(FS, {
           escolher: (H) => {
-            (l(H), o(H === "responsavel" ? "login" : "cadastro"));
+            (l(H), o(H === "voluntario" ? "cadastro" : "login"));
           },
         });
         break;
