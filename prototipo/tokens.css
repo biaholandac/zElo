@@ -1,0 +1,237 @@
+/* zElo · tokens do design system (visual da versão mobile). Único lugar com valores de cor, tipo, espaço e forma. */
+
+:root {
+  /* Paleta da marca */
+  --manteiga: #F5E1A0;
+  --manteiga-hover: #EED98C;
+  --realce: #FAF0CC;
+  --petroleo: #0F5F70;
+  --petroleo-escuro: #0B4A58;
+  --tinta: #17262A;
+  --creme: #FBF8F1;
+  --areia: #F1EEE6;
+  --vermelho: #B3261E;
+  --vermelho-hover: #96201A;
+  --verde: #2E7D4F;
+  --branco: #FFFFFF;
+
+  /* Tipografia */
+  --fonte-titulo: "Nunito", "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fonte: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-display: 30px;
+  --fs-titulo: 26px;
+  --fs-secao: 20px;
+  --fs-item: 17px;
+  --fs-corpo: 16px;
+  --fs-apoio: 14px;
+  --medida: 64ch;
+
+  /* Espaço (base de 4px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --space-7: 40px;
+  --space-8: 56px;
+
+  /* Forma */
+  --raio-etiqueta: 999px;
+  --raio-controle: 14px;
+  --raio-cartao: 18px;
+  --raio-balao: 18px;
+  --sombra: 0 1px 2px rgba(23, 38, 42, .06), 0 4px 14px rgba(23, 38, 42, .06);
+
+  /* Layout */
+  --coluna: 272px;
+  --alvo: 44px;
+  --barra: 68px;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --fs-display: 40px;
+    --fs-titulo: 32px;
+    --fs-secao: 22px;
+    --fs-item: 18px;
+    --fs-corpo: 17px;
+  }
+}
+
+/* Tema claro (padrão) */
+:root, [data-theme="claro"] {
+  color-scheme: light;
+  --bg: var(--creme);
+  --superficie: var(--branco);
+  --superficie-2: var(--areia);
+  --borda: #E2DBCB;
+  --borda-forte: #CFC7B6;
+  --texto: var(--tinta);
+  --texto-apoio: #4A5A5E;
+  --link: var(--petroleo);
+  --destaque-bg: var(--petroleo);
+  --destaque-fg: #FFFFFF;
+  --destaque-apoio: #CFE3E7;
+  --acao-bg: var(--manteiga);
+  --acao-fg: var(--tinta);
+  --acao-borda: var(--tinta);
+  --acao-hover: var(--manteiga-hover);
+  --sec-bg: var(--branco);
+  --sec-borda: var(--borda-forte);
+  --sec-hover: var(--areia);
+  --sel-bg: var(--realce);
+  --sel-borda: var(--petroleo);
+  --chip-bg: var(--branco);
+  --chip-ativo-bg: var(--petroleo);
+  --chip-ativo-fg: #FFFFFF;
+  --campo-bg: var(--branco);
+  --campo-borda: var(--borda-forte);
+  --campo-bloq-bg: var(--areia);
+  --erro: var(--vermelho);
+  --etiqueta-bg: var(--areia);
+  --etiqueta-fg: var(--tinta);
+  --etiqueta-forte-bg: #E3EEF0;
+  --etiqueta-forte-fg: var(--petroleo-escuro);
+  --alerta-info-bg: var(--realce);
+  --alerta-info-borda: #E9D48E;
+  --alerta-ok-bg: #E6F2EA;
+  --alerta-ok-borda: var(--verde);
+  --alerta-aviso-bg: var(--realce);
+  --alerta-aviso-borda: #E9D48E;
+  --balao-voce-bg: var(--manteiga);
+  --balao-voce-fg: var(--tinta);
+  --balao-ana-bg: var(--branco);
+  --balao-ana-borda: #E2DBCB;
+  --menu-ativo-bg: var(--manteiga);
+  --menu-ativo-fg: var(--tinta);
+  --menu-icone-ativo: var(--petroleo-escuro);
+  --hero-bg: var(--manteiga);
+  --hero-fg: var(--tinta);
+  --hero-bola-1: var(--realce);
+  --hero-bola-2: #EFD68A;
+  --rodape-fg: #5C676B;
+  --emergencia: var(--vermelho);
+  --emergencia-hover: var(--vermelho-hover);
+  --emergencia-fg: #FFFFFF;
+  --online: var(--verde);
+  --foco: var(--petroleo);
+  --borda-largura: 1.5px;
+}
+
+/* Tema escuro: petróleo profundo, textos em manteiga clara */
+[data-theme="escuro"] {
+  color-scheme: dark;
+  --bg: #0A262D;
+  --superficie: #11343D;
+  --superficie-2: #174450;
+  --borda: #285866;
+  --borda-forte: #3B6E7B;
+  --texto: #F7EDCD;
+  --texto-apoio: #C9C0A2;
+  --link: var(--manteiga);
+  --destaque-bg: #0F5F70;
+  --destaque-fg: #FFFFFF;
+  --destaque-apoio: #CFE3E7;
+  --acao-bg: var(--manteiga);
+  --acao-fg: var(--tinta);
+  --acao-borda: var(--manteiga);
+  --acao-hover: #FFF0BF;
+  --sec-bg: transparent;
+  --sec-borda: #4F8290;
+  --sec-hover: #174450;
+  --sel-bg: #1D4F5C;
+  --sel-borda: var(--manteiga);
+  --chip-bg: transparent;
+  --chip-ativo-bg: var(--manteiga);
+  --chip-ativo-fg: var(--tinta);
+  --campo-bg: #0D2E36;
+  --campo-borda: #4F8290;
+  --campo-bloq-bg: #174450;
+  --erro: #FF9C8F;
+  --etiqueta-bg: #174450;
+  --etiqueta-fg: #F7EDCD;
+  --etiqueta-forte-bg: var(--manteiga);
+  --etiqueta-forte-fg: var(--tinta);
+  --alerta-info-bg: #174450;
+  --alerta-info-borda: #4F8290;
+  --alerta-ok-bg: #173F2B;
+  --alerta-ok-borda: #6CC08F;
+  --alerta-aviso-bg: #3A3418;
+  --alerta-aviso-borda: #C9B266;
+  --balao-voce-bg: var(--manteiga);
+  --balao-voce-fg: var(--tinta);
+  --balao-ana-bg: #174450;
+  --balao-ana-borda: #285866;
+  --menu-ativo-bg: var(--manteiga);
+  --menu-ativo-fg: var(--tinta);
+  --menu-icone-ativo: var(--tinta);
+  --hero-bg: #11343D;
+  --hero-fg: #F7EDCD;
+  --hero-bola-1: #174450;
+  --hero-bola-2: #0F5F70;
+  --rodape-fg: #C9C0A2;
+  --emergencia: #C9352B;
+  --emergencia-hover: #A82B22;
+  --online: #6CC08F;
+  --foco: var(--manteiga);
+}
+
+/* Alto contraste: preto no branco, bordas grossas, nada de cores suaves */
+[data-theme="alto-contraste"] {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --superficie: #FFFFFF;
+  --superficie-2: #FFFFFF;
+  --borda: #000000;
+  --borda-forte: #000000;
+  --texto: #000000;
+  --texto-apoio: #1A1A1A;
+  --link: #00323D;
+  --destaque-bg: #000000;
+  --destaque-fg: #FFFFFF;
+  --destaque-apoio: #FFFFFF;
+  --acao-bg: #000000;
+  --acao-fg: #FFFFFF;
+  --acao-borda: #000000;
+  --acao-hover: #2B2B2B;
+  --sec-bg: #FFFFFF;
+  --sec-borda: #000000;
+  --sec-hover: #FFF3B0;
+  --sel-bg: #FFF3B0;
+  --sel-borda: #000000;
+  --chip-bg: #FFFFFF;
+  --chip-ativo-bg: #000000;
+  --chip-ativo-fg: #FFFFFF;
+  --campo-bg: #FFFFFF;
+  --campo-borda: #000000;
+  --campo-bloq-bg: #E6E6E6;
+  --erro: #A30000;
+  --etiqueta-bg: #FFFFFF;
+  --etiqueta-fg: #000000;
+  --etiqueta-forte-bg: #000000;
+  --etiqueta-forte-fg: #FFFFFF;
+  --alerta-info-bg: #FFFFFF;
+  --alerta-info-borda: #000000;
+  --alerta-ok-bg: #FFFFFF;
+  --alerta-ok-borda: #000000;
+  --alerta-aviso-bg: #FFF3B0;
+  --alerta-aviso-borda: #000000;
+  --balao-voce-bg: #FFF3B0;
+  --balao-voce-fg: #000000;
+  --balao-ana-bg: #FFFFFF;
+  --balao-ana-borda: #000000;
+  --menu-ativo-bg: #000000;
+  --menu-ativo-fg: #FFFFFF;
+  --menu-icone-ativo: #FFFFFF;
+  --hero-bg: #FFFFFF;
+  --hero-fg: #000000;
+  --hero-bola-1: #FFFFFF;
+  --hero-bola-2: #FFFFFF;
+  --rodape-fg: #000000;
+  --emergencia: #A30000;
+  --emergencia-hover: #7A0000;
+  --online: #00602A;
+  --foco: #000000;
+  --borda-largura: 2.5px;
+}
