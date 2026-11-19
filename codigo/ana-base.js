@@ -93,8 +93,8 @@
       links: ["atendimentos"] },
     { id: "verificado", tema: "app", perguntas: ["os profissionais são verificados", "posso confiar nos profissionais", "como sei que é profissional de verdade", "quem são os voluntários"],
       resposta: "Sim. Todo voluntário envia o registro no conselho da profissão (como CRP, CREFITO ou CRFa) e a comprovação do título. A equipe confere antes de liberar o acesso. Por isso aparece a etiqueta Verificado." },
-    { id: "online-agora", tema: "app", perguntas: ["o que significa online agora", "o profissional está online", "dá pra falar agora com alguém", "atendimento hoje"],
-      resposta: "Online agora quer dizer que o voluntário está disponível hoje e tem horários ainda neste dia. Você vê os horários de hoje ao tocar em Agendar consulta.",
+    { id: "online-agora", tema: "app", perguntas: ["o que significa atende hoje", "o que significa online agora", "o profissional está online", "dá pra falar agora com alguém", "atendimento hoje"],
+      resposta: "Atende hoje quer dizer que o voluntário ainda tem horários livres neste dia. Você vê os horários de hoje ao tocar em Agendar consulta.",
       links: ["atendimentos"] },
     { id: "presencial-online", tema: "app", perguntas: ["a consulta é online ou presencial", "como funciona a consulta online", "chamada de vídeo", "preciso instalar alguma coisa para a consulta online"],
       resposta: "Depende do profissional: alguns atendem presencialmente, outros por vídeo, e alguns dos dois jeitos. Quando há as duas opções, você escolhe na hora de agendar. A chamada de vídeo abre pelo próprio zElo, sem instalar nada." },
@@ -134,7 +134,7 @@
     { id: "convulsao-depois", tema: "emergencia", perguntas: ["o que fazer depois da convulsão", "ele dormiu depois da crise", "quando levar ao médico depois da convulsão"],
       resposta: "Depois da convulsão é comum a pessoa ficar sonolenta ou confusa. Deixe de lado, num lugar calmo, e fique por perto. Anote a hora, quanto durou e como foi, e conte ao médico que acompanha. Se as crises ficarem mais frequentes, procure atendimento." },
     { id: "engasgo-agora", tema: "emergencia", perguntas: ["está engasgado agora", "não consegue respirar", "engasgou e ficou roxo", "o que fazer se engasgar"],
-      resposta: "Se a pessoa tosse com força, deixe tossir e fique por perto. Se não consegue tossir, falar ou respirar, ligue 192 agora e siga as orientações da atendente.",
+      resposta: "Se a pessoa tosse com força, deixe tossir e fique por perto. Se não consegue tossir, falar ou respirar, ligue 192 agora. Em adulto ou criança maior de 1 ano, fique atrás dela, feche uma das mãos acima do umbigo, cubra com a outra e puxe para dentro e para cima, com força, até o objeto sair. Em bebê, veja os passos na tela Preciso de ajuda.",
       links: ["ajuda"] },
     { id: "queda", tema: "emergencia", perguntas: ["ele caiu e bateu a cabeça", "teve uma queda", "caiu da cadeira de rodas", "bateu a cabeça"],
       resposta: "Depois de uma queda com batida na cabeça, observe por algumas horas. Ligue 192 se houver vômito, sonolência fora do normal, convulsão, sangramento pelo nariz ou ouvido, ou se a pessoa ficar diferente do jeito dela.",
@@ -368,7 +368,83 @@
     { id: "so-conversar", tema: "conversa", perguntas: ["só quero conversar", "quero desabafar", "preciso falar com alguém", "posso conversar com você"],
       resposta: "Estou aqui. Pode escrever do seu jeito, sem pressa. O que pesou mais hoje?" },
     { id: "pedir-profissional", tema: "app", perguntas: ["quero falar com um profissional", "preciso de um psicólogo", "quero falar com um especialista", "tem fono disponível"],
-      resposta: "Em Atendimentos você vê quem está online agora, escolhe o profissional e marca o horário, de graça. Os profissionais são voluntários verificados.",
+      resposta: "Em Atendimentos você vê quem atende hoje, escolhe o profissional e marca o horário, de graça. Os profissionais são voluntários verificados.",
       links: ["atendimentos"], sugestoes: ["Como marcar uma consulta?", "A consulta é online ou presencial?"] },
   ];
+
+  /* ===== Risco emocional grave =====
+     A Ana checa estas frases ANTES de procurar na base. Se alguma aparecer, ela mostra
+     CVV 188 e SAMU 192 em destaque, sem passar pelo ranking. Escreva sem acento. */
+  var zAnaRisco = {
+    padroes: [
+      /quero morrer/, /queria morrer/, /vontade de morrer/, /prefiro morrer/, /melhor morrer/,
+      /me matar/, /suicid/, /tirar (a )?minha (propria )?vida/, /acabar com (a )?minha vida/,
+      /acabar com tudo/, /quero sumir/, /queria sumir/, /sumir de vez/, /desaparecer (de vez|pra sempre|para sempre)/,
+      /fazer (uma )?besteira/, /nao aguento mais/, /nao aguento viver/, /nao quero (mais )?viver/,
+      /nao vale a pena viver/, /cansei de viver/, /melhor sem mim/, /dormir e nao acordar/,
+      /me machucar/, /me cortar/, /me ferir/, /autolesao/, /nao vejo saida/, /sem saida/,
+      /nao tenho (mais )?forca(s)? (pra|para) (nada|continuar|viver)/,
+    ],
+    texto:
+      "Obrigada por me contar. O que você está sentindo é sério, e você não precisa passar por isso sem ninguém. Se você pensa em se machucar ou em tirar a própria vida, ligue agora para o CVV, no 188. É de graça, funciona 24 horas e quem atende é uma pessoa. Se alguém corre perigo neste momento, ligue 192. Se puder, chame alguém de confiança para ficar com você agora.",
+    extra:
+      "Eu sou uma assistente automática, não uma pessoa. Se quiser, também posso te levar para marcar uma conversa com uma psicóloga voluntária do zElo.",
+    acoes: [
+      { numero: "188", rotulo: "Ligar 188 · CVV", sub: "Apoio emocional, 24 horas" },
+      { numero: "192", rotulo: "Ligar 192 · SAMU", sub: "Se há risco de vida agora" },
+    ],
+    opcoes: ["Quero falar com um profissional", "Continuar conversando"],
+  };
+
+  /* ===== Primeiros socorros =====
+     Usado na tela Preciso de ajuda e nas respostas de emergência da Ana.
+     ANTES DE IR AO AR: um profissional de saúde precisa revisar estes passos.
+     Depois da revisão, preencha revisadoPor e data. Enquanto estiverem vazios,
+     o app mostra "Aguardando revisão de profissional de saúde". */
+  var zSaudeRevisao = {
+    fonte: "Orientações de primeiros socorros do SAMU 192 e do Ministério da Saúde",
+    revisadoPor: "",
+    data: "",
+  };
+  function zSaudeRodape() {
+    var r = zSaudeRevisao;
+    return "Fonte: " + r.fonte + ". " +
+      (r.revisadoPor && r.data ? "Revisado por " + r.revisadoPor + " em " + r.data + "." : "Aguardando revisão de profissional de saúde.");
+  }
+  var zSituacoes = [
+    { id: "convulsao", titulo: "Convulsão",
+      ligar: "Ligue 192 se passar de 5 minutos, se for a primeira vez, se houver machucado ou se a pessoa não voltar a respirar normalmente.",
+      passos: [
+        "Deite a pessoa de lado no chão e afaste móveis e objetos",
+        "Apoie a cabeça em algo macio. Não segure braços nem pernas",
+        "Não coloque nada na boca, nem os dedos",
+        "Marque a hora em que começou",
+        "Quando parar, deixe de lado e fique por perto até ela acordar bem",
+      ] },
+    { id: "engasgo", titulo: "Engasgo",
+      ligar: "Se a pessoa não consegue tossir, falar ou respirar, peça para alguém ligar 192 enquanto você ajuda.",
+      passos: [
+        "Se tosse com força, deixe tossir e não bata nas costas",
+        "Adulto ou criança maior de 1 ano: fique atrás, feche uma mão acima do umbigo, cubra com a outra e puxe para dentro e para cima até o objeto sair",
+        "Bebê: deite de bruços no seu antebraço, cabeça mais baixa, e dê 5 tapas entre as costas. Vire e faça 5 compressões no meio do peito com dois dedos. Repita",
+        "Se a pessoa desmaiar, ligue 192 e siga a atendente",
+      ] },
+    { id: "crise", titulo: "Crise de comportamento",
+      ligar: "Ligue 192 se a pessoa se machucar ou machucar alguém e você não conseguir proteger.",
+      passos: [
+        "Fale pouco, devagar e sempre com a mesma voz calma",
+        "Diminua luz e barulho, ou leve a pessoa para um lugar mais quieto",
+        "Afaste o que pode machucar. Não force contato nem olho no olho",
+        "Espere passar. Depois, ofereça água e descanso, e cuide de você também",
+      ] },
+    { id: "queda", titulo: "Queda",
+      ligar: "Ligue 192 se a pessoa desmaiou, vomitou, ficou muito sonolenta, teve convulsão, sangra pelo nariz ou ouvido, ou não mexe alguma parte do corpo.",
+      passos: [
+        "Não levante a pessoa logo. Veja se ela responde e se sente dor",
+        "Se dói no pescoço ou nas costas, não mexa e ligue 192",
+        "Se bateu a cabeça, observe por 24 horas e não deixe sozinha",
+        "Anote a hora e como foi a queda para contar ao médico",
+      ] },
+  ];
+
   zAna.preparar(zAnaBase, zAnaSinonimos);

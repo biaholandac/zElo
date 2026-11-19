@@ -230,11 +230,20 @@
     });
   }
   var Em = [
-      { id: "fisica", rotulo: "Defici\xEAncia f\xEDsica" },
+      { id: "fisica", rotulo: "Defici\xEAncia f\xEDsica", sub: "Les\xE3o medular, amputa\xE7\xE3o, m\xE1 forma\xE7\xE3o, distrofia" },
+      { id: "pc", rotulo: "Paralisia cerebral" },
       { id: "intelectual", rotulo: "Defici\xEAncia intelectual" },
-      { id: "visual", rotulo: "Defici\xEAncia visual" },
-      { id: "auditiva", rotulo: "Defici\xEAncia auditiva" },
+      { id: "down", rotulo: "S\xEDndrome de Down" },
       { id: "tea", rotulo: "Transtorno do espectro autista (TEA)" },
+      { id: "tdah", rotulo: "TDAH" },
+      { id: "visual", rotulo: "Defici\xEAncia visual", sub: "Cegueira ou baixa vis\xE3o" },
+      { id: "auditiva", rotulo: "Defici\xEAncia auditiva", sub: "Surdez ou perda auditiva" },
+      { id: "surdocegueira", rotulo: "Surdocegueira" },
+      { id: "psicossocial", rotulo: "Defici\xEAncia psicossocial", sub: "Esquizofrenia, transtorno bipolar e outros transtornos mentais graves" },
+      { id: "zika", rotulo: "S\xEDndrome cong\xEAnita do Zika", sub: "Microcefalia" },
+      { id: "rara", rotulo: "Doen\xE7a rara", sub: "AME, osteog\xEAnese imperfeita, s\xEDndromes gen\xE9ticas" },
+      { id: "nanismo", rotulo: "Nanismo" },
+      { id: "outra", rotulo: "Outra", sub: "Escreva qual \xE9" },
       { id: "nao-sei", rotulo: "Ainda n\xE3o sei" },
     ],
     El = [
@@ -896,6 +905,11 @@
       t
     );
   }
+  function zNovos(id, n) {
+    return id === "chat"
+      ? n + (n === 1 ? " mensagem nova" : " mensagens novas")
+      : n + (n === 1 ? " novo" : " novos");
+  }
   var zSort = (lista) =>
     [...lista].sort(
       (x, y) =>
@@ -912,9 +926,9 @@
   }
   function zSenha(v) {
     if (v.length < 8)
-      return "A senha precisa de pelo menos 8 caracteres. Misture letras e n\xFAmeros.";
+      return v ? "Faltam caracteres na senha. Use pelo menos 8, com letras e n\xFAmeros." : "Falta a senha. Use pelo menos 8 caracteres, com letras e n\xFAmeros.";
     if (!/[a-zA-Z]/.test(v) || !/[0-9]/.test(v))
-      return "Misture letras e n\xFAmeros na senha para deix\xE1-la mais segura.";
+      return "Faltam letras ou n\xFAmeros na senha. Ela precisa ter os dois.";
     return "";
   }
   var M2 = (a, o) => Ur(a, o).reduce((e, t) => e + t.horas.length, 0);
@@ -924,25 +938,7 @@
       ? `${e.rotulo}, \xE0s ${e.horas[0]}`
       : "Sem hor\xE1rios nesta semana";
   }
-  var B2 = [
-      [
-        "Fique perto e fale devagar",
-        "Use frases curtas e a mesma voz calma. Diga o que vai fazer antes de tocar na pessoa.",
-      ],
-      [
-        "Reduza luz e barulho",
-        "Desligue a televis\xE3o, baixe as luzes e leve a pessoa para um lugar mais quieto. N\xE3o force contato olho no olho.",
-      ],
-      [
-        "Em convuls\xE3o, proteja a cabe\xE7a",
-        "Deite a pessoa de lado, afaste objetos e apoie a cabe\xE7a. N\xE3o coloque nada na boca. Marque a hora. Se passar de 5 minutos, ligue 192.",
-      ],
-      [
-        "Mantenha \xE0 m\xE3o o essencial",
-        "Tenha por perto o nome dos rem\xE9dios, o \xFAltimo relat\xF3rio m\xE9dico e o telefone de um familiar. Isso agiliza o atendimento.",
-      ],
-    ],
-    H2 = [
+  var H2 = [
       ["193", "Bombeiros", "Resgate e inc\xEAndio."],
       ["190", "Pol\xEDcia Militar", "Viol\xEAncia ou amea\xE7a em andamento."],
       ["188", "CVV", "Apoio emocional, 24 horas."],
@@ -1006,6 +1002,7 @@
               className: baixo ? "aba-baixo" : "menu-item",
               onClick: () => n(c.tela),
               "aria-current": o === c.id ? "page" : void 0,
+              "aria-label": l[c.id] > 0 ? c.rotulo + ", " + zNovos(c.id, l[c.id]) : void 0,
               children: [
                 (0, r.jsxs)("span", {
                   className: "menu-icone",
@@ -1018,10 +1015,6 @@
                           (0, r.jsx)("span", {
                             "aria-hidden": "true",
                             children: l[c.id],
-                          }),
-                          (0, r.jsxs)("span", {
-                            className: "so-leitor",
-                            children: [", ", l[c.id], l[c.id] === 1 ? " novo" : " novos"],
                           }),
                         ],
                       }),
@@ -1036,6 +1029,13 @@
     return (0, r.jsxs)("div", {
       className: "app" + (e ? " app--menu" : " app--entrada"),
       children: [
+        // An\xFAncio para leitores de tela quando chega mensagem nova no Chat fora da tela do Chat
+        (0, r.jsx)("div", {
+          className: "so-leitor",
+          role: "status",
+          "aria-live": "polite",
+          children: e && o !== "chat" && l.chat > 0 ? "Chat: " + zNovos("chat", l.chat) : "",
+        }),
         (0, r.jsx)("a", {
           className: "pular",
           href: "#principal",
@@ -1150,7 +1150,44 @@
       ],
     });
   }
-  function FS({ escolher: a }) {
+  // Tema: o que a pessoa escolheu antes; sen\xE3o, o que o celular pede (alto contraste ou modo escuro)
+  function zTemaInicial() {
+    try {
+      let t = localStorage.getItem("zelo-tema");
+      if (t && jS.some((x) => x.id === t)) return t;
+    } catch (x) {}
+    let mq = (q) => window.matchMedia && window.matchMedia(q).matches;
+    return mq("(prefers-contrast: more)") || mq("(forced-colors: active)")
+      ? "alto-contraste"
+      : mq("(prefers-color-scheme: dark)")
+        ? "escuro"
+        : "claro";
+  }
+  function zTemaRapido({ tema: v, setTema: A }) {
+    return (0, r.jsxs)("div", {
+      className: "tema-rapido",
+      role: "radiogroup",
+      "aria-labelledby": "tema-rapido-h",
+      children: [
+        (0, r.jsx)("span", { id: "tema-rapido-h", children: "Tela" }),
+        jS.map((x) =>
+          (0, r.jsx)(
+            "button",
+            {
+              type: "button",
+              role: "radio",
+              "aria-checked": v === x.id,
+              className: "tema-rapido-op",
+              onClick: () => A(x.id),
+              children: x.rotulo,
+            },
+            x.id,
+          ),
+        ),
+      ],
+    });
+  }
+  function FS({ escolher: a, tema: tm, setTema: st }) {
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
@@ -1243,6 +1280,7 @@
               "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
           }),
         }),
+        st && (0, r.jsx)(zTemaRapido, { tema: tm, setTema: st }),
       ],
     });
   }
@@ -1300,7 +1338,7 @@
                 sn && (I.senha = sn);
               }
               if (modo === "entrar" && !n)
-                I.senha = "Falta a senha.";
+                I.senha = "Falta a senha. Escreva a senha da sua conta.";
               if ((i(I), Object.keys(I).length)) return Or();
               if (modo === "esqueci") return setEnviado(e.trim());
               o(e.trim(), modo === "criar" ? nome.trim() : "");
@@ -1424,7 +1462,7 @@
         "Pode escolher mais de uma. Se ainda n\xE3o h\xE1 diagn\xF3stico, escolha Ainda n\xE3o sei.",
       itens: Em,
       multi: !0,
-      aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar.",
+      aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar. Se escolheu Outra, escreva qual \xE9.",
     },
     {
       campo: "direcionamento",
@@ -1454,7 +1492,7 @@
   }) {
     let s = _S[a - 1],
       i = e[s.campo],
-      c = s.multi ? i.length > 0 : !!i,
+      c = (s.multi ? i.length > 0 : !!i) && !(s.campo === "tipo" && i.includes("outra") && !(e.tipoOutra || "").trim()),
       m = (I) => {
         if (!s.multi) return t({ ...e, [s.campo]: I });
         let f;
@@ -1508,6 +1546,23 @@
             multi: s.multi,
             rotulo: s.titulo,
           }),
+          s.campo === "tipo" &&
+            i.includes("outra") &&
+            (0, r.jsxs)("div", {
+              className: "campo outra-campo",
+              children: [
+                (0, r.jsx)("label", { htmlFor: "tipo-outra", children: "Qual defici\xEAncia?" }),
+                (0, r.jsx)("input", {
+                  id: "tipo-outra",
+                  className: "campo-entrada",
+                  value: e.tipoOutra || "",
+                  maxLength: 80,
+                  autoComplete: "off",
+                  onChange: (I) => t({ ...e, tipoOutra: I.target.value }),
+                }),
+                (0, r.jsx)("span", { className: "apoio", children: "Se n\xE3o souber o nome, descreva do seu jeito." }),
+              ],
+            }),
           (0, r.jsxs)("div", {
             className: "acoes",
             style: { marginTop: 40 },
@@ -1997,7 +2052,7 @@
                           "Escolhidos pelas suas respostas. ",
                           (0, r.jsxs)("span", {
                             className: "online-ponto",
-                            children: [online.length, " volunt\xE1rios online agora"],
+                            children: [online.length, " volunt\xE1rios atendem hoje"],
                           }),
                           ", com hor\xE1rios ainda hoje.",
                         ],
@@ -2030,7 +2085,7 @@
                                     f.nome,
                                     f.agora &&
                                       (0, r.jsxs)(r.Fragment, {
-                                        children: [" ", (0, r.jsx)(Bo, { forte: !0, children: "Online agora" })],
+                                        children: [" ", (0, r.jsx)(Bo, { forte: !0, children: "Atende hoje" })],
                                       }),
                                   ],
                                 }),
@@ -2265,7 +2320,7 @@
                       (0, r.jsx)("dt", { children: "Tipo de defici\xEAncia" }),
                       (0, r.jsx)("dd", {
                         children:
-                          A(Em, e.tipo || []),
+                          A(Em, e.tipo || []).replace("Outra", e.tipoOutra ? "Outra: " + e.tipoOutra : "Outra"),
                       }),
                     ],
                   }),
@@ -2323,7 +2378,7 @@
                 (0, r.jsxs)("div", {
                   className: "previa-linha",
                   children: [
-                    (0, r.jsx)(Bo, { forte: !0, children: "Online agora" }),
+                    (0, r.jsx)(Bo, { forte: !0, children: "Verificado" }),
                     (0, r.jsx)(Bo, { children: "Rotina" }),
                     (0, r.jsx)("span", { className: "btn btn--peq", "aria-hidden": "true", children: "Bot\xE3o" }),
                   ],
@@ -2332,6 +2387,7 @@
             }),
           ],
         }),
+        (0, r.jsx)(zSemRespostaBloco, {}),
         (0, r.jsx)("div", {
           className: "perfil-bloco",
           children: (0, r.jsx)(ia, {
@@ -2340,6 +2396,59 @@
             children: "Sair do zElo",
           }),
         }),
+      ],
+    });
+  }
+  function zSemRespostaBloco() {
+    let [l, setL] = (0, L.useState)(zSemRespostaLer),
+      [copiou, setCopiou] = (0, L.useState)(!1),
+      fmt = (q) => new Date(q).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+      copiar = () => {
+        let t = l.map((x) => fmt(x.quando) + "\t" + x.texto + (x.perto ? "\t(mais parecida: " + x.perto + ")" : "")).join("\n");
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+          () => setCopiou(!0),
+          () => setCopiou(!1),
+        );
+      };
+    return (0, r.jsxs)("div", {
+      className: "perfil-bloco",
+      children: [
+        (0, r.jsx)("h2", { children: "Perguntas que a Ana n\xE3o soube responder" }),
+        (0, r.jsx)("p", {
+          className: "secao-sub",
+          children:
+            "A equipe usa esta lista para acrescentar respostas na base. Neste prot\xF3tipo ela fica s\xF3 neste aparelho.",
+        }),
+        l.length
+          ? (0, r.jsxs)(r.Fragment, {
+              children: [
+                (0, r.jsx)("ul", {
+                  className: "sem-resposta",
+                  children: l.slice(0, 8).map((x, k) =>
+                    (0, r.jsxs)("li", { children: [(0, r.jsx)("span", { children: x.texto }), (0, r.jsx)("span", { className: "apoio", children: fmt(x.quando) })] }, k),
+                  ),
+                }),
+                l.length > 8 && (0, r.jsxs)("p", { className: "apoio", children: ["E mais ", l.length - 8, ". O bot\xE3o copia todas."] }),
+                (0, r.jsxs)("div", {
+                  className: "acoes",
+                  children: [
+                    (0, r.jsx)(ia, { sec: !0, onClick: copiar, children: "Copiar lista (" + l.length + ")" }),
+                    (0, r.jsx)(ia, {
+                      sec: !0,
+                      onClick: () => {
+                        try {
+                          localStorage.removeItem(zSemRespostaChave);
+                        } catch (x) {}
+                        (setL([]), setCopiou(!1));
+                      },
+                      children: "Apagar lista",
+                    }),
+                    copiou && (0, r.jsx)("span", { className: "apoio", role: "status", children: "Copiada. Cole numa planilha ou mensagem para a equipe." }),
+                  ],
+                }),
+              ],
+            })
+          : (0, r.jsx)("p", { className: "apoio", children: "Nenhuma por enquanto." }),
       ],
     });
   }
@@ -2404,9 +2513,34 @@
         .toLowerCase()
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "");
+  // Hor\xE1rio da equipe de acolhimento. Ajuste aqui quando o grupo definir o hor\xE1rio real.
+  var zAcolhimento = { abre: 8, fecha: 22, prazoHoras: 1 };
+  function zStatusAcolhimento() {
+    let h = new Date().getHours(),
+      c = zAcolhimento,
+      aberto = h >= c.abre && h < c.fecha;
+    return {
+      aberto,
+      curto: aberto
+        ? "Atende hoje at\xE9 as " + c.fecha + "h. Responde em at\xE9 " + c.prazoHoras + " hora"
+        : "Fora do hor\xE1rio. Responde a partir das " + c.abre + "h",
+      longo: aberto
+        ? "A equipe atende das " + c.abre + "h \xE0s " + c.fecha + "h e costuma responder em at\xE9 " + c.prazoHoras + " hora."
+        : "Agora a equipe est\xE1 fora do hor\xE1rio, que \xE9 das " + c.abre + "h \xE0s " + c.fecha + "h. Seu pedido fica guardado e \xE9 respondido a partir das " + c.abre + "h.",
+    };
+  }
+  function zStatusAcolhimentoTexto() {
+    let st = zStatusAcolhimento();
+    return (0, r.jsx)("span", { className: st.aberto ? "online-ponto" : "fora-ponto", children: st.curto });
+  }
   var zPedidoResposta = {
-    texto:
-      "Seu pedido foi para a equipe de acolhimento do zElo, que responde aqui no chat. Enquanto isso, me conte em poucas palavras o que est\xE1 acontecendo. Se algu\xE9m corre risco de vida, ligue 192.",
+    get texto() {
+      return (
+        "Seu pedido foi para a equipe de acolhimento do zElo, que responde aqui no chat. " +
+        zStatusAcolhimento().longo +
+        " Enquanto isso, me conte em poucas palavras o que est\xE1 acontecendo. Se algu\xE9m corre risco de vida, ligue 192."
+      );
+    },
     links: [zLink192],
     opcoes: [],
     ctx: { f: "conversa", n: 0 },
@@ -2424,22 +2558,64 @@
   function zPrimeira(p) {
     return p.charAt(0).toUpperCase() + p.slice(1) + (/[?]$/.test(p) ? "" : /^(como|qual|quais|o que|onde|quando|quem|posso|tem|ele|a |os |meu|precisa|e |\xE9 )/i.test(p) ? "?" : "");
   }
+  var zLigar192 = [{ numero: "192", rotulo: "Ligar 192 \xB7 SAMU", sub: "Atende 24 horas, de gra\xE7a" }],
+    zSemRespostaChave = "zelo-ana-sem-resposta";
+  function zSemRespostaLer() {
+    try {
+      return JSON.parse(localStorage.getItem(zSemRespostaChave) || "[]");
+    } catch (x) {
+      return [];
+    }
+  }
+  function zSemRespostaGuardar(texto, perto) {
+    try {
+      let l = zSemRespostaLer();
+      l.unshift({ texto: texto.slice(0, 300), quando: new Date().toISOString(), perto: perto || null });
+      localStorage.setItem(zSemRespostaChave, JSON.stringify(l.slice(0, 200)));
+    } catch (x) {}
+  }
+  function zRespostaBase(m, ctx) {
+    let emerg = m.e.tema === "emergencia";
+    return {
+      texto: m.e.resposta,
+      acoes: emerg && m.e.id !== "violencia" ? zLigar192 : void 0,
+      rodape: emerg && m.e.id !== "violencia" ? zSaudeRodape() : void 0,
+      links: zLinks(m.e.links),
+      opcoes: m.e.sugestoes || [],
+      ctx: m.e.id === "so-conversar" ? { f: "conversa", n: 0 } : ctx,
+    };
+  }
   function YS(a, o) {
     let e = Ll(a),
       conversa = o && o.f === "conversa",
       ctxC = conversa ? { f: "conversa", n: o.n + 1 } : null;
+    // 1. Risco emocional grave: sempre antes da busca por semelhan\xE7a
+    if (zAnaRisco.padroes.some((re) => re.test(e)))
+      return {
+        texto: zAnaRisco.texto,
+        acoes: zAnaRisco.acoes,
+        extra: zAnaRisco.extra,
+        links: zLinks(["atendimentos"]),
+        opcoes: zAnaRisco.opcoes,
+        ctx: { f: "conversa", n: 1 },
+      };
+    // 2. Emerg\xEAncia m\xE9dica descrita com palavras de urg\xEAncia
     if (
-      /suicid|me matar|quero morrer|nao respira|sem respirar|convulsionando|esta convulsionando|desmaiou|sangrando muito|engasgou|ficou roxo/.test(
+      /nao respira|sem respirar|convulsionando|convulsao agora|desmaiou|desmaiado|sangrando muito|engasgou|engasgad|ficou roxo|nao acorda|bateu a cabeca/.test(
         e,
       )
-    )
+    ) {
+      let mr = zAna.buscar(a).melhor;
+      if (mr && mr.e.tema === "emergencia" && mr.pts >= 0.25) return zRespostaBase(mr, { f: "conversa", n: 1 });
       return {
         texto:
-          "Isso pode ser uma emerg\xEAncia. Se h\xE1 risco de vida, ligue agora para o SAMU, no 192. Eu continuo aqui com voc\xEA.",
+          "Isso pode ser uma emerg\xEAncia. Se h\xE1 risco de vida, ligue agora para o SAMU, no 192. Na tela Preciso de ajuda h\xE1 os passos para convuls\xE3o, engasgo, crise e queda.",
+        acoes: zLigar192,
         links: [zLink192],
         opcoes: ["Continuar conversando"],
         ctx: { f: "conversa", n: 1 },
       };
+    }
     if (/pedir ajuda/.test(e)) return zPedidoResposta;
     if (/continuar conversando/.test(e))
       return {
@@ -2461,13 +2637,7 @@
       };
     let r = zAna.buscar(a),
       m = r.melhor;
-    if (m && m.pts >= (conversa ? 0.5 : 0.4))
-      return {
-        texto: m.e.resposta,
-        links: zLinks(m.e.links),
-        opcoes: m.e.sugestoes || (conversa ? [] : []),
-        ctx: m.e.id === "so-conversar" ? { f: "conversa", n: 0 } : ctxC,
-      };
+    if (m && m.pts >= (conversa ? 0.5 : 0.4)) return zRespostaBase(m, ctxC);
     if (conversa) {
       let n = o.n + 1,
         oferecer = n >= 2,
@@ -2496,7 +2666,8 @@
           : null,
       };
     }
-    let perto = r.lista.filter((x) => x.pts >= 0.3).slice(0, 3);
+    let perto = r.lista.filter((x) => x.pts >= 0.3).slice(0, 4);
+    zSemRespostaGuardar(a, perto.length ? perto[0].e.id : null);
     if (perto.length)
       return {
         texto:
@@ -2506,11 +2677,34 @@
       };
     return {
       texto:
-        "Ainda n\xE3o sei responder isso. Eu s\xF3 sei o que est\xE1 na base do zElo, e essa pergunta n\xE3o est\xE1 l\xE1. Voc\xEA pode perguntar no F\xF3rum ou falar com um profissional.",
+        "Ainda n\xE3o sei responder isso. Sou uma assistente autom\xE1tica, n\xE3o uma pessoa, e s\xF3 sei o que est\xE1 na base do zElo. Guardei sua pergunta para a equipe acrescentar na base. Enquanto isso, voc\xEA pode perguntar no F\xF3rum ou falar com um profissional.",
       links: zLinks(["forum", "atendimentos"]),
       opcoes: xr,
       ctx: null,
     };
+  }
+  // Mude para !0 quando o app for ao ar: os bot\xF5es passam a abrir a liga\xE7\xE3o de verdade.
+  var zLigarDeVerdade = !1;
+  function zBotaoLigar({ numero: n, rotulo: t, sub: s, classe: c }) {
+    let [av, setAv] = (0, L.useState)(!1),
+      corpo = [
+        (0, r.jsx)(la, { n: "telefone", size: 24 }, "i"),
+        (0, r.jsxs)("span", { className: "ligar-texto", children: [(0, r.jsx)("b", { children: t }), s && (0, r.jsx)("span", { children: s })] }, "t"),
+      ];
+    return (0, r.jsxs)("div", {
+      className: "ligar-grupo",
+      children: [
+        zLigarDeVerdade
+          ? (0, r.jsx)("a", { className: c || "btn-ligar btn-ligar--chat", href: "tel:" + n, children: corpo })
+          : (0, r.jsx)("button", { type: "button", className: c || "btn-ligar btn-ligar--chat", onClick: () => setAv(!0), children: corpo }),
+        av &&
+          (0, r.jsx)("p", {
+            className: "ligar-aviso",
+            role: "status",
+            children: "No celular, este bot\xE3o liga direto para o " + n + ". Neste prot\xF3tipo a liga\xE7\xE3o n\xE3o \xE9 feita.",
+          }),
+      ],
+    });
   }
   function Mm(a) {
     let o = 12 + a;
@@ -2535,7 +2729,7 @@
       (e({ ...o, msgs: g, opcoes: [] }), n(""), s(!0));
       let v = YS(f, o.ctx);
       c.current = setTimeout(() => {
-        let A = [{ de: "ana", texto: v.texto, hora: Mm(u * 2 + 1), links: v.extra ? void 0 : v.links }];
+        let A = [{ de: "ana", texto: v.texto, hora: Mm(u * 2 + 1), acoes: v.acoes, rodape: v.rodape, links: v.extra ? void 0 : v.links }];
         (v.extra && A.push({ de: "ana", texto: v.extra, hora: Mm(u * 2 + 1), links: v.links }),
           e({ msgs: [...g, ...A], opcoes: v.opcoes, ctx: v.ctx }),
           s(!1));
@@ -2553,7 +2747,7 @@
                 (0, r.jsx)("h1", { tabIndex: -1, children: "Ana" }),
                 (0, r.jsxs)("p", {
                   className: "apoio",
-                  children: "Assistente do zElo. Responde com a base de perguntas revisada pela equipe."
+                  children: "Assistente autom\xE1tica, n\xE3o \xE9 uma pessoa. Responde com a base de perguntas revisada pela equipe do zElo."
                 }),
               ],
             }),
@@ -2588,7 +2782,13 @@
                     {
                       className: `msg msg--${I.de}${I.pedido ? " msg--pedido" : ""}`,
                       children: [
+                        I.acoes &&
+                          (0, r.jsx)("div", {
+                            className: "msg-ligar",
+                            children: I.acoes.map((k) => (0, r.jsx)(zBotaoLigar, { ...k }, k.numero)),
+                          }),
                         (0, r.jsx)("div", { className: "balao", children: I.texto }),
+                        I.rodape && (0, r.jsx)("p", { className: "msg-rodape", children: I.rodape }),
                         I.links &&
                           (0, r.jsx)("div", {
                             className: "msg-links",
@@ -3408,7 +3608,7 @@
                                               f.agora &&
                                                 (0, r.jsx)(Bo, {
                                                   forte: !0,
-                                                  children: "Online agora",
+                                                  children: "Atende hoje",
                                                 }),
                                               a.some((x) => x.profId === f.id) &&
                                                 (0, r.jsx)(Bo, {
@@ -3788,7 +3988,9 @@
     );
   }
   function t4({ irPara: a, pedir: pd }) {
-    let [lig, setLig] = (0, L.useState)(null),
+    let [sit, setSit] = (0, L.useState)(null),
+      atual = zSituacoes.find((x) => x.id === sit),
+      [lig, setLig] = (0, L.useState)(null),
       ligar = (num) => setLig(num),
       aviso = (num) =>
         lig === num &&
@@ -3850,7 +4052,7 @@
                   className: "apoio",
                   children: [
                     "A equipe de acolhimento do zElo responde por mensagem. ",
-                    (0, r.jsx)("span", { className: "online-ponto", children: "Online agora" }),
+                    (0, r.jsx)(zStatusAcolhimentoTexto, {}),
                   ],
                 }),
               ],
@@ -3861,24 +4063,42 @@
         (0, r.jsxs)("div", {
           className: "secao",
           children: [
-            (0, r.jsx)("h2", { children: "Enquanto a ajuda chega" }),
-            (0, r.jsx)("ol", {
-              className: "orientacoes",
-              children: B2.map(([t, n]) =>
+            (0, r.jsx)("h2", { id: "sit-h", children: "O que est\xE1 acontecendo?" }),
+            (0, r.jsx)("div", {
+              className: "situacoes",
+              role: "group",
+              "aria-labelledby": "sit-h",
+              children: zSituacoes.map((x) =>
                 (0, r.jsx)(
-                  "li",
+                  "button",
                   {
-                    children: (0, r.jsxs)("div", {
-                      children: [
-                        (0, r.jsx)("b", { children: t }),
-                        (0, r.jsx)("span", { children: n }),
-                      ],
-                    }),
+                    type: "button",
+                    className: "situacao",
+                    "aria-expanded": sit === x.id,
+                    "aria-controls": "sit-passos",
+                    onClick: () => setSit(sit === x.id ? null : x.id),
+                    children: x.titulo,
                   },
-                  t,
+                  x.id,
                 ),
               ),
             }),
+            atual &&
+              (0, r.jsxs)("div", {
+                id: "sit-passos",
+                className: "situacao-passos",
+                children: [
+                  (0, r.jsx)("h3", { children: atual.titulo }),
+                  (0, r.jsx)("ol", {
+                    className: "orientacoes",
+                    children: atual.passos.map((t, k) => (0, r.jsx)("li", { children: (0, r.jsx)("span", { children: t }) }, k)),
+                  }),
+                  (0, r.jsxs)("p", {
+                    className: "situacao-ligar",
+                    children: [(0, r.jsx)(la, { n: "telefone", size: 20 }), atual.ligar],
+                  }),
+                ],
+              }),
           ],
         }),
         (0, r.jsxs)("div", {
@@ -3924,7 +4144,14 @@
           className: "apoio",
           style: { marginTop: 24 },
           children:
-            "Estas orienta\xE7\xF5es n\xE3o substituem o atendimento m\xE9dico. Na d\xFAvida, ligue 192.",
+            "Tenha \xE0 m\xE3o o nome dos rem\xE9dios, o \xFAltimo relat\xF3rio m\xE9dico e o telefone de um familiar. Isso agiliza o atendimento.",
+        }),
+        (0, r.jsxs)("footer", {
+          className: "rodape-saude",
+          children: [
+            (0, r.jsx)("p", { children: "Estas orienta\xE7\xF5es n\xE3o substituem o atendimento m\xE9dico. Na d\xFAvida, ligue 192." }),
+            (0, r.jsx)("p", { children: zSaudeRodape() }),
+          ],
         }),
       ],
     });
@@ -3966,7 +4193,7 @@
         {
           de: "ana",
           texto:
-            "Oi, eu sou a Ana, a assistente do zElo. Posso responder d\xFAvidas do dia a dia de cuidado e sobre o app. Escreva do seu jeito, mesmo com erro de digita\xE7\xE3o.",
+            "Oi, eu sou a Ana, a assistente autom\xE1tica do zElo. N\xE3o sou uma pessoa: respondo com uma base de perguntas revisada pela equipe. Posso ajudar com d\xFAvidas do dia a dia de cuidado e sobre o app. Escreva do seu jeito, mesmo com erro de digita\xE7\xE3o.",
           hora: "09:12",
         },
       ],
@@ -4000,7 +4227,7 @@
       [c, m] = (0, L.useState)(R2),
       [I, f] = (0, L.useState)(1),
       [u, g] = (0, L.useState)("inicio"),
-      [v, A] = (0, L.useState)("claro"),
+      [v, A] = (0, L.useState)(zTemaInicial),
       [y, h] = (0, L.useState)(Nm),
       [p, d] = (0, L.useState)(null),
       [S, b] = (0, L.useState)(null),
@@ -4019,6 +4246,9 @@
     }, [a, O.msgs.length]);
     ((0, L.useEffect)(() => {
       document.documentElement.dataset.theme = v;
+      try {
+        localStorage.setItem("zelo-tema", v);
+      } catch (x) {}
     }, [v]),
       (0, L.useEffect)(() => {
         if (!Hm.current) {
@@ -4121,6 +4351,8 @@
     switch (a) {
       case "objetivo":
         xa = (0, r.jsx)(FS, {
+          tema: v,
+          setTema: A,
           escolher: (H) => {
             (l(H), o(H === "voluntario" ? "cadastro" : "login"));
           },
