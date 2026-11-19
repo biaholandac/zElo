@@ -1,5 +1,22 @@
 /* zElo · tokens do design system (visual da versão mobile). Único lugar com valores de cor, tipo, espaço e forma. */
 
+/* Fontes hospedadas junto com o app (sem chamar o Google, para não expor o IP de quem usa
+   e para funcionar sem rede). Nunito e Nunito Sans, licença SIL Open Font License 1.1. */
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fontes/nunito.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fontes/nunito-sans.woff2") format("woff2");
+}
+
 :root {
   /* Paleta da marca */
   --manteiga: #F5E1A0;
@@ -23,7 +40,7 @@
   --fs-secao: 20px;
   --fs-item: 18px;
   --fs-corpo: 16px;
-  --fs-apoio: 14px;
+  --fs-apoio: 15px;
   --medida: 64ch;
 
   /* Espaço (base de 4px) */
@@ -171,8 +188,10 @@
   --hero-bola-1: #174450;
   --hero-bola-2: #0F5F70;
   --rodape-fg: #C9C0A2;
-  --emergencia: #C9352B;
-  --emergencia-hover: #A82B22;
+  /* No escuro o vermelho fica claro com texto escuro: contraste de 9:1 e o botão se destaca do fundo */
+  --emergencia: #FF8A7D;
+  --emergencia-hover: #FFA397;
+  --emergencia-fg: #2B0B07;
   --online: #6CC08F;
   --foco: var(--manteiga);
 }

@@ -49,7 +49,7 @@ main { flex: 1; width: 100%; padding: 24px 16px 40px; }
 main:focus { outline: none; }
 .rodape {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2) var(--space-5);
-  padding: var(--space-4) 16px; border-top: 1px solid var(--borda); color: var(--rodape-fg); font-size: 13px; line-height: 1.5;
+  padding: var(--space-4) 16px; border-top: 1px solid var(--borda); color: var(--rodape-fg); font-size: 14px; line-height: 1.5;
 }
 .app--menu .rodape { padding-bottom: calc(var(--barra) + 16px); }
 
@@ -61,7 +61,7 @@ main:focus { outline: none; }
 .barra-baixo ul { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
 .aba-baixo {
   width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0;
-  background: none; border: 0; color: var(--texto-apoio); font-size: 12px; font-weight: 600; border-radius: 12px; min-height: 54px;
+  background: none; border: 0; color: var(--texto-apoio); font-size: 14px; font-weight: 600; border-radius: 12px; min-height: 54px;
 }
 .aba-baixo .menu-icone { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 32px; border-radius: 10px; }
 .aba-baixo[aria-current="page"] { color: var(--texto); font-weight: 600; }
@@ -76,7 +76,7 @@ main:focus { outline: none; }
 .ajuda-flutuante:hover { background: var(--emergencia-hover); }
 .contador {
   display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
-  border-radius: 10px; background: var(--petroleo); color: #fff; font-size: 12px; font-weight: 600; line-height: 1;
+  border-radius: 10px; background: var(--petroleo); color: #fff; font-size: 13px; font-weight: 600; line-height: 1;
   box-shadow: 0 0 0 2px var(--superficie);
 }
 [data-theme="escuro"] .contador { background: var(--manteiga); color: var(--tinta); }
@@ -109,7 +109,7 @@ main:focus { outline: none; }
     font-family: var(--fonte-titulo); font-weight: 600; font-size: 16px;
   }
   .btn-emergencia:hover { background: var(--emergencia-hover); }
-  .btn-emergencia[aria-current="page"] { box-shadow: inset 0 0 0 3px rgba(255,255,255,.65); }
+  .btn-emergencia[aria-current="page"] { box-shadow: inset 0 0 0 3px currentColor; }
   /* Telas de entrada: coluna vira o "herói" amarelo da versão mobile */
   .app--entrada .coluna {
     background: var(--hero-bg); color: var(--hero-fg); border-right: 0; position: sticky; overflow: hidden; padding: 40px 32px;
@@ -169,7 +169,7 @@ a, .link { color: var(--link); font-weight: 600; text-decoration: underline; tex
 [data-theme="alto-contraste"] .progresso span.feito { background: #000; }
 .selo-tempo {
   display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 var(--space-3); padding: 4px 8px; border-radius: 6px;
-  background: var(--realce); color: var(--tinta); font-size: 13px; font-weight: 600;
+  background: var(--realce); color: var(--tinta); font-size: 14px; font-weight: 600;
 }
 [data-theme="escuro"] .selo-tempo { background: var(--superficie-2); color: var(--texto); }
 [data-theme="alto-contraste"] .selo-tempo { background: #fff; border: 2px solid #000; }
@@ -258,7 +258,7 @@ select.campo-entrada { appearance: none; padding-right: 44px; }
 .etiqueta {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; min-height: 24px;
   border-radius: var(--raio-etiqueta); background: var(--etiqueta-bg); color: var(--etiqueta-fg);
-  font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap;
+  font-size: 14px; font-weight: 600; line-height: 1.4; white-space: nowrap;
 }
 .etiqueta .ic { width: 14px; height: 14px; }
 .etiqueta--forte { background: var(--etiqueta-forte-bg); color: var(--etiqueta-forte-fg); }
@@ -338,7 +338,7 @@ button.linha:hover { border-color: var(--borda-forte); background: var(--superfi
 .balao { padding: 12px 16px; border-radius: var(--raio-balao); font-size: 16px; line-height: 1.5; white-space: pre-line; }
 .msg--voce .balao { background: var(--balao-voce-bg); color: var(--balao-voce-fg); border-bottom-right-radius: 6px; }
 .msg--ana .balao { background: var(--balao-ana-bg); border: 1px solid var(--balao-ana-borda); border-bottom-left-radius: 6px; }
-.msg--pedido .balao { background: var(--emergencia); color: #fff; font-weight: 600; }
+.msg--pedido .balao { background: var(--emergencia); color: var(--emergencia-fg); font-weight: 600; }
 .balao--digitando { color: var(--texto-apoio); font-style: italic; }
 [data-theme="alto-contraste"] .balao { border: 2px solid #000 !important; }
 .msg-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
@@ -347,7 +347,7 @@ button.linha:hover { border-color: var(--borda-forte); background: var(--superfi
   background: var(--superficie); border: var(--borda-largura) solid var(--link); color: var(--link); font-weight: 600; font-size: 14px;
 }
 .msg-link:hover { background: var(--sec-hover); }
-.msg-meta { margin-top: 4px; font-size: 12px; }
+.msg-meta { margin-top: 4px; font-size: 14px; }
 .respostas-rapidas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 var(--space-4); }
 .chat-form { position: sticky; bottom: calc(var(--barra) + 8px); padding: 8px 0; background: var(--bg); }
 @media (min-width: 900px) { .chat-form { bottom: 0; } }
@@ -462,7 +462,7 @@ button.linha:hover { border-color: var(--borda-forte); background: var(--superfi
 .tela-ajuda { max-width: 680px; }
 .btn-ligar {
   display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 68px; padding: 0 20px;
-  border: 0; border-radius: var(--raio-cartao); background: var(--emergencia); color: #fff;
+  border: 0; border-radius: var(--raio-cartao); background: var(--emergencia); color: var(--emergencia-fg);
   font-family: var(--fonte-titulo); font-weight: 600; font-size: 20px;
 }
 .btn-ligar:hover { background: var(--emergencia-hover); }
@@ -561,3 +561,52 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
   .hero-mobile img { position: relative; width: 190px; height: auto; }
   .hero-mobile p { position: relative; font-family: var(--fonte-titulo); font-weight: 600; font-size: 22px; }
 }
+
+/* ---------- Ligar direto do chat, emergência e risco ---------- */
+.msg-ligar { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 8px; }
+.ligar-grupo { width: 100%; }
+.btn-ligar--chat { min-height: 60px; justify-content: flex-start; padding: 8px 16px; font-size: 18px; text-decoration: none; text-align: left; }
+.ligar-texto { display: flex; flex-direction: column; line-height: 1.25; }
+.ligar-texto b { font-weight: 600; }
+.ligar-texto span { font-family: var(--fonte); font-size: 15px; font-weight: 400; }
+.ligar-aviso { margin-top: 6px; font-size: 15px; color: var(--texto-apoio); }
+.msg-rodape { margin-top: 6px; font-size: 14px; color: var(--texto-apoio); max-width: 46ch; }
+.msg:has(.msg-ligar) { max-width: min(100%, 520px); }
+
+/* Atalhos por situação na tela Preciso de ajuda */
+.situacoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.situacao {
+  min-height: 56px; padding: 8px 12px; border-radius: 10px; text-align: center;
+  background: var(--superficie); border: var(--borda-largura) solid var(--borda-forte); color: var(--texto);
+  font-family: var(--fonte-titulo); font-weight: 600; font-size: 17px; line-height: 1.25;
+}
+.situacao:hover { background: var(--superficie-2); }
+.situacao[aria-expanded="true"] { background: var(--menu-ativo-bg); color: var(--menu-ativo-fg); border-color: var(--link); }
+.situacao-passos { margin-top: var(--space-3); }
+.situacao-passos h3 { margin-bottom: 8px; }
+.situacao-passos .orientacoes span { font-size: 16px; }
+.situacao-ligar { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; font-weight: 600; color: var(--erro); }
+.situacao-ligar .ic { flex: none; margin-top: 2px; }
+.rodape-saude { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--borda); color: var(--texto-apoio); font-size: 14px; display: grid; gap: 4px; }
+@media (min-width: 600px) { .situacoes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Acolhimento fora do horário */
+.fora-ponto { display: inline-flex; align-items: center; gap: 8px; color: var(--texto-apoio); font-weight: 600; }
+.fora-ponto::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 2px solid currentColor; }
+
+/* Outra deficiência */
+.outra-campo { margin-top: var(--space-3); max-width: 620px; }
+.outra-campo .apoio { display: block; margin-top: 4px; }
+
+/* Troca de tema já na primeira tela */
+.tema-rapido { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: var(--space-4); }
+.tema-rapido > span { font-weight: 600; color: var(--texto-apoio); margin-right: 4px; }
+.tema-rapido-op {
+  min-height: 40px; padding: 0 12px; border-radius: 8px; background: var(--superficie);
+  border: var(--borda-largura) solid var(--borda-forte); color: var(--texto); font-weight: 600; font-size: 15px;
+}
+.tema-rapido-op[aria-checked="true"] { border-color: var(--link); background: var(--menu-ativo-bg); color: var(--menu-ativo-fg); }
+
+/* Perguntas sem resposta (Perfil) */
+.sem-resposta { display: grid; gap: 8px; margin: var(--space-2) 0 var(--space-3); }
+.sem-resposta li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 12px; border-radius: 8px; background: var(--superficie-2); }
