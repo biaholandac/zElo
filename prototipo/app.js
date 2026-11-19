@@ -15708,6 +15708,593 @@ Error generating stack: ` +
   );
   Am.displayName = "XIcon";
   var bm = Am;
+  /* ===== Ana: busca a resposta mais parecida na base do zElo (sem IA generativa) =====
+     1. Normaliza o texto (minúsculas, sem acento, sem pontuação).
+     2. Troca sinônimos e gírias por uma palavra-base (ex.: "birra", "surto" -> "crise").
+     3. Corrige erros de digitação comparando com o vocabulário da base (distância de edição).
+     4. Compara com cada pergunta da base, dando mais peso às palavras raras (TF-IDF simples),
+        e soma um pouco de semelhança por trechos de 3 letras para frases curtas.
+     5. Se nada passa do limite, oferece as perguntas mais próximas em vez de inventar. */
+  var zAna = (function () {
+    var PARADAS = (
+      "a o e é de da do das dos em no na nos nas um uma uns umas para pra pro por com sem que se " +
+      "eu me mim meu minha meus minhas voce vc voces seu sua seus suas ele ela eles elas lhe nos " +
+      "isso isto esse essa este esta aquele aquela ai aqui la ja tambem mais muito muita bem so " +
+      "ao aos como qual quais quando onde porque pq por que oque o que e ou mas entao tipo " +
+      "ta to tou estou esta estao sou ser foi era tem tenho temos ter fazer faco faz pode posso " +
+      "consigo dar sobre ola oi bom boa dia tarde noite favor ajuda queria quero gostaria saber " +
+      "algum alguma alguem coisa coisas gente nao sim filho filha crianca pessoa"
+    )
+      .split(" ")
+      .reduce(function (m, w) {
+        m[w] = 1;
+        return m;
+      }, {});
+    // palavras que importam mesmo sendo "comuns" em outro contexto
+    ["nao", "filho", "filha", "crianca", "pessoa", "noite", "dia", "ajuda"].forEach(function (w) {
+      delete PARADAS[w];
+    });
+    ["nao", "ajuda"].forEach(function (w) {
+      PARADAS[w] = 1;
+    });
+
+    function normalizar(t) {
+      return (t || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+    function raiz(w) {
+      if (w.length > 5 && /coes$/.test(w)) return w.slice(0, -4) + "cao";
+      if (w.length > 5 && /oes$/.test(w)) return w.slice(0, -3) + "ao";
+      if (w.length > 4 && /s$/.test(w)) return w.slice(0, -1);
+      return w;
+    }
+    var SIN = {};
+    function sinonimos(lista) {
+      lista.forEach(function (grupo) {
+        var base = grupo[0];
+        grupo.forEach(function (w) {
+          SIN[raiz(normalizar(w))] = base;
+        });
+      });
+    }
+    function lev(a, b, max) {
+      if (Math.abs(a.length - b.length) > max) return max + 1;
+      var prev = [],
+        cur,
+        i,
+        j;
+      for (j = 0; j <= b.length; j++) prev[j] = j;
+      for (i = 1; i <= a.length; i++) {
+        cur = [i];
+        var menor = i;
+        for (j = 1; j <= b.length; j++) {
+          var custo = a[i - 1] === b[j - 1] ? 0 : 1;
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + custo);
+          if (cur[j] < menor) menor = cur[j];
+        }
+        if (menor > max) return max + 1;
+        prev = cur;
+      }
+      return prev[b.length];
+    }
+    var VOCAB = {},
+      VOCAB_LISTA = [],
+      CACHE = {};
+    function corrigir(w) {
+      if (VOCAB[w] || w.length < 4) return w;
+      if (CACHE[w] !== void 0) return CACHE[w];
+      var max = w.length <= 5 ? 1 : 2,
+        melhor = w,
+        dist = max + 1;
+      for (var k = 0; k < VOCAB_LISTA.length; k++) {
+        var v = VOCAB_LISTA[k];
+        if (v.length < 4) continue;
+        var d = lev(w, v, max);
+        if (d < dist || (d === dist && v[0] === w[0] && melhor[0] !== w[0])) {
+          dist = d;
+          melhor = v;
+        }
+        if (dist === 0) break;
+      }
+      CACHE[w] = dist <= max ? melhor : w;
+      return CACHE[w];
+    }
+    function termos(t, corrige) {
+      var saida = [];
+      normalizar(t)
+        .split(" ")
+        .forEach(function (w) {
+          if (!w || PARADAS[w]) return;
+          w = raiz(w);
+          if (SIN[w]) w = SIN[w];
+          else if (corrige) {
+            var c = corrigir(w);
+            w = SIN[c] || c;
+          }
+          if (!PARADAS[w] && saida.indexOf(w) < 0) saida.push(w);
+        });
+      return saida;
+    }
+    function trigramas(t) {
+      var s = "  " + normalizar(t) + " ",
+        m = {};
+      for (var i = 0; i < s.length - 2; i++) m[s.slice(i, i + 3)] = 1;
+      return m;
+    }
+    function dice(a, b) {
+      var n = 0,
+        na = 0,
+        nb = 0,
+        k;
+      for (k in a) {
+        na++;
+        if (b[k]) n++;
+      }
+      for (k in b) nb++;
+      return na + nb ? (2 * n) / (na + nb) : 0;
+    }
+
+    var BASE = [],
+      IDF = {};
+    function preparar(base, listaSinonimos) {
+      sinonimos(listaSinonimos);
+      BASE = base.map(function (e) {
+        return {
+          id: e.id,
+          tema: e.tema,
+          perguntas: e.perguntas,
+          resposta: e.resposta,
+          links: e.links,
+          sugestoes: e.sugestoes,
+          variantes: e.perguntas.map(function (p) {
+            return { termos: termos(p, !1), tri: trigramas(p) };
+          }),
+        };
+      });
+      var df = {};
+      BASE.forEach(function (e) {
+        var vistos = {};
+        e.variantes.forEach(function (v) {
+          v.termos.forEach(function (w) {
+            vistos[w] = 1;
+            if (!VOCAB[w]) {
+              VOCAB[w] = 1;
+              VOCAB_LISTA.push(w);
+            }
+          });
+        });
+        Object.keys(vistos).forEach(function (w) {
+          df[w] = (df[w] || 0) + 1;
+        });
+      });
+      Object.keys(SIN).forEach(function (w) {
+        if (!VOCAB[w]) {
+          VOCAB[w] = 1;
+          VOCAB_LISTA.push(w);
+        }
+      });
+      var n = BASE.length;
+      Object.keys(df).forEach(function (w) {
+        IDF[w] = Math.log(1 + n / df[w]);
+      });
+    }
+    function peso(w) {
+      return IDF[w] || Math.log(1 + BASE.length);
+    }
+    function pontuar(q) {
+      var qt = termos(q, !0),
+        qtri = trigramas(q),
+        somaQ = qt.reduce(function (s, w) {
+          return s + peso(w);
+        }, 0);
+      return BASE.map(function (e) {
+        var melhor = 0;
+        e.variantes.forEach(function (v) {
+          var comum = 0,
+            somaV = 0;
+          v.termos.forEach(function (w) {
+            somaV += peso(w);
+            if (qt.indexOf(w) >= 0) comum += peso(w);
+          });
+          var cos = somaQ && somaV ? comum / Math.sqrt(somaQ * somaV) : 0,
+            // palavras da pergunta que a base não cobre puxam a nota para baixo
+            cobertura = somaQ ? comum / somaQ : 0,
+            pts = 0.82 * cos * (0.45 + 0.55 * cobertura) + 0.18 * dice(qtri, v.tri);
+          if (pts > melhor) melhor = pts;
+        });
+        return { e: e, pts: melhor };
+      }).sort(function (a, b) {
+        return b.pts - a.pts;
+      });
+    }
+    return {
+      preparar: preparar,
+      termos: termos,
+      buscar: function (q) {
+        var r = pontuar(q);
+        return { melhor: r[0], lista: r.slice(0, 4) };
+      },
+    };
+  })();
+  /* ===== Base de perguntas e respostas da Ana =====
+     Cada item: id, tema, perguntas (jeitos diferentes de perguntar a mesma coisa),
+     resposta, links (telas do app) e sugestoes (próximas perguntas).
+     Para ensinar algo novo à Ana, acrescente um item aqui. Ela só sabe o que está nesta base. */
+  var zAnaSinonimos = [
+    ["dormir", "sono", "dorme", "dormindo", "insonia", "acorda", "acordando", "acordar", "desperta", "despertar", "madrugada", "cochilo", "soneca", "deitar"],
+    ["comer", "comida", "alimentacao", "alimentar", "refeicao", "comendo", "almoco", "janta", "jantar", "lanche", "cafe", "cardapio", "apetite"],
+    ["engasgar", "engasgo", "engasga", "engasgando", "engolir", "deglutir", "degluticao", "disfagia", "tosse", "tossindo", "tosse"],
+    ["crise", "birra", "surto", "meltdown", "agitacao", "agitado", "agitada", "agressivo", "agressiva", "agressividade", "bate", "batendo", "morde", "mordendo", "grita", "gritando", "grito", "berra", "berrando", "pirraca", "descontrole", "desregulado", "desregulada", "desregulacao", "explode"],
+    ["convulsao", "convulsiona", "convulsionando", "epilepsia", "epileptico", "epileptica", "ataque", "tremedeira", "desmaio", "desmaiou"],
+    ["falar", "fala", "fala pouco", "comunicar", "comunicacao", "comunica", "palavra", "palavras", "verbal", "naoverbal", "conversar com ele"],
+    ["prancha", "figura", "figuras", "pecs", "caa", "comunicacao alternativa", "cartao", "cartoes", "imagens", "figurinha", "figurinhas", "desenhos"],
+    ["autismo", "autista", "tea", "espectro"],
+    ["paralisia", "pc", "paralisia cerebral", "encefalopatia"],
+    ["down", "sindrome de down", "trissomia"],
+    ["cego", "cega", "cegueira", "visual", "enxerga", "enxergar", "baixa visao", "visao"],
+    ["surdo", "surda", "surdez", "auditiva", "ouvir", "escuta", "ouve", "aparelho auditivo", "implante"],
+    ["libras", "sinais", "lingua de sinais"],
+    ["cadeira", "cadeirante", "cadeira de rodas", "andador", "muleta", "mobilidade", "locomocao", "andar", "anda", "caminhar"],
+    ["dor", "doi", "doendo", "dores", "machucado", "desconforto", "incomodo"],
+    ["postura", "posicao", "sentar", "sentado", "deitado", "posicionamento", "coluna", "escoliose"],
+    ["ferida", "escara", "escaras", "lesao", "assadura", "assado", "vermelhidao", "pele"],
+    ["banho", "higiene", "lavar", "escovar", "dente", "dentes", "escovacao", "unha", "cabelo"],
+    ["banheiro", "fralda", "fraldas", "desfralde", "desfraldar", "xixi", "coco", "penico", "vaso", "intestino", "prisao de ventre", "constipacao", "constipado"],
+    ["remedio", "remedios", "medicamento", "medicamentos", "medicacao", "dose", "comprimido", "receita", "farmacia", "tomar remedio"],
+    ["consulta", "consultas", "medico", "medica", "doutor", "doutora", "pediatra", "neurologista", "neuro", "psiquiatra"],
+    ["terapia", "terapias", "terapeuta", "reabilitacao", "sessao", "sessoes"],
+    ["fono", "fonoaudiologo", "fonoaudiologa", "fonoaudiologia"],
+    ["fisio", "fisioterapeuta", "fisioterapia"],
+    ["to", "terapia ocupacional", "terapeuta ocupacional", "ocupacional"],
+    ["psicologo", "psicologa", "psicologia", "psico", "terapia psicologica"],
+    ["nutricionista", "nutricao", "nutri", "dieta"],
+    ["sus", "ubs", "posto", "posto de saude", "unidade", "unidade de saude", "publico"],
+    ["fila", "espera", "esperando", "demora", "demorando", "encaminhamento", "regulacao", "vaga"],
+    ["cer", "centro especializado", "reabilitacao especializada", "apae", "aacd"],
+    ["escola", "colegio", "creche", "professor", "professora", "aula", "matricula", "inclusao", "aee", "mediador", "acompanhante", "cuidador escolar"],
+    ["bpc", "loas", "beneficio", "inss", "aposentadoria", "auxilio", "dinheiro", "renda"],
+    ["cras", "assistente social", "assistencia social", "cadunico", "cadastro unico"],
+    ["documento", "documentos", "laudo", "laudos", "relatorio", "carteirinha", "ciptea", "carteira"],
+    ["passe", "passe livre", "onibus", "transporte", "gratuidade", "vale transporte"],
+    ["cansado", "cansada", "cansaco", "exausto", "exausta", "exaustao", "esgotado", "esgotada", "aguento", "sem energia", "sem forca", "nao aguento", "estafa", "burnout"],
+    ["triste", "tristeza", "chorando", "choro", "chorar", "deprimido", "deprimida", "depressao", "desanimado", "desanimada", "pra baixo"],
+    ["sozinho", "sozinha", "solidao", "isolado", "isolada", "ninguem", "abandonado", "abandonada", "sem apoio"],
+    ["medo", "preocupado", "preocupada", "preocupacao", "ansioso", "ansiosa", "ansiedade", "nervoso", "nervosa", "aflito", "aflita", "angustia"],
+    ["culpa", "culpado", "culpada", "falhando", "mae ruim", "pai ruim", "errado"],
+    ["raiva", "irritado", "irritada", "irritacao", "estressado", "estressada", "estresse", "nervoso com"],
+    ["diagnostico", "diagnosticado", "descobri", "descobrimos", "recebi o diagnostico", "suspeita"],
+    ["irmao", "irmaos", "irma", "irmas", "outro filho", "outros filhos"],
+    ["agendar", "agendamento", "marcar", "marcacao", "horario", "horarios", "agenda"],
+    ["cancelar", "desmarcar", "cancelamento"],
+    ["remarcar", "trocar horario", "mudar horario", "reagendar"],
+    ["forum", "comunidade", "grupo", "outras familias", "outras maes", "outros pais"],
+    ["dica", "dicas", "material", "materiais", "artigo", "leitura"],
+    ["tema", "cor", "cores", "escuro", "modo escuro", "contraste", "alto contraste", "letra", "fonte"],
+    ["voluntario", "voluntaria", "voluntariado", "voluntarios"],
+    ["gratis", "gratuito", "gratuita", "pagar", "pago", "custa", "preco", "valor", "cobra"],
+    ["privacidade", "privado", "dados", "lgpd", "seguro", "seguranca", "sigilo", "segredo"],
+    ["senha", "login", "entrar", "acesso", "conta"],
+    ["email", "e mail", "mail"],
+    ["sensorial", "barulho", "som", "luz", "toque", "textura", "seletividade sensorial", "hipersensivel"],
+    ["seletivo", "seletiva", "seletividade", "so come", "recusa", "recusar", "nao come", "nao quer comer"],
+    ["tela", "celular", "tablet", "televisao", "tv", "video", "youtube", "jogo"],
+    ["rotina", "horario fixo", "organizacao", "organizar", "dia a dia", "cotidiano"],
+    ["pausa", "descanso", "descansar", "tempo pra mim", "tempo para mim", "folga", "respiro", "revezamento"],
+    ["robo", "bot", "inteligencia artificial", "ia", "maquina", "automatico", "humano", "pessoa de verdade"],
+    ["obrigado", "obrigada", "valeu", "agradeco", "brigado", "brigada"],
+    ["tchau", "ate logo", "ate mais", "falou", "boa noite pra voce", "fui"],
+  ];
+
+  var zAnaBase = [
+    /* ---------- Conversa e o próprio app ---------- */
+    { id: "quem-e", tema: "conversa", perguntas: ["quem é você", "quem é vc", "quem é a ana", "você é um robô", "você é uma pessoa de verdade", "é inteligência artificial", "com quem estou falando"],
+      resposta: "Sou a Ana, a assistente do zElo. Não sou uma pessoa: eu procuro a resposta mais parecida com a sua pergunta numa base de perguntas e respostas revisada pela equipe do zElo. Se eu não souber, eu digo e te mostro outro caminho.",
+      sugestoes: ["O que você sabe responder?", "Quero falar com um profissional"] },
+    { id: "o-que-sabe", tema: "conversa", perguntas: ["o que você sabe responder", "sobre o que posso perguntar", "como você funciona", "o que você faz", "me ajuda com o que"],
+      resposta: "Sei responder dúvidas do dia a dia de cuidado: sono, alimentação, engasgo, crises, comunicação, dor, higiene, remédios, terapias, SUS e escola. Também explico como usar o zElo e falo sobre o cansaço de quem cuida.",
+      sugestoes: ["Meu filho dorme pouco", "Como marcar uma consulta?", "Estou muito cansada"] },
+    { id: "obrigado", tema: "conversa", perguntas: ["obrigado", "obrigada", "valeu", "muito obrigada pela ajuda", "ajudou muito"],
+      resposta: "Que bom que ajudou. Estou por aqui quando precisar." },
+    { id: "tchau", tema: "conversa", perguntas: ["tchau", "até logo", "até mais", "boa noite pra você", "vou sair"],
+      resposta: "Até mais. Se precisar, é só voltar aqui. Em emergência, ligue 192." },
+    { id: "gratis", tema: "app", perguntas: ["o zelo é gratuito", "precisa pagar", "quanto custa a consulta", "a consulta é paga", "tem que pagar alguma coisa"],
+      resposta: "O zElo é gratuito. As consultas em Atendimentos são feitas por profissionais voluntários e não têm custo.",
+      links: ["atendimentos"] },
+    { id: "como-agendar", tema: "app", perguntas: ["como marcar uma consulta", "como agendar atendimento", "quero marcar com um profissional", "como faço para agendar", "marcar horário com psicóloga"],
+      resposta: "Vá em Atendimentos, escolha o profissional e toque em Agendar consulta. Depois escolha se vai ser presencial ou online, o dia e o horário, e confirme. São dois passos.",
+      links: ["atendimentos"], sugestoes: ["Como cancelar um agendamento?", "Os profissionais são verificados?"] },
+    { id: "cancelar", tema: "app", perguntas: ["como cancelar um agendamento", "quero desmarcar a consulta", "não vou poder ir na consulta", "cancelar atendimento"],
+      resposta: "Em Atendimentos, abra Meus agendamentos e toque em Cancelar agendamento no atendimento que você quer desmarcar. Avise com antecedência sempre que puder: assim o horário fica livre para outra família.",
+      links: ["atendimentos"] },
+    { id: "remarcar", tema: "app", perguntas: ["como remarcar a consulta", "quero trocar o horário", "mudar o dia do atendimento", "reagendar consulta"],
+      resposta: "Para trocar o horário, cancele o atendimento em Meus agendamentos e marque de novo com o mesmo profissional no dia que for melhor para você.",
+      links: ["atendimentos"] },
+    { id: "verificado", tema: "app", perguntas: ["os profissionais são verificados", "posso confiar nos profissionais", "como sei que é profissional de verdade", "quem são os voluntários"],
+      resposta: "Sim. Todo voluntário envia o registro no conselho da profissão (como CRP, CREFITO ou CRFa) e a comprovação do título. A equipe confere antes de liberar o acesso. Por isso aparece a etiqueta Verificado." },
+    { id: "online-agora", tema: "app", perguntas: ["o que significa online agora", "o profissional está online", "dá pra falar agora com alguém", "atendimento hoje"],
+      resposta: "Online agora quer dizer que o voluntário está disponível hoje e tem horários ainda neste dia. Você vê os horários de hoje ao tocar em Agendar consulta.",
+      links: ["atendimentos"] },
+    { id: "presencial-online", tema: "app", perguntas: ["a consulta é online ou presencial", "como funciona a consulta online", "chamada de vídeo", "preciso instalar alguma coisa para a consulta online"],
+      resposta: "Depende do profissional: alguns atendem presencialmente, outros por vídeo, e alguns dos dois jeitos. Quando há as duas opções, você escolhe na hora de agendar. A chamada de vídeo abre pelo próprio zElo, sem instalar nada." },
+    { id: "forum-postar", tema: "app", perguntas: ["como postar no fórum", "como fazer uma pergunta no fórum", "quero conversar com outras mães", "criar tópico", "como falar com outras famílias"],
+      resposta: "No Fórum, toque em Novo tópico, escreva um título, escolha o assunto e conte o que aconteceu. Outras famílias e profissionais podem responder. Não publique exames, documentos ou dados que identifiquem a pessoa.",
+      links: ["forum"] },
+    { id: "dicas-onde", tema: "app", perguntas: ["onde encontro as dicas", "tem material para ler", "artigos de profissionais", "onde leio mais sobre isso"],
+      resposta: "Em Dicas há textos curtos escritos por profissionais voluntários. Dá para buscar por palavra, como sono ou fala, e filtrar por área.",
+      links: ["dicas"] },
+    { id: "privacidade", tema: "app", perguntas: ["meus dados estão seguros", "alguém vê o que eu escrevo aqui", "o chat é privado", "quem lê essa conversa", "lgpd"],
+      resposta: "Esta conversa é privada e não aparece no fórum. Seus dados de saúde são protegidos pela LGPD e só são usados para organizar o que o zElo mostra para você." },
+    { id: "tema-cor", tema: "app", perguntas: ["como mudar a cor do aplicativo", "tem modo escuro", "a letra está difícil de ler", "alto contraste", "mudar o tema"],
+      resposta: "No Perfil, em Customização, você escolhe entre Claro, Escuro e Alto contraste. O Alto contraste usa preto no branco e bordas grossas, para quem enxerga pouco.",
+      links: ["perfil"] },
+    { id: "trocar-nome", tema: "app", perguntas: ["como mudar meu nome", "o app está com o nome errado", "trocar meu nome no perfil"],
+      resposta: "No Perfil, em Seus dados, troque o nome e toque em Salvar alterações.", links: ["perfil"] },
+    { id: "trocar-email", tema: "app", perguntas: ["como trocar meu email", "quero mudar o e-mail da conta", "email errado"],
+      resposta: "Por segurança, o e-mail não muda pelo app. Escreva aqui que quer trocar e qual é o novo e-mail: a equipe de acolhimento confere e faz a troca." },
+    { id: "senha", tema: "app", perguntas: ["esqueci minha senha", "não consigo entrar", "como trocar a senha", "minha senha não funciona"],
+      resposta: "Na tela de entrada, toque em Esqueci minha senha e digite o seu e-mail. Enviamos um link para você criar uma senha nova." },
+    { id: "refazer-perguntas", tema: "app", perguntas: ["como mudar minhas respostas do começo", "quero refazer as perguntas", "mudar o que aparece para mim", "as sugestões não combinam comigo"],
+      resposta: "No Perfil, em Preferências do diagnóstico, toque em Refazer as perguntas. O que aparece em Para você muda de acordo com as novas respostas.",
+      links: ["perfil"] },
+    { id: "ser-voluntario", tema: "app", perguntas: ["como ser voluntário", "sou profissional e quero ajudar", "quero atender pelo zelo", "cadastro de voluntário"],
+      resposta: "Na primeira tela, escolha Sou voluntário e preencha o cadastro com seu registro no conselho e a comprovação do título. A aprovação sai em até 24 horas." },
+    { id: "beneficios-escopo", tema: "direitos", perguntas: ["o zelo ajuda com benefício", "vocês resolvem documentos", "ajuda com escola e laudo"],
+      resposta: "O zElo orienta questões de saúde. Para benefícios e documentos, o caminho é o CRAS da sua cidade. Para escola, a própria escola ou a secretaria de educação. Posso te explicar o básico de cada um.",
+      sugestoes: ["Como pedir o BPC?", "Meu filho tem direito a acompanhante na escola?"] },
+
+    /* ---------- Emergência e segurança ---------- */
+    { id: "emergencia", tema: "emergencia", perguntas: ["é uma emergência", "o que fazer numa emergência", "preciso de socorro", "qual número ligar", "ambulância"],
+      resposta: "Se há risco de vida, ligue 192 (SAMU), de graça e 24 horas. Na tela Preciso de ajuda há o passo a passo e outros telefones: 193 para bombeiros, 190 para polícia e 188 para apoio emocional (CVV).",
+      links: ["ajuda"] },
+    { id: "convulsao", tema: "emergencia", perguntas: ["o que fazer numa convulsão", "meu filho está convulsionando", "teve uma crise epiléptica", "como ajudar na convulsão"],
+      resposta: "Na convulsão: deite a pessoa de lado, afaste objetos, apoie a cabeça em algo macio e não coloque nada na boca. Marque a hora em que começou. Se passar de 5 minutos, se for a primeira vez ou se ela não voltar a respirar normalmente, ligue 192.",
+      links: ["ajuda"] },
+    { id: "convulsao-depois", tema: "emergencia", perguntas: ["o que fazer depois da convulsão", "ele dormiu depois da crise", "quando levar ao médico depois da convulsão"],
+      resposta: "Depois da convulsão é comum a pessoa ficar sonolenta ou confusa. Deixe de lado, num lugar calmo, e fique por perto. Anote a hora, quanto durou e como foi, e conte ao médico que acompanha. Se as crises ficarem mais frequentes, procure atendimento." },
+    { id: "engasgo-agora", tema: "emergencia", perguntas: ["está engasgado agora", "não consegue respirar", "engasgou e ficou roxo", "o que fazer se engasgar"],
+      resposta: "Se a pessoa tosse com força, deixe tossir e fique por perto. Se não consegue tossir, falar ou respirar, ligue 192 agora e siga as orientações da atendente.",
+      links: ["ajuda"] },
+    { id: "queda", tema: "emergencia", perguntas: ["ele caiu e bateu a cabeça", "teve uma queda", "caiu da cadeira de rodas", "bateu a cabeça"],
+      resposta: "Depois de uma queda com batida na cabeça, observe por algumas horas. Ligue 192 se houver vômito, sonolência fora do normal, convulsão, sangramento pelo nariz ou ouvido, ou se a pessoa ficar diferente do jeito dela.",
+      links: ["ajuda"] },
+    { id: "febre", tema: "saude", perguntas: ["está com febre", "febre alta o que fazer", "temperatura alta", "quando a febre é perigosa"],
+      resposta: "Meça a temperatura e ofereça líquidos. Dê remédio para febre só como o médico orientou. Procure atendimento se a febre passar de 39 °C, durar mais de dois dias, vier com falta de ar, manchas na pele, convulsão ou muita sonolência." },
+    { id: "violencia", tema: "emergencia", perguntas: ["estou sofrendo violência", "alguém está machucando ele", "acho que ele sofreu abuso", "denunciar maus tratos"],
+      resposta: "Se há perigo agora, ligue 190. Para denunciar violência contra pessoa com deficiência, ligue 100 (Disque Direitos Humanos), de graça e sem se identificar. Você não precisa ter certeza para pedir ajuda.",
+      links: ["ajuda"] },
+
+    /* ---------- Sono ---------- */
+    { id: "sono-geral", tema: "sono", perguntas: ["dúvida sobre o sono", "meu filho dorme pouco", "ele não dorme direito", "como fazer dormir melhor", "problema de sono", "dificuldade para dormir"],
+      resposta: "Três coisas costumam ajudar: 1. Horários parecidos para dormir e acordar, inclusive no fim de semana. 2. Uma hora de calma antes de deitar, com pouca luz, sem telas e sempre a mesma sequência (banho, pijama, música baixa). 3. Anotar por duas semanas a hora de dormir e os despertares. Se não melhorar, leve esse registro a um profissional.",
+      links: ["dicas"], sugestoes: ["Ele acorda de madrugada", "Tela antes de dormir atrapalha?"] },
+    { id: "sono-madrugada", tema: "sono", perguntas: ["acorda várias vezes de madrugada", "acorda no meio da noite e não volta a dormir", "acorda chorando à noite", "desperta de madrugada"],
+      resposta: "Quando acordar, fale pouco, deixe a luz baixa e leve de volta para a cama sem brincadeira ou tela. Repare se algo pode estar incomodando: dor, fome, fralda molhada, calor ou barulho. Despertares todas as noites por semanas merecem conversa com o médico." },
+    { id: "sono-tela", tema: "sono", perguntas: ["tela antes de dormir atrapalha", "celular à noite faz mal", "pode ver vídeo antes de dormir", "televisão no quarto"],
+      resposta: "Atrapalha, sim. A luz e o estímulo da tela deixam o corpo acordado. O ideal é desligar uma hora antes de dormir e trocar por algo calmo e repetido, como uma música baixa ou uma história." },
+    { id: "sono-remedio", tema: "sono", perguntas: ["posso dar remédio para dormir", "melatonina", "chá para dormir", "calmante para criança dormir"],
+      resposta: "Não dê remédio ou suplemento para dormir sem orientação médica, nem melatonina. O médico que acompanha avalia se é o caso e qual dose. Leve o registro de sono das últimas semanas para ajudar." },
+    { id: "sono-cuidador", tema: "cuidador", perguntas: ["eu não durmo direito", "estou sem dormir cuidando dele", "passo a noite acordada", "não descanso nunca"],
+      resposta: "Ficar sem dormir pesa no corpo e no humor. Se for possível, combine com alguém da família um revezamento em algumas noites, nem que seja uma por semana. E fale disso numa consulta: o seu sono também é saúde.",
+      links: ["atendimentos"] },
+
+    /* ---------- Alimentação ---------- */
+    { id: "alimentacao-geral", tema: "alimentacao", perguntas: ["dúvida sobre alimentação", "como melhorar a alimentação", "ele come mal", "hora da refeição é difícil"],
+      resposta: "Na hora de comer: sente a pessoa com as costas retas e os pés apoiados, num lugar calmo e sem televisão. Ofereça pequenas porções, devagar, e espere engolir antes da próxima. Se houver tosse ou engasgo frequente, peça avaliação de um fonoaudiólogo.",
+      links: ["dicas"], sugestoes: ["Ele só come poucas coisas", "Engasga com líquido"] },
+    { id: "seletividade", tema: "alimentacao", perguntas: ["só come poucas coisas", "só come arroz", "só come um tipo de comida", "seletividade alimentar", "recusa comida nova", "só aceita comida de uma cor", "não quer comer nada diferente"],
+      resposta: "Seletividade é comum, principalmente no autismo. Ofereça o alimento novo ao lado de um que a pessoa já aceita, em pouca quantidade e sem pressão. Pode levar muitas tentativas. Deixe tocar, cheirar e brincar com a comida. Um nutricionista ou terapeuta ocupacional ajuda a montar um plano.",
+      links: ["atendimentos"] },
+    { id: "engasgo-liquido", tema: "alimentacao", perguntas: ["engasga com líquido", "engasga com água", "tosse quando bebe", "engasga toda refeição", "dificuldade para engolir"],
+      resposta: "Engasgos frequentes pedem avaliação de um fonoaudiólogo, que vê como a pessoa engole e qual textura é segura. Até lá: pessoa sentada e reta, porções pequenas, devagar. Não engrosse líquidos por conta própria sem orientação. Tosse com febre depois das refeições é sinal para procurar o médico.",
+      links: ["atendimentos"] },
+    { id: "nao-come", tema: "alimentacao", perguntas: ["não quer comer nada", "parou de comer", "está perdendo peso", "recusa todas as refeições"],
+      resposta: "Recusa de comida que dura mais de um ou dois dias, ou perda de peso, merece consulta. Às vezes é dor de dente, na garganta ou na barriga que a pessoa não consegue contar. Ofereça líquidos e comidas que ela já aceita enquanto isso." },
+    { id: "sonda", tema: "alimentacao", perguntas: ["alimentação por sonda", "gastrostomia", "cuidados com a sonda", "botton gastrostomia"],
+      resposta: "Siga sempre o que a equipe que colocou a sonda orientou sobre dieta, limpeza e lavagem. Procure o serviço se a pele ao redor ficar vermelha, com pus ou dor, se a sonda sair do lugar ou se houver vômitos repetidos." },
+    { id: "prisao-ventre", tema: "saude", perguntas: ["prisão de ventre", "não faz cocô há dias", "intestino preso", "constipação"],
+      resposta: "Ofereça mais água, frutas e verduras ao longo do dia e, se possível, movimento. Sentar no vaso no mesmo horário, depois de uma refeição, ajuda. Se passar de três dias, houver dor forte, barriga inchada ou vômito, procure atendimento." },
+
+    /* ---------- Comportamento e emoção da pessoa ---------- */
+    { id: "crise-geral", tema: "comportamento", perguntas: ["dúvida sobre crises e comportamento", "ele tem crise o tempo todo", "o que fazer numa crise", "meu filho tem crise de birra", "ele fica muito agitado", "como lidar com as crises"],
+      resposta: "Antes: repare no que vem antes da crise (fome, cansaço, barulho, troca de atividade) para se antecipar. Durante: fale pouco e devagar, leve para um lugar quieto e afaste o que pode machucar. Não é hora de ensinar nem de brigar. Depois: quando passar, acolha e cuide de você também.",
+      links: ["dicas"], sugestoes: ["Ele se machuca na crise", "Crise ou birra, qual a diferença?"] },
+    { id: "crise-autoagressao", tema: "comportamento", perguntas: ["ele se machuca na crise", "bate a cabeça na parede", "se morde", "se arranha", "autoagressão"],
+      resposta: "Na hora, proteja: uma almofada entre a cabeça e a parede, mãos ocupadas com algo macio, menos gente e menos barulho por perto. Anote quando acontece e o que veio antes. Autoagressão frequente precisa de acompanhamento com psicólogo e médico.",
+      links: ["atendimentos"] },
+    { id: "crise-birra", tema: "comportamento", perguntas: ["crise ou birra qual a diferença", "é birra ou é crise", "meltdown", "é manha"],
+      resposta: "Na birra a pessoa quer algo e costuma parar quando consegue ou quando percebe que não vai conseguir. Na crise de desregulação ela perde o controle, muitas vezes por excesso de estímulo, e não consegue parar sozinha. Na crise, o foco é acalmar e proteger, não negociar." },
+    { id: "crise-rua", tema: "comportamento", perguntas: ["crise na rua", "crise no mercado", "todo mundo olhando durante a crise", "crise em lugar público"],
+      resposta: "Procure um canto mais quieto, fique entre a pessoa e o movimento e fale pouco. Você não deve explicação a ninguém. Se ajudar, leve sempre uma bolsa com fone abafador, um objeto que acalma e água. Algumas famílias usam um cartão que explica a situação para quem pergunta." },
+    { id: "agressivo-outros", tema: "comportamento", perguntas: ["ele bate nos outros", "agressivo com o irmão", "morde as pessoas", "bate em mim"],
+      resposta: "Mantenha a calma e afaste quem pode se machucar. Diga uma frase curta e firme, como 'não pode bater', e ofereça outra saída (apertar uma almofada, ir para o canto calmo). Tente descobrir o que a pessoa quer comunicar com isso. Um psicólogo ajuda a montar um plano para casa.",
+      links: ["atendimentos"] },
+    { id: "sensorial", tema: "comportamento", perguntas: ["sensível a barulho", "tapa os ouvidos", "não gosta de ser tocado", "incomoda com luz", "sensibilidade sensorial"],
+      resposta: "Sensibilidade a som, luz ou toque é comum. Ajuda ter um canto calmo em casa, fones abafadores em lugares barulhentos e avisar antes de tocar. Um terapeuta ocupacional pode avaliar e orientar atividades para o dia a dia.",
+      links: ["atendimentos"] },
+    { id: "mudanca-rotina", tema: "rotina", perguntas: ["não aceita mudança de rotina", "fica nervoso quando muda o plano", "como avisar mudança", "rotina visual"],
+      resposta: "Avise antes e mostre o que vai mudar. Uma rotina visual com 3 ou 4 fotos na ordem das atividades ajuda a pessoa a saber o que vem depois. Quando der, ofereça uma escolha pequena dentro da mudança.",
+      links: ["dicas"] },
+    { id: "tela-excesso", tema: "rotina", perguntas: ["fica muito tempo no celular", "só quer ver vídeo", "vício em tela", "tirar o celular dá crise"],
+      resposta: "Combine horários fixos de tela e avise alguns minutos antes de acabar, com um timer visível. Tenha uma atividade preferida pronta para o depois. Diminua aos poucos: tirar tudo de uma vez costuma gerar crise." },
+    { id: "ansiedade-pessoa", tema: "comportamento", perguntas: ["meu filho é muito ansioso", "ele fica nervoso com tudo", "medo de sair de casa", "ansiedade na criança"],
+      resposta: "Antecipar ajuda muito: contar o que vai acontecer, mostrar fotos do lugar, levar um objeto conhecido. Respiração lenta junto com você também acalma. Se a ansiedade atrapalha comer, dormir ou sair de casa, procure um psicólogo.",
+      links: ["atendimentos"] },
+
+    /* ---------- Comunicação ---------- */
+    { id: "comunicacao-geral", tema: "comunicacao", perguntas: ["dúvida sobre comunicação", "meu filho não fala", "não fala nada ainda", "fala pouco", "como ajudar a falar", "atraso na fala"],
+      resposta: "Comunicar é mais do que falar. Fale devagar sobre o que vocês estão fazendo, ofereça duas escolhas (água ou suco?) e espere a resposta, mesmo que seja um gesto ou um olhar. Responda sempre. Um fonoaudiólogo avalia e orienta o próximo passo.",
+      links: ["dicas", "atendimentos"], sugestoes: ["Como usar prancha com figuras?", "Ele vai falar um dia?"] },
+    { id: "prancha", tema: "comunicacao", perguntas: ["como usar prancha com figuras", "comunicação alternativa", "pecs", "cartões com imagens para se comunicar"],
+      resposta: "Comece com 4 ou 5 fotos do que a pessoa mais pede: água, comida, banheiro, brincar. Deixe num lugar fácil de ver. Aponte a figura enquanto fala a palavra e, quando ela apontar, atenda logo. Assim ela entende que funciona. Usar figuras não atrapalha a fala.",
+      links: ["dicas"] },
+    { id: "vai-falar", tema: "comunicacao", perguntas: ["ele vai falar um dia", "será que vai falar", "com que idade vai falar", "nunca vai falar"],
+      resposta: "Ninguém consegue prever com certeza. Muitas pessoas começam a falar mais tarde, e outras se comunicam bem por gestos, figuras ou aplicativos. O mais importante é ela ter algum jeito de se comunicar desde já. O fonoaudiólogo acompanha a evolução." },
+    { id: "libras", tema: "comunicacao", perguntas: ["onde aprender libras", "meu filho é surdo como me comunicar", "libras para a família", "língua de sinais"],
+      resposta: "Aprender Libras junto com a criança é um ótimo caminho. Muitas universidades, associações de surdos e secretarias oferecem cursos gratuitos. Pergunte no CRAS ou na secretaria de educação da sua cidade. Na escola, a criança surda tem direito a intérprete." },
+    { id: "nao-entendo", tema: "comunicacao", perguntas: ["não entendo o que ele quer", "ele chora e eu não sei por quê", "como saber o que ele sente"],
+      resposta: "Observe o que vem antes do choro e anote por alguns dias: hora, lugar, o que estava acontecendo. Padrões aparecem. Ofereça escolhas com objetos ou figuras na mão. E considere dor: quem não fala às vezes mostra dor pelo choro e pela irritação.",
+      sugestoes: ["Como saber se ele está com dor?"] },
+
+    /* ---------- Corpo, dor e cuidados ---------- */
+    { id: "dor-sinais", tema: "corpo", perguntas: ["como saber se ele está com dor", "sinais de dor em quem não fala", "acho que está com dor", "dúvida sobre dor e postura"],
+      resposta: "Choro diferente, gemidos, recusa de comida, corpo mais rígido, mudança de humor ou de postura podem indicar dor. Anote quando acontece e o que aliviou. Dor nova ou que não passa merece avaliação.",
+      links: ["dicas", "atendimentos"] },
+    { id: "postura-sentar", tema: "corpo", perguntas: ["como sentar corretamente", "posição para comer", "postura na cadeira", "escorrega na cadeira"],
+      resposta: "Costas apoiadas, quadril no fundo do assento, pés apoiados no chão ou num banquinho e mesa na altura do peito. Se a pessoa escorrega ou tomba para o lado, peça ao fisioterapeuta para avaliar adaptações na cadeira.",
+      links: ["dicas"] },
+    { id: "cadeira-rodas", tema: "corpo", perguntas: ["como conseguir cadeira de rodas", "cadeira de rodas pelo sus", "preciso de andador", "órtese pelo sus"],
+      resposta: "Cadeira de rodas, andador e órteses podem ser pedidos pelo SUS. Peça o encaminhamento na unidade de saúde para um Centro Especializado em Reabilitação (CER), onde a equipe avalia e indica o modelo certo." },
+    { id: "transferencia", tema: "corpo", perguntas: ["como levantar sem machucar as costas", "tirar da cama para a cadeira", "transferência da cadeira", "dor nas costas de carregar"],
+      resposta: "Chegue perto, dobre os joelhos e mantenha as costas retas, usando a força das pernas. Avise antes de mover e peça que a pessoa ajude no que puder. Um fisioterapeuta ensina técnicas e equipamentos que poupam a sua coluna.",
+      links: ["atendimentos"] },
+    { id: "escaras", tema: "corpo", perguntas: ["como evitar escaras", "ferida de ficar deitado", "pele vermelha nas costas", "lesão por pressão"],
+      resposta: "Mude a posição a cada 2 horas, mantenha a pele limpa e seca e use travesseiros para aliviar ossos como calcanhar e quadril. Mancha vermelha que não some depois de aliviar a pressão já é sinal de alerta: mostre à equipe de saúde." },
+    { id: "exercicio-casa", tema: "corpo", perguntas: ["exercícios para fazer em casa", "fisioterapia em casa", "alongamento em casa", "como estimular o movimento"],
+      resposta: "Exercícios em casa ajudam muito, mas precisam ser os indicados para o corpo da pessoa. Peça ao fisioterapeuta uma sequência curta para fazer todo dia. Em Atendimentos há fisioterapeutas que montam isso por vídeo.",
+      links: ["atendimentos"] },
+    { id: "banho", tema: "cuidados", perguntas: ["dificuldade na hora do banho", "não gosta de tomar banho", "banho é uma luta", "como dar banho com segurança"],
+      resposta: "Deixe tudo pronto antes, teste a água no seu pulso e avise cada passo. Para quem não gosta, ajudam uma sequência sempre igual, um brinquedo de banho e menos tempo. Para segurança: tapete antiderrapante e, se precisar, uma cadeira de banho." },
+    { id: "dentes", tema: "cuidados", perguntas: ["não deixa escovar os dentes", "como escovar os dentes", "dentista para pessoa com deficiência", "cuidado com os dentes"],
+      resposta: "Comece com pouco tempo e sempre na mesma hora, de preferência na frente do espelho. Escova macia e pouca pasta. Mostre em você primeiro. Há dentistas que atendem pessoas com deficiência pelo SUS: pergunte na unidade de saúde pelo Centro de Especialidades Odontológicas (CEO)." },
+    { id: "desfralde", tema: "cuidados", perguntas: ["como tirar a fralda", "desfralde", "quando tirar a fralda", "ensinar a usar o banheiro"],
+      resposta: "Observe sinais de prontidão: fica seco por mais tempo, avisa ou mostra incômodo com a fralda. Leve ao banheiro em horários fixos, como ao acordar e depois das refeições, e comemore cada tentativa. Escapes fazem parte. O terapeuta ocupacional pode ajudar com um plano." },
+    { id: "puberdade", tema: "cuidados", perguntas: ["puberdade", "menstruação na deficiência", "como explicar as mudanças do corpo", "sexualidade"],
+      resposta: "Explique as mudanças antes que aconteçam, com palavras simples e imagens. Ensine sobre privacidade: quais partes do corpo são privadas e quem pode ajudar no banho. Um psicólogo ou o médico que acompanha pode orientar a família." },
+    { id: "remedio-horario", tema: "remedios", perguntas: ["como organizar os remédios", "esqueço de dar o remédio", "muitos remédios em horários diferentes", "tabela de remédios"],
+      resposta: "Faça uma tabela com nome, dose e horário de cada remédio e cole na geladeira. Use alarmes no celular. Uma caixa organizadora por dia ajuda. Leve a tabela em toda consulta.",
+      sugestoes: ["Esqueci de dar uma dose"] },
+    { id: "remedio-esqueci", tema: "remedios", perguntas: ["esqueci de dar uma dose", "pulei o remédio", "dei o remédio duas vezes", "errei a dose"],
+      resposta: "Não dobre a dose seguinte por conta própria. Ligue para a farmácia que forneceu o remédio ou para o médico e pergunte o que fazer. Se deu dose a mais e a pessoa ficar muito sonolenta, diferente ou passar mal, ligue 192." },
+    { id: "remedio-recusa", tema: "remedios", perguntas: ["não aceita tomar remédio", "cospe o remédio", "como dar remédio para quem não engole comprimido"],
+      resposta: "Pergunte ao médico ou ao farmacêutico se existe o remédio em gotas ou xarope, ou se pode ser amassado e misturado. Nem todo remédio pode. Ofereça com calma, sempre do mesmo jeito, e elogie depois." },
+    { id: "vacina", tema: "saude", perguntas: ["vacinas para pessoa com deficiência", "precisa de vacina especial", "crie centro de imunobiológicos"],
+      resposta: "Mantenha a caderneta em dia na unidade de saúde. Algumas pessoas com deficiência ou doenças crônicas têm direito a vacinas extras nos Centros de Referência para Imunobiológicos Especiais (CRIE). O médico faz o pedido." },
+
+    /* ---------- Terapias, SUS e caminhos ---------- */
+    { id: "qual-terapia", tema: "terapias", perguntas: ["qual terapia meu filho precisa", "dúvida sobre terapias", "que tipo de terapia", "precisa de qual profissional"],
+      resposta: "Depende do que mais pesa no dia a dia. Fono ajuda com fala, comunicação e engolir. Terapia ocupacional ajuda com rotina, sensorial e tarefas como comer e vestir. Fisioterapia, com movimento e postura. Psicologia, com comportamento e emoções. O médico que acompanha ajuda a priorizar.",
+      links: ["atendimentos"] },
+    { id: "sus-fila", tema: "sus", perguntas: ["terapia pelo sus demora muito", "estou na fila há meses", "quanto tempo espera no sus", "encaminhamento não sai"],
+      resposta: "A espera varia muito de cidade para cidade. Vá à unidade de saúde e pergunte em que posição está na fila, levando o número do encaminhamento. Enquanto espera, um voluntário do zElo pode orientar atividades para fazer em casa.",
+      links: ["atendimentos", "forum"] },
+    { id: "cer", tema: "sus", perguntas: ["o que é cer", "centro especializado em reabilitação", "onde fazer reabilitação pelo sus", "apae ou aacd"],
+      resposta: "O CER é o Centro Especializado em Reabilitação do SUS, com equipe de fisio, fono, terapia ocupacional e outros. O acesso é por encaminhamento da unidade de saúde. Instituições como APAE e AACD também atendem em muitas cidades." },
+    { id: "primeira-consulta", tema: "terapias", perguntas: ["como me preparar para a consulta", "o que levar na consulta", "primeira consulta", "não sei o que perguntar ao médico"],
+      resposta: "Anote antes o que mudou nas últimas semanas (sono, apetite, humor, crises), com datas. Leve a lista de remédios com dose e horário, os exames e até três perguntas por escrito. Peça para repetir o que não ficou claro.",
+      links: ["dicas"] },
+    { id: "diagnostico-tea", tema: "diagnostico", perguntas: ["acho que meu filho é autista", "como saber se é autismo", "sinais de autismo", "quem faz o diagnóstico de autismo"],
+      resposta: "Alguns sinais: pouco contato visual, não atender pelo nome, atraso na fala, movimentos repetidos, interesses muito restritos e sensibilidade a sons ou texturas. Converse com o pediatra na unidade de saúde: ele encaminha para avaliação com neuropediatra ou psiquiatra infantil e equipe. Não precisa esperar o laudo para começar a estimular." },
+    { id: "diagnostico-recebido", tema: "diagnostico", perguntas: ["acabei de receber o diagnóstico", "descobri que meu filho tem deficiência", "não sei por onde começar", "o que fazer depois do diagnóstico"],
+      resposta: "É muita coisa de uma vez, e é normal sentir medo, tristeza ou alívio. Um passo de cada vez: 1. Pergunte ao médico quais terapias são prioridade. 2. Peça os encaminhamentos na unidade de saúde. 3. Procure outras famílias no Fórum. 4. Cuide de você também.",
+      links: ["forum", "atendimentos"] },
+    { id: "laudo", tema: "direitos", perguntas: ["como conseguir laudo", "preciso de laudo", "quem dá o laudo", "relatório médico"],
+      resposta: "O laudo é feito pelo médico que acompanha, como neuropediatra ou psiquiatra, depois da avaliação. Peça que conste o CID e como a condição afeta o dia a dia. Guarde cópias: escola, benefícios e carteirinhas costumam pedir." },
+    { id: "down", tema: "condicoes", perguntas: ["síndrome de down cuidados", "meu filho tem down", "acompanhamento na síndrome de down"],
+      resposta: "Na síndrome de Down é importante acompanhar coração, tireoide, visão e audição com exames regulares, além de estimular desde cedo com fisio, fono e terapia ocupacional. O pediatra organiza esse acompanhamento." },
+    { id: "pc", tema: "condicoes", perguntas: ["paralisia cerebral", "meu filho tem pc", "cuidados na paralisia cerebral"],
+      resposta: "Na paralisia cerebral, a fisioterapia e a terapia ocupacional ajudam no movimento, na postura e na independência. Fique atenta a engasgos, prisão de ventre e dor, que são comuns. Cada pessoa é diferente, e a equipe monta o plano." },
+    { id: "deficiencia-visual", tema: "condicoes", perguntas: ["meu filho é cego", "baixa visão", "deficiência visual como ajudar", "estimulação visual"],
+      resposta: "Organize a casa sempre do mesmo jeito e avise quando mudar algo de lugar. Descreva o que acontece ao redor e use o toque e o som para explorar. Peça encaminhamento para estimulação visual e orientação e mobilidade. A escola deve oferecer material em braile ou ampliado." },
+    { id: "deficiencia-auditiva", tema: "condicoes", perguntas: ["meu filho é surdo", "deficiência auditiva", "aparelho auditivo pelo sus", "implante coclear"],
+      resposta: "O SUS oferece avaliação, aparelho auditivo e, em alguns casos, implante coclear. Peça encaminhamento na unidade de saúde. Em casa, fale de frente, com boa luz no rosto. Libras desde cedo ajuda muito no desenvolvimento.",
+      sugestoes: ["Onde aprender Libras?"] },
+    { id: "intelectual", tema: "condicoes", perguntas: ["deficiência intelectual", "aprende mais devagar", "atraso no desenvolvimento", "dificuldade para aprender"],
+      resposta: "Ensine uma coisa de cada vez, com passos curtos, imagens e repetição. Elogie o esforço. Deixe a pessoa fazer o que consegue sozinha, mesmo que demore. Terapia ocupacional e fono ajudam, e a escola deve adaptar as atividades." },
+
+    /* ---------- Escola e direitos ---------- */
+    { id: "escola-acompanhante", tema: "escola", perguntas: ["meu filho tem direito a acompanhante na escola", "mediador escolar", "cuidador na escola", "a escola não aceita meu filho"],
+      resposta: "A escola, pública ou particular, não pode recusar matrícula por causa da deficiência nem cobrar a mais. Quando há necessidade, o estudante tem direito a apoio na sala e ao Atendimento Educacional Especializado (AEE). Converse com a escola e, se não resolver, procure a secretaria de educação ou o Ministério Público." },
+    { id: "bpc", tema: "direitos", perguntas: ["como pedir o bpc", "benefício para pessoa com deficiência", "loas", "tenho direito a algum benefício"],
+      resposta: "O BPC é um salário mínimo por mês para pessoa com deficiência de família com baixa renda. É preciso estar no CadÚnico. O pedido é feito pelo INSS (telefone 135 ou aplicativo Meu INSS), e o CRAS da sua cidade ajuda com o cadastro e os documentos." },
+    { id: "ciptea", tema: "direitos", perguntas: ["carteirinha do autismo", "ciptea", "como tirar a carteira do autista", "carteira de identificação tea"],
+      resposta: "A CIPTEA é a carteira de identificação da pessoa com autismo e garante atendimento prioritário. É emitida pelo estado ou pelo município, geralmente com laudo e documentos. Pergunte no CRAS ou na secretaria de assistência social." },
+    { id: "passe-livre", tema: "direitos", perguntas: ["passe livre", "ônibus de graça para deficiente", "gratuidade no transporte", "acompanhante no ônibus"],
+      resposta: "Há passe livre interestadual para pessoa com deficiência de baixa renda e, em muitas cidades, gratuidade no ônibus municipal, às vezes com acompanhante. As regras mudam por cidade: pergunte no CRAS ou na empresa de transporte." },
+    { id: "cras", tema: "direitos", perguntas: ["o que é cras", "onde fica o cras", "assistente social", "cadúnico"],
+      resposta: "O CRAS é o Centro de Referência de Assistência Social da sua cidade. Lá você faz o CadÚnico e recebe orientação sobre benefícios, documentos e serviços. Procure o mais perto da sua casa, levando documento com foto e comprovante de endereço." },
+    { id: "trabalho-pcd", tema: "direitos", perguntas: ["vagas de emprego para pcd", "trabalhar sendo pessoa com deficiência", "lei de cotas", "sou pcd e quero trabalhar"],
+      resposta: "Empresas com 100 ou mais funcionários precisam reservar vagas para pessoas com deficiência. O SINE e sites de vagas têm filtros para PcD. Ter o laudo atualizado ajuda na contratação." },
+
+
+    /* ---------- Mais situações do dia a dia ---------- */
+    { id: "cama-pais", tema: "sono", perguntas: ["só dorme na minha cama", "dorme com os pais", "como fazer dormir no próprio quarto", "não dorme sozinho"],
+      resposta: "Faça a mudança aos poucos: primeiro fique sentada ao lado da cama dele até dormir, depois na porta, depois fora do quarto, uma etapa por semana. Mantenha a mesma rotina da noite e um objeto que acalma, como uma manta." },
+    { id: "passeio", tema: "rotina", perguntas: ["como sair para passear", "levar para festa de aniversário", "viagem com criança com deficiência", "ir à praia com ele", "sair de casa é difícil"],
+      resposta: "Antecipe: mostre fotos do lugar e conte o que vai acontecer. Leve um kit com água, lanche, fone abafador e um objeto preferido. Chegue mais cedo, quando há menos gente, e combine um sinal para ir embora antes de virar crise." },
+    { id: "medico-dentista-medo", tema: "comportamento", perguntas: ["tem medo de médico", "chora na consulta", "não deixa o médico examinar", "pânico de agulha", "exame de sangue é difícil"],
+      resposta: "Prepare com antecedência: brinque de médico em casa, mostre fotos do lugar e conte o passo a passo. Peça para ser o primeiro horário, quando a espera é menor. Avise a equipe sobre a sensibilidade da pessoa: muitos serviços adaptam o atendimento." },
+    { id: "oculos", tema: "corpo", perguntas: ["não aceita usar óculos", "tira o aparelho auditivo", "não quer usar a órtese", "tira a tala"],
+      resposta: "Comece com pouco tempo de uso, em momentos agradáveis, como ver um desenho ou brincar, e aumente aos poucos. Confira se não está apertando ou machucando. Se continuar recusando, fale com quem indicou: às vezes é preciso ajustar." },
+    { id: "sapato-pe", tema: "corpo", perguntas: ["anda na ponta dos pés", "pé torto", "sapato ortopédico", "anda diferente"],
+      resposta: "Andar na ponta dos pés depois dos 3 anos ou mudanças no jeito de andar merecem avaliação com fisioterapeuta e médico. Eles dizem se é preciso alongamento, órtese ou outro cuidado.",
+      links: ["atendimentos"] },
+    { id: "baba", tema: "corpo", perguntas: ["baba muito", "saliva escorrendo", "excesso de baba", "boca sempre molhada"],
+      resposta: "Babar muito é comum em algumas condições, como a paralisia cerebral. Fono e terapia ocupacional trabalham a força e o controle da boca. Mantenha a pele do queixo seca para não assar. O médico avalia se há outros tratamentos." },
+    { id: "peso", tema: "alimentacao", perguntas: ["está acima do peso", "engordou muito", "obesidade", "come demais"],
+      resposta: "Evite deixar doces e salgadinhos à vista e ofereça porções em pratos menores, nos mesmos horários. Movimento todos os dias, do jeito que a pessoa consegue, ajuda. Alguns remédios aumentam o apetite: vale conversar com o médico e com um nutricionista.",
+      links: ["atendimentos"] },
+    { id: "agua", tema: "alimentacao", perguntas: ["não bebe água", "bebe pouca água", "como fazer beber mais água", "desidratação"],
+      resposta: "Deixe uma garrafa à vista e ofereça a cada hora, em pequenos goles. Copos coloridos, canudo e frutas com bastante água, como melancia e laranja, ajudam. Boca seca, xixi escuro ou pouco xixi são sinais de que falta água." },
+    { id: "fuga", tema: "seguranca", perguntas: ["ele foge de casa", "sai correndo na rua", "tenho medo que ele se perca", "some no shopping"],
+      resposta: "Em casa, use trancas altas ou alarmes simples na porta. Na rua, roupa de cor forte ajuda a achar rápido, e uma pulseira ou etiqueta com seu telefone dá segurança. Ensine a parar com um sinal combinado e treine em lugares calmos." },
+    { id: "seguranca-casa", tema: "seguranca", perguntas: ["como deixar a casa segura", "ele mexe em tudo", "produto de limpeza perigoso", "tomada e quina"],
+      resposta: "Guarde remédios e produtos de limpeza no alto e trancados. Use protetor de tomada e de quina, e prenda móveis que podem tombar. Em casa com piscina, cerca e supervisão o tempo todo." },
+    { id: "brincar", tema: "rotina", perguntas: ["como brincar com ele", "ele não brinca", "brincadeiras para estimular", "o que fazer em casa com ele"],
+      resposta: "Brinque do que ele gosta, mesmo que pareça repetitivo, e entre na brincadeira aos poucos. Brincadeiras com água, massinha, bolhas de sabão e música costumam funcionar. Dez minutos com sua atenção inteira valem mais do que uma hora distraída." },
+    { id: "luto", tema: "cuidador", perguntas: ["sinto que perdi o filho que imaginei", "luto pelo diagnóstico", "não aceito o diagnóstico", "é difícil aceitar"],
+      resposta: "Muitas famílias sentem um luto pelo filho que imaginaram, e isso não diminui o amor pelo filho que têm. Esse sentimento vai e volta. Conversar com quem passou por isso, no Fórum, ou com uma psicóloga ajuda a atravessar.",
+      links: ["forum", "atendimentos"] },
+    { id: "julgamento", tema: "cuidador", perguntas: ["as pessoas me julgam", "olhares na rua", "a família critica como eu cuido", "comentários que machucam"],
+      resposta: "Você conhece seu filho melhor do que quem olha de fora. Uma frase curta pronta ajuda, como: 'ele tem autismo, está tudo bem, obrigada'. Com a família, convide para participar de uma consulta ou terapia: ver de perto costuma mudar o olhar." },
+    { id: "trabalho-cuidador", tema: "cuidador", perguntas: ["parei de trabalhar para cuidar", "como conciliar trabalho e cuidado", "perdi o emprego por faltar", "trabalho e terapias"],
+      resposta: "É uma das maiores dificuldades de quem cuida. Converse com o trabalho sobre horários flexíveis. Algumas leis garantem horário especial para servidor público que cuida de pessoa com deficiência. No CRAS você recebe orientação sobre benefícios e rede de apoio." },
+    { id: "curatela", tema: "direitos", perguntas: ["o que é curatela", "interdição", "meu filho fez 18 anos", "maioridade da pessoa com deficiência"],
+      resposta: "Aos 18 anos, a pessoa com deficiência passa a ter os mesmos direitos civis de qualquer adulto. A curatela é um apoio decidido pela Justiça, só para atos de dinheiro e patrimônio, e só quando necessário. A Defensoria Pública orienta de graça." },
+    { id: "atividade-fisica", tema: "corpo", perguntas: ["esporte para pessoa com deficiência", "natação", "atividade física adaptada", "equoterapia"],
+      resposta: "Atividade física faz bem ao corpo, ao sono e ao humor. Natação, dança, futebol adaptado e equoterapia são opções. Muitas prefeituras, universidades e associações têm projetos gratuitos. Peça liberação do médico antes de começar." },
+
+    /* ---------- Quem cuida ---------- */
+    { id: "cansaco", tema: "cuidador", perguntas: ["estou sem energia hoje", "estou muito cansada", "não aguento mais", "estou exausta", "estou esgotado de cuidar"],
+      resposta: "Cuidar o tempo todo cansa mesmo, e faz sentido você estar assim. Teve algum momento hoje só para você, nem que seja curto? Se quiser, escreva o que está pesando mais. Se o cansaço dura semanas, conversar com uma psicóloga ajuda.",
+      links: ["atendimentos"], sugestoes: ["Como conseguir uma pausa?", "Só quero conversar"] },
+    { id: "pausa", tema: "cuidador", perguntas: ["como conseguir uma pausa", "não tenho tempo para mim", "preciso descansar", "ninguém me ajuda a cuidar"],
+      resposta: "Comece pequeno: dez minutos sem tela, um café sentada, uma volta no quarteirão. Combine com alguém da família um horário fixo por semana: dizer o horário pesa menos do que pedir ajuda toda vez. No Fórum, outras famílias contam o que funciona para elas.",
+      links: ["forum", "dicas"] },
+    { id: "triste", tema: "cuidador", perguntas: ["estou triste", "choro todo dia", "me sinto deprimida", "estou pra baixo", "não tenho vontade de nada"],
+      resposta: "Sinto muito que esteja tão pesado. Chorar também alivia, e você não precisa dar conta de tudo. Se a tristeza dura mais de duas semanas ou tira a vontade de fazer as coisas, procure apoio: há psicólogas voluntárias em Atendimentos, e o CVV atende no 188, 24 horas.",
+      links: ["atendimentos", "ajuda"] },
+    { id: "sozinha", tema: "cuidador", perguntas: ["me sinto sozinha", "ninguém entende o que eu passo", "não tenho com quem conversar", "me sinto isolada"],
+      resposta: "Você não está só. No Fórum há famílias que vivem coisas parecidas e respondem com o que funcionou para elas. E eu estou aqui para conversar quando quiser.",
+      links: ["forum"] },
+    { id: "culpa", tema: "cuidador", perguntas: ["me sinto culpada", "acho que a culpa é minha", "sou uma mãe ruim", "estou falhando com meu filho"],
+      resposta: "Culpa aparece muito em quem cuida, e quase sempre é injusta. A deficiência não é culpa de ninguém. Errar faz parte de cuidar de alguém por tanto tempo. O fato de você se preocupar mostra o quanto se importa." },
+    { id: "raiva", tema: "cuidador", perguntas: ["estou com raiva", "estou muito irritada", "perdi a paciência com ele", "gritei com meu filho"],
+      resposta: "Raiva também faz parte de cuidar e não faz de você uma pessoa pior. Quando sentir que vai explodir, se der, saia do cômodo por um minuto e respire devagar. Depois, se precisar, peça desculpa: isso também ensina." },
+    { id: "medo-futuro", tema: "cuidador", perguntas: ["tenho medo do futuro", "quem vai cuidar dele quando eu não estiver", "estou preocupada com o futuro", "e quando eu morrer"],
+      resposta: "Esse medo é muito comum e muito real. Ajuda trazer para o presente em passos pequenos: envolver outras pessoas da família no cuidado, buscar autonomia possível para a pessoa e se informar sobre direitos e curatela. Conversar com uma psicóloga ajuda a carregar esse peso.",
+      links: ["atendimentos"] },
+    { id: "irmaos", tema: "cuidador", perguntas: ["o irmão sente ciúmes", "dou pouca atenção ao outro filho", "como explicar para o irmão", "irmãos de criança com deficiência"],
+      resposta: "Reserve um tempo só com o outro filho, mesmo que curto, toda semana. Explique a deficiência com palavras simples e deixe ele perguntar e sentir o que sente, inclusive raiva ou ciúme. Dê tarefas pequenas de ajuda, mas sem transformar ele em cuidador." },
+    { id: "casal", tema: "cuidador", perguntas: ["meu casamento está difícil", "brigas com meu marido", "o pai não ajuda", "dividir o cuidado com o parceiro"],
+      resposta: "Cuidar sobrecarrega a relação. Ajuda dividir tarefas por escrito, com dias e horários, e reservar um tempo, mesmo curto, para o casal. Terapia de casal ou familiar também é um caminho." },
+    { id: "pcd-autonomia", tema: "pcd", perguntas: ["sou pcd e quero mais autonomia", "quero fazer as coisas sozinho", "minha família me superprotege", "independência"],
+      resposta: "Combine com a família uma coisa por vez que você quer fazer sozinho e quais apoios precisa. Um terapeuta ocupacional ajuda a adaptar a casa e as tarefas. No Fórum, outras pessoas com deficiência contam como conquistaram mais autonomia.",
+      links: ["atendimentos", "forum"] },
+    { id: "pcd-saude-mental", tema: "pcd", perguntas: ["sou pcd e estou ansioso", "tenho deficiência e me sinto mal", "preconceito me deixa triste", "sofri capacitismo"],
+      resposta: "O que você sente importa. Preconceito machuca, e não é culpa sua. Conversar com um psicólogo que entende de deficiência ajuda. Em Atendimentos há psicólogos que acompanham jovens e adultos com deficiência.",
+      links: ["atendimentos"] },
+    { id: "so-conversar", tema: "conversa", perguntas: ["só quero conversar", "quero desabafar", "preciso falar com alguém", "posso conversar com você"],
+      resposta: "Estou aqui. Pode escrever do seu jeito, sem pressa. O que pesou mais hoje?" },
+    { id: "pedir-profissional", tema: "app", perguntas: ["quero falar com um profissional", "preciso de um psicólogo", "quero falar com um especialista", "tem fono disponível"],
+      resposta: "Em Atendimentos você vê quem está online agora, escolhe o profissional e marca o horário, de graça. Os profissionais são voluntários verificados.",
+      links: ["atendimentos"], sugestoes: ["Como marcar uma consulta?", "A consulta é online ou presencial?"] },
+  ];
+  zAna.preparar(zAnaBase, zAnaSinonimos);
   var P = N(yt()),
     OS = {
       conversa: Qu,
@@ -15945,7 +16532,6 @@ Error generating stack: ` +
       { id: "visual", rotulo: "Defici\xEAncia visual" },
       { id: "auditiva", rotulo: "Defici\xEAncia auditiva" },
       { id: "tea", rotulo: "Transtorno do espectro autista (TEA)" },
-      { id: "multipla", rotulo: "Defici\xEAncia m\xFAltipla" },
       { id: "nao-sei", rotulo: "Ainda n\xE3o sei" },
     ],
     El = [
@@ -16870,7 +17456,7 @@ Error generating stack: ` +
           "aria-hidden": "true",
           children: [
             (0, r.jsx)("img", { src: "logo-claro.png", alt: "", width: "1132", height: "665" }),
-            (0, r.jsx)("p", { children: "Voc\xEA n\xE3o est\xE1 s\xF3." }),
+            (0, r.jsx)("p", { children: "Voc\xEA n\xE3o est\xE1 s\xF3" }),
           ],
         }),
         (0, r.jsx)("h1", {
@@ -16893,6 +17479,27 @@ Error generating stack: ` +
                       className: "opcao-sub",
                       children:
                         "Cuido de uma pessoa com defici\xEAncia e quero dire\xE7\xE3o e apoio.",
+                    }),
+                  ],
+                }),
+                (0, r.jsx)("span", {
+                  className: "opcao-estado",
+                  children: (0, r.jsx)(la, { n: "avancar", size: 28 }),
+                }),
+              ],
+            }),
+            (0, r.jsxs)("button", {
+              type: "button",
+              className: "opcao",
+              onClick: () => a("pcd"),
+              children: [
+                (0, r.jsxs)("span", {
+                  children: [
+                    "Sou a pessoa com defici\xEAncia",
+                    (0, r.jsx)("span", {
+                      className: "opcao-sub",
+                      children:
+                        "Uso o zElo por conta pr\xF3pria para cuidar da minha sa\xFAde.",
                     }),
                   ],
                 }),
@@ -16952,7 +17559,7 @@ Error generating stack: ` +
       },
       vol = pp === "voluntario",
       titulos = {
-        entrar: vol ? "Entre na sua conta de volunt\xE1rio" : "Que bom ter voc\xEA aqui.",
+        entrar: vol ? "Entre na sua conta de volunt\xE1rio" : "Que bom ter voc\xEA aqui",
         criar: "Crie sua conta",
         esqueci: "Esqueceu a senha?",
       },
@@ -17110,9 +17717,11 @@ Error generating stack: ` +
     {
       campo: "tipo",
       titulo: "Qual \xE9 o tipo de defici\xEAncia?",
+      ajuda:
+        "Pode escolher mais de uma. Se ainda n\xE3o h\xE1 diagn\xF3stico, escolha Ainda n\xE3o sei.",
       itens: Em,
-      multi: !1,
-      aviso: "Escolha uma op\xE7\xE3o para continuar.",
+      multi: !0,
+      aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar.",
     },
     {
       campo: "direcionamento",
@@ -17146,9 +17755,10 @@ Error generating stack: ` +
       m = (I) => {
         if (!s.multi) return t({ ...e, [s.campo]: I });
         let f;
-        if (I === "nenhuma") f = i.includes("nenhuma") ? [] : ["nenhuma"];
+        let excl = ["nenhuma", "nao-sei"];
+        if (excl.includes(I)) f = i.includes(I) ? [] : [I];
         else {
-          let u = i.filter((g) => g !== "nenhuma");
+          let u = i.filter((g) => !excl.includes(g));
           f = u.includes(I) ? u.filter((g) => g !== I) : [...u, I];
         }
         t({ ...e, [s.campo]: f });
@@ -17422,7 +18032,7 @@ Error generating stack: ` +
           style: { marginBottom: 32 },
           children: (0, r.jsxs)("h1", {
             tabIndex: -1,
-            children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0], "."],
+            children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0]],
           }),
         }),
         (0, r.jsx)(Do, {
@@ -17508,7 +18118,7 @@ Error generating stack: ` +
         (e.direcionamento.forEach((d) => {
           (zAreas[d] || []).includes(f.area) && (k += 2);
         }),
-          e.tipo === "tea" && /TEA/.test(f.foco) && (k += 2),
+          (e.tipo || []).includes("tea") && /TEA/.test(f.foco) && (k += 2),
           (e.especificidades || []).includes("engolir") &&
             /engasg|alimenta/.test(f.foco) &&
             (k += 1));
@@ -17600,14 +18210,16 @@ Error generating stack: ` +
             (0, r.jsx)("h1", {
               className: "display",
               tabIndex: -1,
-              children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}.` : "Ol\xE1!",
+              children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}` : "Ol\xE1",
             }),
             (0, r.jsx)("p", {
               className: "lead",
               children:
                 o === "voluntario"
                   ? "Veja onde a sua resposta pode ajudar hoje."
-                  : "Como a sa\xFAde de voc\xEAs est\xE1 hoje? Comece por um destes caminhos.",
+                  : o === "pcd"
+                    ? "Como est\xE1 a sua sa\xFAde hoje? Comece por um destes caminhos."
+                    : "Como a sa\xFAde de voc\xEAs est\xE1 hoje? Comece por um destes caminhos.",
             }),
             !a.nome &&
               (0, r.jsxs)("p", {
@@ -17917,7 +18529,7 @@ Error generating stack: ` +
                   readOnly: !0,
                   "aria-readonly": "true",
                   ajuda:
-                    "Para trocar o e-mail, fale com a Ana (apoio) no chat.",
+                    "Para trocar o e-mail, pe\xE7a pelo chat. A equipe confere e faz a troca.",
                 }),
                 I &&
                   (0, r.jsx)("div", {
@@ -17935,7 +18547,7 @@ Error generating stack: ` +
             }),
           ],
         }),
-        t === "responsavel" &&
+        t !== "voluntario" &&
           (0, r.jsxs)("div", {
             className: "perfil-bloco",
             children: [
@@ -17950,8 +18562,7 @@ Error generating stack: ` +
                       (0, r.jsx)("dt", { children: "Tipo de defici\xEAncia" }),
                       (0, r.jsx)("dd", {
                         children:
-                          Em.find((y) => y.id === e.tipo)?.rotulo ||
-                          "N\xE3o informado",
+                          A(Em, e.tipo || []),
                       }),
                     ],
                   }),
@@ -18092,21 +18703,30 @@ Error generating stack: ` +
         .replace(/[̀-ͯ]/g, "");
   var zPedidoResposta = {
     texto:
-      "Recebi seu pedido de ajuda e estou aqui com voc\xEA. Me conte em poucas palavras o que est\xE1 acontecendo agora. Se algu\xE9m corre risco de vida, ligue 192.",
+      "Seu pedido foi para a equipe de acolhimento do zElo, que responde aqui no chat. Enquanto isso, me conte em poucas palavras o que est\xE1 acontecendo. Se algu\xE9m corre risco de vida, ligue 192.",
     links: [zLink192],
     opcoes: [],
     ctx: { f: "conversa", n: 0 },
   };
+  var zRotuloTela = {
+    atendimentos: "Abrir Atendimentos",
+    forum: "Abrir F\xF3rum",
+    dicas: "Abrir Dicas",
+    ajuda: "Ver telefones de emerg\xEAncia",
+    perfil: "Abrir Perfil",
+  };
+  function zLinks(l) {
+    return (l || []).map((t) => ({ rotulo: zRotuloTela[t], tela: t }));
+  }
+  function zPrimeira(p) {
+    return p.charAt(0).toUpperCase() + p.slice(1) + (/[?]$/.test(p) ? "" : /^(como|qual|quais|o que|onde|quando|quem|posso|tem|ele|a |os |meu|precisa|e |\xE9 )/i.test(p) ? "?" : "");
+  }
   function YS(a, o) {
     let e = Ll(a),
       conversa = o && o.f === "conversa",
-      t = {
-        texto: "Tudo bem. Quando quiser, escolha uma das op\xE7\xF5es ou escreva do seu jeito.",
-        opcoes: xr,
-        ctx: null,
-      };
+      ctxC = conversa ? { f: "conversa", n: o.n + 1 } : null;
     if (
-      /suicid|me matar|quero morrer|nao respira|sem respirar|convuls|desmai|sangr|engasgou|roxo|machucou|caiu/.test(
+      /suicid|me matar|quero morrer|nao respira|sem respirar|convulsionando|esta convulsionando|desmaiou|sangrando muito|engasgou|ficou roxo/.test(
         e,
       )
     )
@@ -18124,129 +18744,69 @@ Error generating stack: ` +
         opcoes: [],
         ctx: { f: "conversa", n: 0 },
       };
-    if (/agora nao|^entendi|voltar ao inicio|nao quero/.test(e)) return t;
-    if (/laudo|escola|bpc|inss|beneficio|documento|cras|matricula/.test(e))
+    if (/^(oi+|ola|bom dia|boa tarde|boa noite|e ai|opa|hey)[\s!.]*$/.test(e))
       return {
-        texto:
-          "O zElo cuida de quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, o caminho \xE9 o CRAS ou a pr\xF3pria escola. Posso ajudar com algo de sa\xFAde?",
+        texto: "Oi. Pode me perguntar sobre o cuidado do dia a dia ou sobre como usar o zElo. Se preferir, a gente s\xF3 conversa.",
         opcoes: xr,
         ctx: null,
       };
-    if (o && O2[o.f] && /(mostrar|passo|sim|pode|proximo|continuar)/.test(e)) {
-      let n = O2[o.f],
-        l = o.i;
-      if (l < n.length) {
-        let s = l === n.length - 1;
-        return {
-          texto: n[l],
-          opcoes: s ? ["Voltar ao in\xEDcio"] : ["Pr\xF3ximo passo", "Agora n\xE3o"],
-          ctx: s ? null : { f: o.f, i: l + 1 },
-          extra: s
-            ? "Esse \xE9 o \xFAltimo passo. Voc\xEA tamb\xE9m encontra dicas escritas por profissionais em Dicas."
-            : null,
-          links: s ? [zLinkDicas, zLinkAtend] : void 0,
-        };
-      }
-    }
-    if (/explicar/.test(e))
+    if (/^(agora nao|entendi|ok|voltar ao inicio|nao quero)$/.test(e))
       return {
-        texto:
-          "S\xE3o dois passos curtos: escolher o dia e o hor\xE1rio e depois confirmar. O atendimento \xE9 gratuito e feito por volunt\xE1rios verificados.",
-        links: [zLinkAtend],
-        opcoes: ["Entendi"],
+        texto: "Tudo bem. Quando quiser, escolha uma op\xE7\xE3o ou escreva do seu jeito.",
+        opcoes: xr,
         ctx: null,
       };
-    if (/profissional|consulta|terapeut|psicolog|fisio|fono|agendar|atendimento/.test(e))
+    let r = zAna.buscar(a),
+      m = r.melhor;
+    if (m && m.pts >= (conversa ? 0.5 : 0.4))
+      return {
+        texto: m.e.resposta,
+        links: zLinks(m.e.links),
+        opcoes: m.e.sugestoes || (conversa ? [] : []),
+        ctx: m.e.id === "so-conversar" ? { f: "conversa", n: 0 } : ctxC,
+      };
+    if (conversa) {
+      let n = o.n + 1,
+        oferecer = n >= 2,
+        resp =
+          /cansad|exaust|sem energia|nao aguento|esgotad/.test(e)
+            ? "Cuidar o tempo todo cansa mesmo, e faz sentido voc\xEA estar assim. Teve algum momento hoje s\xF3 para voc\xEA, nem que seja curto?"
+            : /trist|chor|deprimid|desanim/.test(e)
+              ? "Sinto muito que hoje esteja pesado. Chorar tamb\xE9m \xE9 um jeito de aliviar. O que deixou o dia mais dif\xEDcil?"
+              : /medo|preocup|ansios|nervos|insegur/.test(e)
+                ? "\xC9 natural sentir medo quando a gente cuida de algu\xE9m que ama. O que mais te preocupa agora?"
+                : /sozinh|ninguem|abandon/.test(e)
+                  ? "Voc\xEA n\xE3o est\xE1 s\xF3. Aqui no zElo h\xE1 outras fam\xEDlias que passam por coisas parecidas. Quer me contar mais?"
+                  : /grit|crise|agressiv|bate|se joga|birra/.test(e)
+                    ? "Isso \xE9 dif\xEDcil de viver, e voc\xEA n\xE3o est\xE1 fazendo nada errado por n\xE3o saber. Na hora, ajuda falar pouco e levar a pessoa para um lugar mais quieto. Quer continuar me contando?"
+                    : n === 1
+                      ? "Obrigada por me contar. Estou ouvindo. Quer falar mais sobre isso?"
+                      : "Entendo. Isso \xE9 muita coisa para carregar. Estou aqui com voc\xEA.";
+      return {
+        texto: resp,
+        opcoes: oferecer
+          ? ["Continuar conversando", "Quero falar com um profissional", "Ver dicas para quem cuida"]
+          : [],
+        ctx: { f: "conversa", n },
+        extra: oferecer
+          ? "Se quiser, posso te mostrar outros caminhos. Ou podemos continuar s\xF3 conversando."
+          : null,
+      };
+    }
+    let perto = r.lista.filter((x) => x.pts >= 0.3).slice(0, 3);
+    if (perto.length)
       return {
         texto:
-          "Em Atendimentos voc\xEA v\xEA quem est\xE1 online agora, escolhe o profissional e marca o hor\xE1rio. Quer que eu explique como funciona?",
-        links: [zLinkAtend],
-        opcoes: ["Explicar", "Entendi"],
+          "N\xE3o tenho certeza se entendi. Voc\xEA quis perguntar alguma destas?",
+        opcoes: perto.map((x) => zPrimeira(x.e.perguntas[0])),
         ctx: null,
       };
-    if (/so quero conversar|^conversar|quero conversar|desabafar/.test(e))
-      return {
-        texto: "Estou aqui. O que pesou mais hoje?",
-        opcoes: [],
-        ctx: { f: "conversa", n: 0 },
-      };
-    if (!conversa) {
-      if (/sono|dormir|dorm|noite|acorda/.test(e))
-        return {
-          texto: "O sono pesa em tudo. Posso te mostrar tr\xEAs passos, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "sono", i: 0 },
-        };
-      if (/aliment|engasg|engolir|comer|refeic/.test(e))
-        return {
-          texto: "Entendo. Posso te mostrar tr\xEAs passos para as refei\xE7\xF5es, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "alimentacao", i: 0 },
-        };
-      if (/crise|comportament|agressiv|agita|birra/.test(e))
-        return {
-          texto: "Crises cansam muito quem cuida. Posso te mostrar tr\xEAs passos, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "crises", i: 0 },
-        };
-      if (/comunica|fala|falar pouco|nao fala|prancha/.test(e))
-        return {
-          texto: "Comunicar \xE9 mais do que falar. Posso te mostrar tr\xEAs passos para come\xE7ar, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "comunicacao", i: 0 },
-        };
-      if (/dor|postura|mobilidade|movimento/.test(e))
-        return {
-          texto: "Dor nem sempre aparece em palavras. Posso te mostrar tr\xEAs passos para observar, um de cada vez?",
-          opcoes: ["Mostrar os passos", "Agora n\xE3o"],
-          ctx: { f: "dor", i: 0 },
-        };
-      if (/terapia/.test(e))
-        return {
-          texto:
-            "Em Atendimentos h\xE1 terapeutas ocupacionais, fisioterapeutas e fonoaudi\xF3logos volunt\xE1rios. Voc\xEA tamb\xE9m pode perguntar a outras fam\xEDlias no F\xF3rum.",
-          links: [zLinkAtend, { rotulo: "Abrir F\xF3rum", tela: "forum" }],
-          opcoes: xr,
-          ctx: null,
-        };
-      if (/sem energia|cansad|exaust|nao aguento/.test(e))
-        return {
-          texto:
-            "Voc\xEA n\xE3o precisa dar conta disso sozinha ou sozinho. Quer pedir ajuda agora ou s\xF3 conversar?",
-          opcoes: ["Pedir ajuda agora", "S\xF3 quero conversar"],
-          ctx: null,
-        };
-    }
-    let n = conversa ? o.n + 1 : 1,
-      oferecer = n >= 2,
-      resp;
-    resp = /cansad|exaust|sem energia|nao aguento|esgotad/.test(e)
-      ? "Cuidar o tempo todo cansa mesmo, e faz sentido voc\xEA estar assim. Teve algum momento hoje s\xF3 para voc\xEA, nem que seja curto?"
-      : /trist|chor|deprimid|desanim/.test(e)
-        ? "Sinto muito que hoje esteja pesado. Chorar tamb\xE9m \xE9 um jeito de aliviar. O que deixou o dia mais dif\xEDcil?"
-        : /medo|preocup|ansios|nervos|insegur/.test(e)
-          ? "\xC9 natural sentir medo quando a gente cuida de algu\xE9m que ama. O que mais te preocupa agora?"
-          : /sozinh|ninguem|abandon/.test(e)
-            ? "Voc\xEA n\xE3o est\xE1 s\xF3. Aqui no zElo h\xE1 outras fam\xEDlias que passam por coisas parecidas. Quer me contar mais?"
-            : /grit|crise|agressiv|bate|se joga|birra/.test(e)
-              ? "Isso \xE9 dif\xEDcil de viver, e voc\xEA n\xE3o est\xE1 fazendo nada errado por n\xE3o saber. Na hora, ajuda falar pouco e levar a pessoa para um lugar mais quieto. Quer continuar me contando? Se preferir, a dica abaixo explica o que fazer antes, durante e depois."
-            : /raiva|irritad|brig/.test(e)
-              ? "Raiva tamb\xE9m faz parte de cuidar. N\xE3o te faz uma pessoa pior. O que aconteceu?"
-              : /obrigad|valeu|melhor/.test(e)
-                ? "Fico feliz em ajudar. Estou por aqui quando precisar."
-                : n === 1
-                  ? "Obrigada por me contar. Estou ouvindo. Quer falar mais sobre isso?"
-                  : "Entendo. Isso \xE9 muita coisa para carregar. Estou aqui com voc\xEA.";
     return {
-      texto: resp,
-      opcoes: oferecer
-        ? ["Continuar conversando", "Quero falar com um profissional", "Ver dicas para quem cuida"]
-        : [],
-      ctx: { f: "conversa", n },
-      extra: oferecer
-        ? "Se quiser, posso te mostrar outros caminhos. Ou podemos continuar s\xF3 conversando."
-        : null,
-      links: /grit|crise|agressiv|bate|se joga|birra/.test(e) ? [zLinkDicas] : void 0,
+      texto:
+        "Ainda n\xE3o sei responder isso. Eu s\xF3 sei o que est\xE1 na base do zElo, e essa pergunta n\xE3o est\xE1 l\xE1. Voc\xEA pode perguntar no F\xF3rum ou falar com um profissional.",
+      links: zLinks(["forum", "atendimentos"]),
+      opcoes: xr,
+      ctx: null,
     };
   }
   function Mm(a) {
@@ -18287,10 +18847,10 @@ Error generating stack: ` +
             (0, r.jsx)("span", { className: "avatar avatar--ana", "aria-hidden": "true", children: "A" }),
             (0, r.jsxs)("div", {
               children: [
-                (0, r.jsx)("h1", { tabIndex: -1, children: "Ana (apoio)" }),
+                (0, r.jsx)("h1", { tabIndex: -1, children: "Ana" }),
                 (0, r.jsxs)("p", {
                   className: "apoio",
-                  children: [(0, r.jsx)("span", { className: "online-ponto", children: "Online" }), " \xB7 Equipe de acolhimento do zElo"],
+                  children: "Assistente do zElo. Responde com a base de perguntas revisada pela equipe."
                 }),
               ],
             }),
@@ -18317,7 +18877,7 @@ Error generating stack: ` +
               className: "chat-fluxo",
               role: "log",
               "aria-live": "polite",
-              "aria-label": "Conversa com Ana (apoio)",
+              "aria-label": "Conversa com a Ana",
               children: [
                 o.msgs.map((I, f) =>
                   (0, r.jsxs)(
@@ -18345,7 +18905,7 @@ Error generating stack: ` +
                         (0, r.jsxs)("span", {
                           className: "apoio msg-meta",
                           children: [
-                            I.de === "ana" ? "Ana (apoio)" : "Voc\xEA",
+                            I.de === "ana" ? "Ana" : "Voc\xEA",
                             " \xB7 ",
                             I.hora,
                             I.de === "voce" && o.msgs[f + 1] ? " \xB7 Lida" : "",
@@ -18361,7 +18921,7 @@ Error generating stack: ` +
                     className: "msg msg--ana",
                     children: (0, r.jsx)("div", {
                       className: "balao balao--digitando",
-                      children: "Ana est\xE1 escrevendo...",
+                      children: "Ana est\xE1 procurando a resposta",
                     }),
                   }),
                 (0, r.jsx)("div", { ref: i }),
@@ -18456,13 +19016,13 @@ Error generating stack: ` +
               children: [
                 (0, r.jsx)("h1", {
                   tabIndex: -1,
-                  children: "F\xF3rum de respons\xE1veis",
+                  children: "F\xF3rum",
                 }),
                 (0, r.jsx)("p", {
                   className: "lead",
                   style: { fontSize: 18 },
                   children:
-                    "Conversas entre fam\xEDlias e profissionais, em ordem de atividade.",
+                    "Conversas entre fam\xEDlias, pessoas com defici\xEAncia e profissionais, das mais recentes para as mais antigas.",
                 }),
               ],
             }),
@@ -18641,7 +19201,8 @@ Error generating stack: ` +
                             " ",
                             (0, r.jsx)(Bo, {
                               forte: !0,
-                              children: "Profissional",
+                              icone: "elo",
+                              children: "Verificado",
                             }),
                           ],
                         }),
@@ -18930,7 +19491,7 @@ Error generating stack: ` +
           : (0, r.jsxs)("div", {
               className: "vazio",
               children: [
-                (0, r.jsx)("h3", { children: "Nenhuma dica encontrada." }),
+                (0, r.jsx)("h3", { children: "Nenhuma dica encontrada" }),
                 (0, r.jsx)("p", {
                   children:
                     t === "Todas"
@@ -19138,7 +19699,7 @@ Error generating stack: ` +
                                             className: "etiquetas",
                                             children: [
                                               (0, r.jsx)(Bo, {
-                                                icone: "confirmar",
+                                                icone: "elo",
                                                 children: "Verificado",
                                               }),
                                               f.agora &&
@@ -19223,7 +19784,7 @@ Error generating stack: ` +
                           className: "vazio",
                           children: [
                             (0, r.jsx)("h3", {
-                              children: "Nenhum profissional encontrado.",
+                              children: "Nenhum profissional encontrado",
                             }),
                             (0, r.jsx)("p", {
                               children:
@@ -19300,7 +19861,7 @@ Error generating stack: ` +
                     children: [
                       (0, r.jsx)("h3", {
                         children:
-                          "Voc\xEA ainda n\xE3o tem atendimentos marcados.",
+                          "Voc\xEA ainda n\xE3o tem atendimentos marcados",
                       }),
                       (0, r.jsx)("p", {
                         children:
@@ -19581,7 +20142,7 @@ Error generating stack: ` +
             (0, r.jsxs)("span", {
               className: "cartao-acao-texto",
               children: [
-                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia m\xE9dica? Fale com a Ana no chat" }),
+                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia m\xE9dica? Pe\xE7a apoio pelo chat" }),
                 (0, r.jsxs)("span", {
                   className: "apoio",
                   children: [
@@ -19690,19 +20251,19 @@ Error generating stack: ` +
           }),
           (0, r.jsx)("p", {
             className: "splash-frase",
-            children: "Dire\xE7\xE3o, ajuda e apoio para quem cuida.",
+            children: "Dire\xE7\xE3o, ajuda e apoio para quem cuida",
           }),
         ],
       })
     );
   }
-  var R2 = { tipo: null, direcionamento: [], especificidades: [], quem: null },
+  var R2 = { tipo: [], direcionamento: [], especificidades: [], quem: null },
     z2 = {
       msgs: [
         {
           de: "ana",
           texto:
-            "Oi, eu sou a Ana, da equipe de acolhimento do zElo. Pode me contar o que precisa, tirar uma d\xFAvida ou s\xF3 conversar.",
+            "Oi, eu sou a Ana, a assistente do zElo. Posso responder d\xFAvidas do dia a dia de cuidado e sobre o app. Escreva do seu jeito, mesmo com erro de digita\xE7\xE3o.",
           hora: "09:12",
         },
       ],
@@ -19720,11 +20281,11 @@ Error generating stack: ` +
       },
     ],
     zFrases = {
-      objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3.",
-      login: "Que bom ter voc\xEA aqui.",
-      cadastro: "Obrigado por querer ajudar.",
-      "status-voluntario": "Falta pouco para voc\xEA come\xE7ar.",
-      diagnostico: "Leva menos de 2 minutos.",
+      objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3",
+      login: "Que bom ter voc\xEA aqui",
+      cadastro: "Obrigado por querer ajudar",
+      "status-voluntario": "Falta pouco para voc\xEA come\xE7ar",
+      diagnostico: "Leva menos de 2 minutos",
     };
   function Dm() {
     let [a, o] = (0, L.useState)("objetivo"),
@@ -19858,7 +20419,7 @@ Error generating stack: ` +
       case "objetivo":
         xa = (0, r.jsx)(FS, {
           escolher: (H) => {
-            (l(H), o(H === "responsavel" ? "login" : "cadastro"));
+            (l(H), o(H === "voluntario" ? "cadastro" : "login"));
           },
         });
         break;

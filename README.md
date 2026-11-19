@@ -16,9 +16,13 @@ Abra `prototipo/index.html` no navegador. Também dá para publicar a pasta `pro
 | --- | --- |
 | Cores, fontes e temas (claro, escuro, alto contraste) | `prototipo/tokens.css` |
 | Layout e aparência dos componentes | `prototipo/app.css` |
-| Telas, textos, dados e respostas do chat | `codigo/app-fonte.js` |
+| Telas, textos e dados | `codigo/app-fonte.js` |
+| Perguntas e respostas da Ana, e sinônimos | `codigo/ana-base.js` |
+| Como a Ana compara as perguntas (sinônimos, erros de digitação) | `codigo/ana-motor.js` |
 
-Depois de mudar `codigo/app-fonte.js`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
+Para a Ana aprender uma resposta nova, acrescente um item em `zAnaBase` com várias formas de perguntar a mesma coisa. Palavras com o mesmo sentido entram em `zAnaSinonimos`.
+
+Depois de mudar qualquer arquivo em `codigo/`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
 
 ## Como voltar a uma versão anterior
 
