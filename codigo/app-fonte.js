@@ -897,7 +897,11 @@
           .filter(
             (i) =>
               !o.some(
-                (c) => c.diaId === n.id && c.hora === i,
+                (c) =>
+                  c.diaId === n.id &&
+                  c.hora === i &&
+                  (!c.profId || c.profId === a.id) &&
+                  c.status !== "cancelado",
               ),
           );
         s.length && t.push({ ...n, horas: s });
@@ -908,7 +912,9 @@
   function zNovos(id, n) {
     return id === "chat"
       ? n + (n === 1 ? " mensagem nova" : " mensagens novas")
-      : n + (n === 1 ? " novo" : " novos");
+      : id === "notif"
+        ? n + (n === 1 ? " nova" : " novas")
+        : n + (n === 1 ? " novo" : " novos");
   }
   var zSort = (lista) =>
     [...lista].sort(
@@ -955,6 +961,7 @@
         ic: "calendario",
         tela: "atendimentos",
       },
+      { id: "notif", rotulo: "Notifica\xE7\xF5es", ic: "sino", tela: "notificacoes" },
       { id: "perfil", rotulo: "Perfil", ic: "perfil", tela: "perfil" },
     ],
     US = {
@@ -968,6 +975,8 @@
       dicas: "dicas",
       dica: "dicas",
       atendimentos: "atend",
+      sala: "atend",
+      notificacoes: "notif",
     },
     xS = [
       "objetivo",
@@ -975,6 +984,7 @@
       "diagnostico-entrada",
       "cadastro",
       "status-voluntario",
+      "painel",
     ];
   function zIniciais(nome) {
     let p = (nome || "").trim().split(/\s+/).filter(Boolean);
@@ -1104,6 +1114,18 @@
                   }),
                 }),
                 e &&
+                  (0, r.jsxs)("button", {
+                    type: "button",
+                    className: "topo-sino",
+                    onClick: () => n("notificacoes"),
+                    "aria-current": o === "notif" ? "page" : void 0,
+                    "aria-label": l.notif > 0 ? "Notifica\xE7\xF5es, " + l.notif + (l.notif === 1 ? " nova" : " novas") : "Notifica\xE7\xF5es",
+                    children: [
+                      (0, r.jsx)(la, { n: "sino", size: 22 }),
+                      l.notif > 0 && (0, r.jsx)("span", { className: "contador", "aria-hidden": "true", children: l.notif }),
+                    ],
+                  }),
+                e &&
                   (0, r.jsx)("button", {
                     type: "button",
                     className: "topo-avatar",
@@ -1143,7 +1165,7 @@
             "aria-label": "Menu principal (celular)",
             children: (0, r.jsx)("ul", {
               children: zS
-                .filter((c) => c.id !== "perfil")
+                .filter((c) => c.id !== "perfil" && c.id !== "notif")
                 .map((c) => itemMenu(c, !0)),
             }),
           }),
@@ -1281,6 +1303,18 @@
           }),
         }),
         st && (0, r.jsx)(zTemaRapido, { tema: tm, setTema: st }),
+        (0, r.jsxs)("p", {
+          className: "apoio equipe-link",
+          children: [
+            "Faz parte da equipe zElo? ",
+            (0, r.jsx)("button", {
+              type: "button",
+              className: "link",
+              onClick: () => a("equipe"),
+              children: "Entrar no painel da equipe",
+            }),
+          ],
+        }),
       ],
     });
   }
@@ -1712,7 +1746,7 @@
                 (0, r.jsx)("span", {
                   className: "campo-ajuda apoio",
                   children:
-                    "Foto ou PDF do diploma ou da carteira do conselho.",
+                    "Foto ou PDF do diploma ou da carteira do conselho. S\xF3 a pessoa da equipe que faz a verifica\xE7\xE3o v\xEA o arquivo, e ele \xE9 apagado depois da an\xE1lise.",
                 }),
                 (0, r.jsxs)("div", {
                   className: "arquivo-linha",
@@ -1795,7 +1829,8 @@
         }),
         (0, r.jsx)(Do, {
           tipo: "info",
-          children: "Sua aprova\xE7\xE3o sai em at\xE9 24 horas.",
+          children:
+            "Uma pessoa da equipe zElo confere o seu documento em at\xE9 24 horas.",
         }),
         (0, r.jsxs)("ul", {
           className: "etapas",
@@ -1809,7 +1844,15 @@
             (0, r.jsxs)("li", {
               children: [
                 (0, r.jsx)("span", {
-                  children: "An\xE1lise do t\xEDtulo profissional",
+                  children: "Consulta do registro no conselho profissional",
+                }),
+                (0, r.jsx)(Bo, { icone: "confirmar", children: "Feito" }),
+              ],
+            }),
+            (0, r.jsxs)("li", {
+              children: [
+                (0, r.jsx)("span", {
+                  children: "An\xE1lise do documento por uma pessoa da equipe",
                 }),
                 (0, r.jsx)(Bo, { forte: !0, children: "Em andamento" }),
               ],
@@ -1825,7 +1868,8 @@
         (0, r.jsx)("p", {
           className: "apoio medida",
           style: { marginTop: 24 },
-          children: "Enviaremos o resultado para o seu e-mail.",
+          children:
+            "Enviaremos o resultado para o seu e-mail. Depois da an\xE1lise, o documento \xE9 apagado. Guardamos s\xF3 o seu nome, o n\xFAmero do registro e a data da verifica\xE7\xE3o.",
         }),
         (0, r.jsxs)("div", {
           className: "acoes",
@@ -3462,6 +3506,8 @@
     abrirProf: t,
     cancelar: n,
     confirmado: l,
+    remarcar: rm,
+    sala: sl,
   }) {
     let [s, i] = (0, L.useState)(""),
       [c, m] = (0, L.useState)("Todas"),
@@ -3495,8 +3541,11 @@
             className: "alerta-bloco",
             children: (0, r.jsx)(Do, {
               tipo: "ok",
-              children:
-                "Atendimento marcado. Enviamos um lembrete para o seu e-mail.",
+              children: {
+                marcado: "Atendimento marcado. Enviamos um lembrete para o seu e-mail.",
+                remarcado: "Atendimento remarcado. O profissional recebeu um aviso.",
+                cancelado: "Atendimento cancelado. O profissional recebeu um aviso e o hor\xE1rio ficou livre.",
+              }[l],
             }),
           }),
         (0, r.jsxs)("div", {
@@ -3699,79 +3748,7 @@
                         }),
                   ],
                 })
-              : a.length
-                ? (0, r.jsx)("ul", {
-                    className: "lista",
-                    style: { marginTop: 32 },
-                    children: zSort(a).map((f) =>
-                      (0, r.jsx)(
-                        "li",
-                        {
-                          children: (0, r.jsxs)("div", {
-                            className: "linha",
-                            style: { cursor: "default" },
-                            children: [
-                              (0, r.jsx)(qr, { p: f.prof }),
-                              (0, r.jsxs)("span", {
-                                className: "linha-texto",
-                                children: [
-                                  (0, r.jsxs)("span", {
-                                    className: "linha-titulo",
-                                    children: [
-                                      f.prof.area,
-                                      " com ",
-                                      f.prof.nome,
-                                    ],
-                                  }),
-                                  (0, r.jsxs)("span", {
-                                    className: "apoio linha-meta",
-                                    style: {
-                                      color: "var(--texto)",
-                                      fontSize: 18,
-                                    },
-                                    children: [f.dia, ", \xE0s ", f.hora],
-                                  }),
-                                  (0, r.jsx)("span", {
-                                    className: "apoio linha-meta",
-                                    children: f.onde || f.prof.onde,
-                                  }),
-                                  (0, r.jsx)("span", {
-                                    className: "linha-etiquetas",
-                                    children: (0, r.jsx)("button", {
-                                      type: "button",
-                                      className: "link",
-                                      onClick: () => n(f),
-                                      children: "Cancelar agendamento",
-                                    }),
-                                  }),
-                                ],
-                              }),
-                              (0, r.jsx)(Bo, {
-                                forte: !0,
-                                icone: "confirmar",
-                                children: "Confirmado",
-                              }),
-                            ],
-                          }),
-                        },
-                        `${f.profId}${f.diaId}${f.hora}`,
-                      ),
-                    ),
-                  })
-                : (0, r.jsxs)("div", {
-                    className: "vazio",
-                    style: { marginTop: 32 },
-                    children: [
-                      (0, r.jsx)("h3", {
-                        children:
-                          "Voc\xEA ainda n\xE3o tem atendimentos marcados",
-                      }),
-                      (0, r.jsx)("p", {
-                        children:
-                          "Use Buscar especialistas para escolher um profissional e um hor\xE1rio.",
-                      }),
-                    ],
-                  }),
+              : (0, r.jsx)(zMeusAgend, { agenda: a, cancelar: n, remarcar: rm, sala: sl }),
         }),
       ],
     });
@@ -3785,11 +3762,13 @@
     setSel: l,
     sair: s,
     confirmar: i,
+    ocupados: oc,
+    remarcando: rmc,
   }) {
-    let c = Ur(a, o),
+    let c = Ur(a, oc || o),
       m = c.find((f) => f.id === n.dia),
       modos = a.modos || null,
-      ja = zSort(o.filter((x) => x.profId === a.id)),
+      ja = rmc ? [] : zSort(o.filter((x) => x.profId === a.id)),
       I = e === 1 ? !!(n.dia && n.hora && (!modos || n.modo)) : !0,
       ondeEscolhido = modos ? n.modo : a.onde;
     return (0, r.jsxs)(
@@ -3810,7 +3789,9 @@
                 tabIndex: -1,
                 children:
                   e === 1
-                    ? "Escolha o dia e o hor\xE1rio"
+                    ? rmc
+                      ? "Escolha o novo dia e hor\xE1rio"
+                      : "Escolha o dia e o hor\xE1rio"
                     : "Confira e confirme",
               }),
             ],
@@ -3846,7 +3827,21 @@
                   ja[0].dia.toLowerCase(),
                   ", \xE0s ",
                   ja[0].hora,
-                  ". Se quiser trocar o hor\xE1rio, cancele o anterior em Meus agendamentos. Se precisa de mais uma consulta, pode continuar.",
+                  ". Se quiser trocar o hor\xE1rio, use Remarcar em Meus agendamentos. Se precisa de mais uma consulta, pode continuar.",
+                ],
+              }),
+            }),
+          rmc &&
+            (0, r.jsx)("div", {
+              className: "alerta-bloco",
+              children: (0, r.jsxs)(Do, {
+                tipo: "info",
+                children: [
+                  "Voc\xEA est\xE1 remarcando o atendimento de ",
+                  rmc.dia.toLowerCase(),
+                  ", \xE0s ",
+                  rmc.hora,
+                  ". O hor\xE1rio antigo fica livre quando voc\xEA confirmar o novo.",
                 ],
               }),
             }),
@@ -3969,7 +3964,12 @@
                         hora: n.hora,
                         onde: ondeEscolhido,
                       })),
-                children: e === 2 ? "Confirmar agendamento" : "Continuar",
+                children:
+                  e === 2
+                    ? rmc
+                      ? "Confirmar novo hor\xE1rio"
+                      : "Confirmar agendamento"
+                    : "Continuar",
               }),
               !I &&
                 (0, r.jsx)("span", {
@@ -4200,23 +4200,833 @@
       opcoes: null,
       ctx: null,
     },
-    zAgendaInicial = [
-      {
-        profId: "p1",
-        prof: At[0],
-        diaId: "d5",
-        dia: "Quinta, 5 de novembro",
-        hora: "10:30",
-        onde: "Presencial na Boa Vista, Recife",
-      },
-    ],
     zFrases = {
       objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3",
       login: "Que bom ter voc\xEA aqui",
       cadastro: "Obrigado por querer ajudar",
       "status-voluntario": "Falta pouco para voc\xEA come\xE7ar",
+      painel: "Painel da equipe",
       diagnostico: "Leva menos de 2 minutos",
     };
+  // ===================================================================
+  // Novidades (sugestões da monitora Millena, novembro de 2026)
+  // 1. Atendimentos: a família remarca e cancela, o voluntário tem a
+  //    Minha agenda e a equipe do zElo tem um painel.
+  // 2. Sala de vídeo dentro do zElo (no app real: Jitsi Meet).
+  // 3. Verificação de voluntários: o sistema confere o registro no
+  //    conselho e uma pessoa da equipe aprova. O arquivo é apagado depois.
+  // 4. Notificações do fórum, dos atendimentos e do cadastro.
+  // ===================================================================
+  Object.assign(OS, {
+    sino: zIc('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2.5h-15z"/><path d="M10 21h4"/>'),
+    microfone: zIc('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
+    legenda: zIc('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 12h4M13 12h4M7 15.5h7"/>'),
+    documento: zIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'),
+    sair: zIc('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8l-4 4 4 4M6 12h10"/>'),
+  });
+
+  // Atalho para escrever as telas novas sem repetir (0, r.jsx)(...).
+  function zh(t, p, ...c) {
+    let q = { ...(p || {}) },
+      k = q.key;
+    delete q.key;
+    if (c.length === 1) q.children = c[0];
+    else if (c.length > 1) q.children = c;
+    return (c.length > 1 ? r.jsxs : r.jsx)(t, q, k);
+  }
+  var zDiaRotulo = (id) => (RS.find((d) => d.id === id) || {}).rotulo || "",
+    zOnline = (f) => /Online/.test(f.onde || ""),
+    zOndeTexto = (f) => (zOnline(f) ? "Online, na sala de v\xEDdeo do zElo" : f.onde),
+    zPara = (papel) => (papel === "voluntario" ? "voluntario" : "familia"),
+    zSemana = ["Segunda", "Ter\xE7a", "Quarta", "Quinta", "Sexta", "S\xE1bado"],
+    zHorasOp = ["08:00", "09:00", "10:30", "14:00", "15:30", "17:00"],
+    zModosOp = ["Online por v\xEDdeo", "Presencial no meu consult\xF3rio"],
+    zDispInicial = {
+      dias: ["Ter\xE7a", "Quinta", "Segunda"],
+      horas: ["09:00", "10:30", "14:00"],
+      modos: ["Online por v\xEDdeo"],
+    };
+  function zNovoAt(o) {
+    return {
+      status: "confirmado",
+      ...o,
+      dia: zDiaRotulo(o.diaId),
+      prof: o.profId === "pv" ? null : At.find((p) => p.id === o.profId),
+    };
+  }
+  // Agenda de todo mundo. familia "voce" é a pessoa usando o protótipo.
+  // profId "pv" é o voluntário usando o protótipo.
+  var zAgInicial = [
+      zNovoAt({ id: "a1", profId: "p1", diaId: "d5", hora: "10:30", onde: "Presencial na Boa Vista, Recife", familia: "voce" }),
+      zNovoAt({ id: "a6", profId: "p5", diaId: "d6", hora: "14:00", onde: "Online por v\xEDdeo", familia: "voce" }),
+      zNovoAt({ id: "a2", profId: "p2", diaId: "d4", hora: "10:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Joana P." }),
+      zNovoAt({ id: "a3", profId: "p3", diaId: "d3", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Marcos L." }),
+      zNovoAt({ id: "a4", profId: "p4", diaId: "d6", hora: "09:00", onde: "Presencial em Olinda", familia: "Fam\xEDlia de Rita S.", status: "cancelado", motivo: "A pedido da fam\xEDlia" }),
+      zNovoAt({ id: "a5", profId: "p8", diaId: "d5", hora: "15:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Paulo M." }),
+      zNovoAt({ id: "v1", profId: "pv", diaId: "d3", hora: "09:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Ana C.", assunto: "Rotina de sono, crian\xE7a de 6 anos com TEA" }),
+      zNovoAt({ id: "v2", profId: "pv", diaId: "d5", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Lu\xEDs F.", assunto: "Crises de choro no fim da tarde" }),
+      zNovoAt({ id: "v3", profId: "pv", diaId: "d9", hora: "10:30", onde: "Online por v\xEDdeo", familia: "L\xFAcia R., pessoa com defici\xEAncia", assunto: "Ansiedade antes de consultas" }),
+    ],
+    zNotifsIniciais = [
+      { id: "n1", para: "familia", tipo: "forum", titulo: "Nova resposta em t\xF3pico que voc\xEA segue", texto: "Dra. Beatriz Nogueira respondeu em “Meu filho dorme pouco: o que funcionou a\xED?”", quando: "h\xE1 20 min", lida: !1, topico: "t1" },
+      { id: "n2", para: "familia", tipo: "atend", titulo: "Lembrete de atendimento", texto: "Quinta, 5 de novembro, \xE0s 10:30, com Dra. Helena Cavalcanti.", quando: "hoje, 08:00", lida: !1, tela: "atendimentos-meus" },
+      { id: "n3", para: "familia", tipo: "forum", titulo: "T\xF3pico novo sobre o que voc\xEA escolheu", texto: "“Crises de choro no fim da tarde: como voc\xEAs lidam?”", quando: "ontem", lida: !0, topico: "t6" },
+      { id: "n4", para: "voluntario", tipo: "cadastro", titulo: "Cadastro aprovado", texto: "Uma pessoa da equipe conferiu o seu registro. O documento que voc\xEA enviou foi apagado.", quando: "hoje, 09:10", lida: !1, tela: "inicio" },
+      { id: "n5", para: "voluntario", tipo: "atend", titulo: "Novo atendimento marcado", texto: "Fam\xEDlia de Ana C. marcou ter\xE7a, 3 de novembro, \xE0s 09:00.", quando: "hoje, 09:40", lida: !1, tela: "atendimentos" },
+      { id: "n6", para: "voluntario", tipo: "forum", titulo: "Pergunta da sua \xE1rea sem resposta", texto: "“Meu filho dorme pouco: o que funcionou a\xED?” espera a resposta de um profissional.", quando: "ontem", lida: !0, topico: "t1" },
+    ],
+    // Cadastros de voluntários esperando análise. "checagem" é o resultado
+    // automático da consulta ao conselho profissional.
+    zPendentes = [
+      { id: "c1", nome: "Patr\xEDcia Lemos", area: "Fonoaudiologia", registro: "CRFa 4-12290", cidade: "Recife", enviado: "h\xE1 3 horas", arquivo: "carteira-crfa.pdf", checagem: { ok: !0, texto: "Registro ativo no CRFa 4. O nome confere." }, status: "pendente" },
+      { id: "c2", nome: "Marcelo Arruda", area: "Psicologia", registro: "CRP 02/31877", cidade: "Caruaru", enviado: "h\xE1 1 dia", arquivo: "diploma.jpg", checagem: { ok: !1, texto: "Registro encontrado, mas o nome no conselho \xE9 diferente. Confira no documento." }, status: "pendente" },
+      { id: "c3", nome: "Vera Souto", area: "Enfermagem", registro: "COREN-PE 7781", cidade: "Olinda", enviado: "h\xE1 2 dias", arquivo: "coren.pdf", checagem: { ok: !1, texto: "N\xE3o achamos este n\xFAmero no COREN-PE. Pode ser erro de digita\xE7\xE3o." }, status: "pendente" },
+    ];
+  function zChecar(reg) {
+    return /\d{4,}/.test(reg || "")
+      ? { ok: !0, texto: "Registro ativo no conselho. O nome confere." }
+      : { ok: !1, texto: "N\xE3o achamos este n\xFAmero no conselho. Confira no documento." };
+  }
+  function zAgora() {
+    let d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  // ---------- Pedaços reaproveitados ----------
+  function zEscolherHorario({ prof: p, ocupados: oc, sel: s, setSel: ss, rotulo: rt }) {
+    let dias = Ur(p, oc);
+    if (!dias.length)
+      return zh("p", { className: "apoio" }, "Sem hor\xE1rios livres nesta semana.");
+    return zh(
+      "div",
+      { role: "group", "aria-label": rt || "Dia e hor\xE1rio" },
+      dias.map((f) =>
+        zh(
+          "div",
+          { className: "dia", key: f.id },
+          zh("h3", null, f.rotulo),
+          zh(
+            "div",
+            { className: "horarios" },
+            f.horas.map((u) => {
+              let on = s.dia === f.id && s.hora === u;
+              return (0, r.jsx)(
+                ia,
+                { sec: !0, peq: !0, "aria-pressed": on, icone: on ? "confirmar" : void 0, onClick: () => ss({ ...s, dia: f.id, hora: u }), children: u },
+                u,
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+  function zCancelar({ idp, motivos, aviso, confirmar, voltar }) {
+    let [m, setM] = (0, L.useState)(motivos ? motivos[0] : "");
+    return zh(
+      "div",
+      { className: "painel-acao", role: "group", "aria-label": "Cancelar atendimento" },
+      zh("p", { className: "linha-titulo" }, "Cancelar este atendimento?"),
+      aviso && zh("p", { className: "apoio" }, aviso),
+      motivos &&
+        (0, r.jsx)(Za, {
+          id: "motivo-" + idp,
+          como: "select",
+          rotulo: "Motivo",
+          value: m,
+          onChange: (e) => setM(e.target.value),
+          children: motivos.map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
+        }),
+      zh(
+        "div",
+        { className: "acoes--linha" },
+        (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", onClick: () => confirmar(m), children: "Sim, cancelar" }),
+        (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: voltar, children: "N\xE3o, manter" }),
+      ),
+    );
+  }
+  function zRemarcarBloco({ prof: p, ocupados: oc, confirmar, voltar, aviso }) {
+    let [s, ss] = (0, L.useState)({ dia: null, hora: null }),
+      pronto = !!(s.dia && s.hora);
+    return zh(
+      "div",
+      { className: "painel-acao", role: "group", "aria-label": "Remarcar atendimento" },
+      zh("p", { className: "linha-titulo" }, "Escolha o novo dia e hor\xE1rio"),
+      aviso && zh("p", { className: "apoio" }, aviso),
+      (0, r.jsx)(zEscolherHorario, { prof: p, ocupados: oc, sel: s, setSel: ss, rotulo: "Novo dia e hor\xE1rio" }),
+      zh(
+        "div",
+        { className: "acoes--linha" },
+        (0, r.jsx)(ia, { peq: !0, disabled: !pronto, "aria-disabled": !pronto, icone: "confirmar", onClick: () => pronto && confirmar(s), children: "Confirmar novo hor\xE1rio" }),
+        (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: voltar, children: "Voltar" }),
+      ),
+    );
+  }
+  function zAbas({ abas, atual, setAtual, rotulo, id }) {
+    return zh(
+      "div",
+      { className: "abas", role: "tablist", "aria-label": rotulo },
+      abas.map(([k, txt, n]) =>
+        zh(
+          "button",
+          { key: k, type: "button", role: "tab", id: id + "-aba-" + k, "aria-selected": atual === k, "aria-controls": id + "-painel", className: "aba", onClick: () => setAtual(k) },
+          txt,
+          n > 0 ? zh("span", { className: "contador aba-contador" }, n) : null,
+        ),
+      ),
+    );
+  }
+
+  // ---------- 1a. Meus agendamentos (família) ----------
+  function zMeusAgend({ agenda: a, cancelar, remarcar, sala }) {
+    let [ab, setAb] = (0, L.useState)(null);
+    if (!a.length)
+      return zh(
+        "div",
+        { className: "vazio", style: { marginTop: 32 } },
+        zh("h3", null, "Voc\xEA ainda n\xE3o tem atendimentos marcados"),
+        zh("p", null, "Use Buscar especialistas para escolher um profissional e um hor\xE1rio."),
+      );
+    return zh(
+      "ul",
+      { className: "lista", style: { marginTop: 32 } },
+      zSort(a).map((f) =>
+        zh(
+          "li",
+          { key: f.id },
+          zh(
+            "div",
+            { className: "linha linha--agenda" },
+            (0, r.jsx)(qr, { p: f.prof }),
+            zh(
+              "span",
+              { className: "linha-texto" },
+              zh("span", { className: "linha-titulo" }, f.prof.area, " com ", f.prof.nome),
+              zh("span", { className: "linha-meta linha-quando" }, f.dia, ", \xE0s ", f.hora),
+              zh("span", { className: "apoio linha-meta" }, zOndeTexto(f)),
+              zh(
+                "span",
+                { className: "linha-etiquetas" },
+                (0, r.jsx)(Bo, { forte: !0, icone: "confirmar", children: f.remarcado ? "Remarcado" : "Confirmado" }),
+              ),
+              ab === f.id
+                ? (0, r.jsx)(zCancelar, {
+                    idp: f.id,
+                    aviso: "O profissional recebe um aviso e o hor\xE1rio fica livre para outra fam\xEDlia.",
+                    confirmar: () => (setAb(null), cancelar(f)),
+                    voltar: () => setAb(null),
+                  })
+                : zh(
+                    "span",
+                    { className: "agenda-acoes" },
+                    zOnline(f) && (0, r.jsx)(ia, { peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
+                    (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => remarcar(f), children: "Remarcar" }),
+                    zh("button", { type: "button", className: "link link--perigo", onClick: () => setAb(f.id) }, "Cancelar"),
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------- 1b. Minha agenda (voluntário) ----------
+  function zMinhaAgenda({ prof: p, agenda: a, ocupados: oc, disp, setDisp, cancelar, remarcar, sala }) {
+    let [aba, setAba] = (0, L.useState)("proximos"),
+      [ab, setAb] = (0, L.useState)(null),
+      [ok, setOk] = (0, L.useState)(""),
+      [rasc, setRasc] = (0, L.useState)(disp),
+      [falta, setFalta] = (0, L.useState)(""),
+      alternar = (campo, v) =>
+        setRasc({ ...rasc, [campo]: rasc[campo].includes(v) ? rasc[campo].filter((x) => x !== v) : [...rasc[campo], v] }),
+      grupo = (titulo, campo, itens) =>
+        zh(
+          "div",
+          { className: "hor-grupo" },
+          zh("h2", { className: "h-pequeno" }, titulo),
+          zh(
+            "div",
+            { className: "horarios", role: "group", "aria-label": titulo },
+            itens.map((v) =>
+              (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": rasc[campo].includes(v), icone: rasc[campo].includes(v) ? "confirmar" : void 0, onClick: () => alternar(campo, v), children: v }, v),
+            ),
+          ),
+        );
+    return zh(
+      "section",
+      { className: "entra" },
+      zh(
+        "header",
+        { className: "cabeca", style: { marginBottom: 24 } },
+        zh("h1", { tabIndex: -1 }, "Minha agenda"),
+        zh("p", { className: "lead", style: { fontSize: 18 } }, "Seus atendimentos com as fam\xEDlias e os hor\xE1rios em que voc\xEA atende."),
+      ),
+      ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
+      (0, r.jsx)(zAbas, {
+        id: "agenda",
+        rotulo: "Minha agenda",
+        atual: aba,
+        setAtual: (k) => (setAba(k), setOk("")),
+        abas: [["proximos", "Pr\xF3ximos atendimentos", a.length], ["horarios", "Meus hor\xE1rios"]],
+      }),
+      zh(
+        "div",
+        { id: "agenda-painel", role: "tabpanel", "aria-labelledby": "agenda-aba-" + aba },
+        aba === "proximos"
+          ? a.length
+            ? zh(
+                "ul",
+                { className: "lista", style: { marginTop: 32 } },
+                zSort(a).map((f) =>
+                  zh(
+                    "li",
+                    { key: f.id },
+                    zh(
+                      "div",
+                      { className: "linha linha--agenda" },
+                      (0, r.jsx)(qr, { p: { iniciais: zIniciais(f.familia.replace(/^Fam\xEDlia de /, "")) } }),
+                      zh(
+                        "span",
+                        { className: "linha-texto" },
+                        zh("span", { className: "linha-titulo" }, f.familia),
+                        zh("span", { className: "linha-meta linha-quando" }, f.dia, ", \xE0s ", f.hora),
+                        zh("span", { className: "apoio linha-meta" }, zOndeTexto(f)),
+                        f.assunto && zh("span", { className: "apoio linha-meta" }, "Assunto: ", f.assunto),
+                        f.remarcado && zh("span", { className: "linha-etiquetas" }, (0, r.jsx)(Bo, { children: "Remarcado" })),
+                        ab && ab.id === f.id && ab.modo === "cancelar"
+                          ? (0, r.jsx)(zCancelar, {
+                              idp: f.id,
+                              motivos: ["Imprevisto pessoal", "Problema de sa\xFAde", "N\xE3o vou conseguir no hor\xE1rio", "Outro motivo"],
+                              aviso: "A fam\xEDlia recebe um aviso no app e por e-mail, com o motivo.",
+                              confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. A fam\xEDlia foi avisada.")),
+                              voltar: () => setAb(null),
+                            })
+                          : ab && ab.id === f.id && ab.modo === "remarcar"
+                            ? (0, r.jsx)(zRemarcarBloco, {
+                                prof: p,
+                                ocupados: oc,
+                                aviso: "Aparecem s\xF3 os seus hor\xE1rios livres. A fam\xEDlia recebe um aviso com o novo hor\xE1rio.",
+                                confirmar: (s) => (setAb(null), remarcar(f, s), setOk("Atendimento remarcado. A fam\xEDlia recebe um aviso no app e por e-mail.")),
+                                voltar: () => setAb(null),
+                              })
+                            : zh(
+                                "span",
+                                { className: "agenda-acoes" },
+                                zOnline(f) && (0, r.jsx)(ia, { peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
+                                (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
+                                zh("button", { type: "button", className: "link link--perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })) }, "Cancelar"),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : zh(
+                "div",
+                { className: "vazio", style: { marginTop: 32 } },
+                zh("h3", null, "Nenhum atendimento marcado"),
+                zh("p", null, "Quando uma fam\xEDlia marcar um hor\xE1rio com voc\xEA, ele aparece aqui."),
+              )
+          : zh(
+              "div",
+              { style: { marginTop: 24 } },
+              zh("p", { className: "apoio medida" }, "As fam\xEDlias s\xF3 conseguem marcar nos dias e hor\xE1rios escolhidos aqui. Atendimentos j\xE1 marcados n\xE3o mudam: para trocar um deles, use Remarcar."),
+              grupo("Dias em que voc\xEA atende", "dias", zSemana),
+              grupo("Hor\xE1rios", "horas", zHorasOp),
+              grupo("Como voc\xEA atende", "modos", zModosOp),
+              zh(
+                "div",
+                { className: "acoes", style: { marginTop: 32 } },
+                (0, r.jsx)(ia, {
+                  icone: "confirmar",
+                  onClick: () => {
+                    let f = !rasc.dias.length ? "Escolha pelo menos um dia." : !rasc.horas.length ? "Escolha pelo menos um hor\xE1rio." : !rasc.modos.length ? "Escolha se atende online, presencial ou os dois." : "";
+                    setFalta(f);
+                    f || (setDisp(rasc), setOk("Hor\xE1rios salvos. As fam\xEDlias j\xE1 veem os novos hor\xE1rios."));
+                  },
+                  children: "Salvar hor\xE1rios",
+                }),
+                falta && zh("span", { className: "aviso", role: "status" }, falta),
+              ),
+            ),
+      ),
+    );
+  }
+
+  // ---------- 1c + 3. Painel da equipe zElo ----------
+  function zPainel({ ag, profDe, ocupados: oc, cancelar, remarcar, agendar, pend, decidir, verDoc, log, sair }) {
+    let [aba, setAba] = (0, L.useState)("atend"),
+      [filtro, setFiltro] = (0, L.useState)("ativos"),
+      [busca, setBusca] = (0, L.useState)(""),
+      [ab, setAb] = (0, L.useState)(null),
+      [ok, setOk] = (0, L.useState)(""),
+      [novo, setNovo] = (0, L.useState)(null),
+      [doc, setDoc] = (0, L.useState)(null),
+      [recusa, setRecusa] = (0, L.useState)(null),
+      [vistos, setVistos] = (0, L.useState)([]),
+      ativos = ag.filter((x) => x.status !== "cancelado"),
+      pendentes = pend.filter((x) => x.status === "pendente"),
+      feitos = pend.filter((x) => x.status !== "pendente"),
+      nomeFam = (f) => (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia),
+      lista = zSort(
+        ag.filter(
+          (f) =>
+            (filtro === "todos" || (filtro === "ativos" ? f.status !== "cancelado" : f.status === "cancelado")) &&
+            (!busca.trim() || Ll(nomeFam(f) + " " + profDe(f).nome + " " + profDe(f).area).includes(Ll(busca.trim()))),
+        ),
+      ),
+      novoProf = novo && novo.profId ? At.find((p) => p.id === novo.profId) : null,
+      novoPronto = novo && novo.familia.trim() && novoProf && novo.dia && novo.hora && (!novoProf.modos || novo.modo);
+    return zh(
+      "section",
+      { className: "entra" },
+      zh(
+        "header",
+        { className: "cabeca", style: { marginBottom: 24 } },
+        zh("p", { className: "sobretitulo" }, "S\xF3 para a equipe zElo"),
+        zh("h1", { tabIndex: -1 }, "Painel da equipe"),
+        zh("p", { className: "lead", style: { fontSize: 18 } }, "Atendimentos de todas as fam\xEDlias e a verifica\xE7\xE3o dos volunt\xE1rios. Cada a\xE7\xE3o fica registrada."),
+      ),
+      ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
+      (0, r.jsx)(zAbas, {
+        id: "painel",
+        rotulo: "Painel da equipe",
+        atual: aba,
+        setAtual: (k) => (setAba(k), setOk(""), setAb(null)),
+        abas: [["atend", "Atendimentos"], ["verif", "Verifica\xE7\xE3o", pendentes.length], ["log", "Registro"]],
+      }),
+      zh(
+        "div",
+        { id: "painel-painel", role: "tabpanel", "aria-labelledby": "painel-aba-" + aba },
+        aba === "atend" &&
+          zh(
+            r.Fragment,
+            null,
+            zh(
+              "dl",
+              { className: "painel-numeros" },
+              zh("div", null, zh("dt", null, "Marcados"), zh("dd", null, ativos.length)),
+              zh("div", null, zh("dt", null, "Online"), zh("dd", null, ativos.filter(zOnline).length)),
+              zh("div", null, zh("dt", null, "Cancelados"), zh("dd", null, ag.length - ativos.length)),
+            ),
+            novo
+              ? zh(
+                  "div",
+                  { className: "painel-acao", role: "group", "aria-label": "Agendar para uma fam\xEDlia" },
+                  zh("h2", { className: "h-pequeno" }, "Agendar para uma fam\xEDlia"),
+                  zh("p", { className: "apoio" }, "Use quando a fam\xEDlia pedir ajuda para marcar, por exemplo pelo telefone. Pe\xE7a s\xF3 o nome."),
+                  (0, r.jsx)(Za, { id: "novo-fam", rotulo: "Nome da fam\xEDlia ou da pessoa", value: novo.familia, onChange: (e) => setNovo({ ...novo, familia: e.target.value }), autoComplete: "off" }),
+                  (0, r.jsx)(Za, {
+                    id: "novo-prof",
+                    como: "select",
+                    rotulo: "Profissional",
+                    value: novo.profId,
+                    onChange: (e) => setNovo({ ...novo, profId: e.target.value, dia: null, hora: null, modo: null }),
+                    children: [(0, r.jsx)("option", { value: "", children: "Escolha um profissional" }, ""), ...At.map((p) => (0, r.jsx)("option", { value: p.id, children: p.nome + " \xB7 " + p.area }, p.id))],
+                  }),
+                  novoProf &&
+                    novoProf.modos &&
+                    zh(
+                      "div",
+                      { className: "horarios", role: "group", "aria-label": "Como vai ser" },
+                      novoProf.modos.map((md) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": novo.modo === md, icone: novo.modo === md ? "confirmar" : void 0, onClick: () => setNovo({ ...novo, modo: md }), children: md }, md)),
+                    ),
+                  novoProf && (0, r.jsx)(zEscolherHorario, { prof: novoProf, ocupados: oc, sel: novo, setSel: setNovo }),
+                  zh(
+                    "div",
+                    { className: "acoes--linha" },
+                    (0, r.jsx)(ia, {
+                      peq: !0,
+                      icone: "confirmar",
+                      disabled: !novoPronto,
+                      "aria-disabled": !novoPronto,
+                      onClick: () => novoPronto && (agendar({ profId: novoProf.id, diaId: novo.dia, hora: novo.hora, onde: novoProf.modos ? novo.modo : novoProf.onde, familia: novo.familia.trim() }), setNovo(null), setOk("Atendimento marcado. A fam\xEDlia e o profissional recebem um aviso.")),
+                      children: "Confirmar agendamento",
+                    }),
+                    (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: () => setNovo(null), children: "Voltar" }),
+                  ),
+                )
+              : zh("div", { className: "acoes", style: { marginTop: 0 } }, (0, r.jsx)(ia, { sec: !0, icone: "adicionar", onClick: () => (setOk(""), setNovo({ familia: "", profId: "", dia: null, hora: null, modo: null })), children: "Agendar para uma fam\xEDlia" })),
+            zh(
+              "div",
+              { className: "busca", style: { marginTop: 24 } },
+              (0, r.jsx)(Za, { id: "busca-painel", rotulo: "Buscar por fam\xEDlia ou profissional", value: busca, onChange: (e) => setBusca(e.target.value), autoComplete: "off" }),
+            ),
+            zh(
+              "div",
+              { className: "filtros", role: "group", "aria-label": "Mostrar" },
+              [["ativos", "Marcados"], ["cancelados", "Cancelados"], ["todos", "Todos"]].map(([k, t]) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": filtro === k, icone: filtro === k ? "confirmar" : void 0, onClick: () => setFiltro(k), children: t }, k)),
+            ),
+            lista.length
+              ? zh(
+                  "ul",
+                  { className: "lista", style: { marginTop: 16 } },
+                  lista.map((f) => {
+                    let p = profDe(f),
+                      cancelado = f.status === "cancelado";
+                    return zh(
+                      "li",
+                      { key: f.id },
+                      zh(
+                        "div",
+                        { className: "linha linha--agenda" + (cancelado ? " linha--apagada" : "") },
+                        zh(
+                          "span",
+                          { className: "linha-texto" },
+                          zh("span", { className: "linha-titulo" }, f.dia, ", \xE0s ", f.hora),
+                          zh("span", { className: "linha-meta" }, p.nome, " \xB7 ", p.area),
+                          zh("span", { className: "apoio linha-meta" }, nomeFam(f), " \xB7 ", zOnline(f) ? "Online" : f.onde),
+                          zh(
+                            "span",
+                            { className: "linha-etiquetas" },
+                            cancelado
+                              ? (0, r.jsx)(Bo, { children: "Cancelado" + (f.motivo ? ": " + f.motivo.toLowerCase() : "") })
+                              : (0, r.jsx)(Bo, { forte: !0, icone: "confirmar", children: f.remarcado ? "Remarcado" : "Marcado" }),
+                          ),
+                          !cancelado &&
+                            (ab && ab.id === f.id && ab.modo === "cancelar"
+                              ? (0, r.jsx)(zCancelar, {
+                                  idp: f.id,
+                                  motivos: ["A pedido da fam\xEDlia", "A pedido do profissional", "Problema na plataforma", "Outro motivo"],
+                                  aviso: "A fam\xEDlia e o profissional recebem um aviso no app e por e-mail.",
+                                  confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. Os dois lados foram avisados.")),
+                                  voltar: () => setAb(null),
+                                })
+                              : ab && ab.id === f.id && ab.modo === "remarcar"
+                                ? (0, r.jsx)(zRemarcarBloco, {
+                                    prof: p,
+                                    ocupados: oc,
+                                    aviso: "A fam\xEDlia e o profissional recebem um aviso com o novo hor\xE1rio.",
+                                    confirmar: (s) => (setAb(null), remarcar(f, s), setOk("Atendimento remarcado. Os dois lados foram avisados.")),
+                                    voltar: () => setAb(null),
+                                  })
+                                : zh(
+                                    "span",
+                                    { className: "agenda-acoes" },
+                                    (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
+                                    zh("button", { type: "button", className: "link link--perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })) }, "Cancelar"),
+                                  )),
+                        ),
+                      ),
+                    );
+                  }),
+                )
+              : zh("div", { className: "vazio", style: { marginTop: 16 } }, zh("h3", null, "Nenhum atendimento encontrado"), zh("p", null, "Tente outro nome ou mude o filtro.")),
+          ),
+        aba === "verif" &&
+          zh(
+            r.Fragment,
+            null,
+            zh(
+              "div",
+              { style: { marginTop: 24 } },
+              (0, r.jsx)(Do, {
+                tipo: "info",
+                children: "O sistema j\xE1 consultou o n\xFAmero no conselho profissional. Voc\xEA confere o documento e decide. Depois da decis\xE3o, o arquivo \xE9 apagado, como pede a LGPD. Guardamos s\xF3 o nome, o n\xFAmero do registro e a data.",
+              }),
+            ),
+            pendentes.length
+              ? zh(
+                  "ul",
+                  { className: "lista", style: { marginTop: 24 } },
+                  pendentes.map((v) =>
+                    zh(
+                      "li",
+                      { key: v.id, className: "cartao-vol" },
+                      zh(
+                        "div",
+                        null,
+                        zh("h3", { className: "linha-titulo" }, v.nome),
+                        zh("p", { className: "apoio" }, v.area, " \xB7 ", v.registro, " \xB7 ", v.cidade),
+                        zh("p", { className: "apoio" }, "Enviado ", v.enviado),
+                      ),
+                      zh(
+                        "p",
+                        { className: "checagem " + (v.checagem.ok ? "checagem--ok" : "checagem--aviso") },
+                        (0, r.jsx)(la, { n: v.checagem.ok ? "confirmar" : "atencao", size: 22 }),
+                        zh("span", null, zh("b", null, "Confer\xEAncia autom\xE1tica: "), v.checagem.texto),
+                      ),
+                      doc === v.id
+                        ? zh(
+                            "div",
+                            { className: "doc-previa" },
+                            zh("p", { className: "linha-titulo" }, (0, r.jsx)(la, { n: "documento", size: 22 }), " ", v.arquivo || "documento"),
+                            zh("p", { className: "apoio" }, "Pr\xE9via fict\xEDcia. No app real o arquivo abre aqui, sem download, e s\xF3 para quem faz a verifica\xE7\xE3o."),
+                            zh("p", { className: "apoio" }, "Este acesso ficou registrado."),
+                            zh("button", { type: "button", className: "link", onClick: () => setDoc(null) }, "Fechar documento"),
+                          )
+                        : zh(
+                            "div",
+                            null,
+                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "documento", onClick: () => (setDoc(v.id), setVistos((l0) => [...l0, v.id]), verDoc(v)), children: "Ver documento" }),
+                          ),
+                      recusa && recusa.id === v.id
+                        ? zh(
+                            "div",
+                            { className: "painel-acao" },
+                            (0, r.jsx)(Za, {
+                              id: "recusa-" + v.id,
+                              como: "select",
+                              rotulo: "Por que n\xE3o aprovar?",
+                              value: recusa.motivo,
+                              onChange: (e) => setRecusa({ ...recusa, motivo: e.target.value }),
+                              children: ["O documento n\xE3o d\xE1 para ler", "O nome n\xE3o confere com o registro", "O registro n\xE3o est\xE1 ativo", "A \xE1rea n\xE3o \xE9 atendida pelo zElo"].map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
+                            }),
+                            zh(
+                              "div",
+                              { className: "acoes--linha" },
+                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => (decidir(v, "novo-doc", recusa.motivo), setRecusa(null), setOk("Pedimos outro documento a " + v.nome.split(" ")[0] + ". O arquivo antigo foi apagado.")), children: "Pedir outro documento" }),
+                              (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", onClick: () => (decidir(v, "recusado", recusa.motivo), setRecusa(null), setOk("Cadastro recusado. A pessoa recebe o motivo por e-mail e o arquivo foi apagado.")), children: "Recusar cadastro" }),
+                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa(null), children: "Voltar" }),
+                            ),
+                          )
+                        : zh(
+                            "div",
+                            { className: "acoes--linha" },
+                            !vistos.includes(v.id) && zh("p", { className: "apoio", style: { flexBasis: "100%" } }, "Abra o documento antes de aprovar."),
+                            (0, r.jsx)(ia, { peq: !0, icone: "confirmar", disabled: !vistos.includes(v.id), "aria-disabled": !vistos.includes(v.id), onClick: () => vistos.includes(v.id) && (decidir(v, "aprovado"), setDoc(null), setOk("Cadastro de " + v.nome.split(" ")[0] + " aprovado. O arquivo foi apagado.")), children: "Aprovar" }),
+                            (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa({ id: v.id, motivo: "O documento n\xE3o d\xE1 para ler" }), children: "N\xE3o aprovar" }),
+                          ),
+                    ),
+                  ),
+                )
+              : zh("div", { className: "vazio", style: { marginTop: 24 } }, zh("h3", null, "Nenhum cadastro esperando"), zh("p", null, "Quando um volunt\xE1rio enviar o cadastro, ele aparece aqui.")),
+            feitos.length > 0 &&
+              zh(
+                r.Fragment,
+                null,
+                zh("h2", { className: "h-pequeno secao-titulo-peq" }, "J\xE1 analisados"),
+                zh(
+                  "ul",
+                  { className: "lista", style: { marginTop: 12 } },
+                  feitos.map((v) =>
+                    zh(
+                      "li",
+                      { key: v.id },
+                      zh(
+                        "div",
+                        { className: "linha" },
+                        zh(
+                          "span",
+                          { className: "linha-texto" },
+                          zh("span", { className: "linha-titulo" }, v.nome),
+                          zh("span", { className: "apoio linha-meta" }, v.registro, " \xB7 ", { aprovado: "Aprovado", recusado: "Recusado", "novo-doc": "Pediu outro documento" }[v.status], v.motivo ? ": " + v.motivo.toLowerCase() : ""),
+                          zh("span", { className: "apoio linha-meta" }, "Documento apagado \xE0s ", v.apagadoEm, "."),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ),
+        aba === "log" &&
+          zh(
+            "div",
+            { style: { marginTop: 24 } },
+            zh("p", { className: "apoio medida" }, "Tudo o que a equipe faz aqui fica guardado: o que foi feito e quando. Isso protege as fam\xEDlias e os volunt\xE1rios."),
+            log.length
+              ? zh("ul", { className: "lista registro", style: { marginTop: 16 } }, log.map((x, i) => zh("li", { key: i, className: "registro-item" }, zh("b", null, x.hora), " ", x.texto)))
+              : zh("div", { className: "vazio", style: { marginTop: 16 } }, zh("h3", null, "Nenhuma a\xE7\xE3o ainda"), zh("p", null, "Agendar, remarcar, cancelar, abrir um documento e aprovar aparecem aqui.")),
+          ),
+      ),
+      zh(
+        "div",
+        { className: "acoes", style: { marginTop: 48 } },
+        (0, r.jsx)(ia, { sec: !0, icone: "sair", onClick: sair, children: "Sair do painel" }),
+      ),
+    );
+  }
+
+  // ---------- 2. Sala de vídeo ----------
+  // No app real, a sala usa o Jitsi Meet (código aberto, sem conta e sem instalar nada).
+  function zSala({ at: f, outro, voltar }) {
+    let [fase, setFase] = (0, L.useState)("antes"),
+      [cam, setCam] = (0, L.useState)(!0),
+      [mic, setMic] = (0, L.useState)(!0),
+      [leg, setLeg] = (0, L.useState)(!0),
+      [sup, setSup] = (0, L.useState)(!1),
+      [pediu, setPediu] = (0, L.useState)(!1),
+      [teste, setTeste] = (0, L.useState)(""),
+      vid = (0, L.useRef)(null),
+      fluxo = (0, L.useRef)(null),
+      parar = () => {
+        fluxo.current && fluxo.current.getTracks().forEach((t) => t.stop());
+        fluxo.current = null;
+      },
+      testar = () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return setTeste("erro");
+        setTeste("testando");
+        navigator.mediaDevices
+          .getUserMedia({ video: !0, audio: !0 })
+          .then((s) => {
+            fluxo.current = s;
+            vid.current && (vid.current.srcObject = s);
+            setTeste("ok");
+          })
+          .catch(() => setTeste("erro"));
+      },
+      sairDaSala = () => (parar(), setFase("fim"));
+    (0, L.useEffect)(() => parar, []);
+    (0, L.useEffect)(() => {
+      fluxo.current && (fluxo.current.getVideoTracks().forEach((t) => (t.enabled = cam)), fluxo.current.getAudioTracks().forEach((t) => (t.enabled = mic)));
+      vid.current && fluxo.current && vid.current.srcObject !== fluxo.current && (vid.current.srcObject = fluxo.current);
+    }, [cam, mic, fase, teste]);
+    let euVideo = teste === "ok" && cam,
+      minhaImagem = zh("video", { ref: vid, autoPlay: !0, muted: !0, playsInline: !0, "aria-label": "Sua c\xE2mera", hidden: !euVideo }),
+      botao = (on, txtOn, txtOff, ic, set) =>
+        (0, r.jsx)(ia, { sec: !on, peq: !0, icone: ic, "aria-pressed": on, onClick: () => set(!on), children: on ? txtOn : txtOff }),
+      ajuda = sup &&
+        zh(
+          "div",
+          { className: "painel-acao", role: "region", "aria-label": "Ajuda com a chamada" },
+          zh("p", { className: "linha-titulo" }, "Ajuda com a chamada"),
+          zh(
+            "ul",
+            { className: "sala-dicas" },
+            zh("li", null, zh("b", null, "N\xE3o estou ouvindo: "), "confira o volume e se o fone est\xE1 conectado."),
+            zh("li", null, zh("b", null, "N\xE3o me veem: "), "toque em C\xE2mera e confira se o navegador deu permiss\xE3o."),
+            zh("li", null, zh("b", null, "A chamada caiu: "), "volte em Atendimentos e toque em Entrar na sala. O profissional espera 10 minutos."),
+          ),
+          pediu
+            ? (0, r.jsx)(Do, { tipo: "ok", children: "Pedido enviado. O suporte do zElo responde no Chat em at\xE9 5 minutos, no hor\xE1rio de atendimento." })
+            : (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "conversa", onClick: () => setPediu(!0), children: "Falar com o suporte do zElo" }),
+        );
+    if (fase === "fim")
+      return zh(
+        "section",
+        { className: "entra" },
+        zh("header", { className: "cabeca", style: { marginBottom: 24 } }, zh("h1", { tabIndex: -1 }, "Atendimento encerrado")),
+        zh("p", { className: "lead medida" }, "Obrigado por usar o zElo. A chamada n\xE3o foi gravada."),
+        zh("div", { className: "acoes", style: { marginTop: 32 } }, (0, r.jsx)(ia, { fim: "avancar", onClick: voltar, children: "Voltar aos atendimentos" })),
+      );
+    if (fase === "chamada")
+      return zh(
+        "section",
+        { className: "entra tela-sala" },
+        zh("h1", { tabIndex: -1, className: "so-leitor" }, "Chamada com ", outro.nome),
+        zh(
+          "div",
+          { className: "sala-video" },
+          zh("span", { className: "sala-avatar", "aria-hidden": "true" }, outro.iniciais),
+          zh("span", { className: "sala-nome" }, outro.nome),
+          zh("div", { className: "sala-eu" }, minhaImagem, !euVideo && zh("span", null, cam ? "Voc\xEA" : "C\xE2mera desligada")),
+        ),
+        leg && zh("p", { className: "sala-legenda", "aria-live": "polite" }, zh("b", null, outro.nome.split(" ").slice(0, 2).join(" "), ": "), "Oi, tudo bem? Est\xE1 me ouvindo direitinho?"),
+        zh(
+          "div",
+          { className: "sala-controles", role: "toolbar", "aria-label": "Controles da chamada" },
+          botao(mic, "Microfone ligado", "Microfone desligado", "microfone", setMic),
+          botao(cam, "C\xE2mera ligada", "C\xE2mera desligada", "video", setCam),
+          botao(leg, "Legendas ligadas", "Legendas desligadas", "legenda", setLeg),
+          (0, r.jsx)(ia, { sec: !sup, peq: !0, icone: "ajuda", "aria-expanded": sup, onClick: () => setSup(!sup), children: "Ajuda" }),
+          (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", icone: "fechar", onClick: sairDaSala, children: "Sair da chamada" }),
+        ),
+        ajuda,
+      );
+    return zh(
+      "section",
+      { className: "entra" },
+      (0, r.jsx)(Ye, { onClick: () => (parar(), voltar()) }),
+      zh(
+        "header",
+        { className: "cabeca", style: { marginBottom: 24 } },
+        zh("h1", { tabIndex: -1 }, "Sala de v\xEDdeo"),
+        zh("p", { className: "lead", style: { fontSize: 18 } }, "Com ", outro.nome, ". ", f.dia, ", \xE0s ", f.hora, "."),
+      ),
+      (0, r.jsx)(Do, { tipo: "info", children: "A chamada acontece aqui no zElo, sem instalar nada. Ela n\xE3o \xE9 gravada, e s\xF3 voc\xEAs dois entram na sala." }),
+      zh(
+        "div",
+        { className: "sala-video sala-previa", style: { marginTop: 24 } },
+        minhaImagem,
+        !euVideo && zh("span", { className: "sala-previa-texto" }, cam ? "Sua c\xE2mera aparece aqui depois do teste" : "C\xE2mera desligada"),
+      ),
+      zh(
+        "div",
+        { className: "sala-controles" },
+        (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "video", onClick: testar, disabled: teste === "testando", children: teste === "ok" ? "Testar de novo" : "Testar c\xE2mera e microfone" }),
+      ),
+      teste === "ok" && zh("p", { className: "apoio", role: "status" }, "C\xE2mera e microfone funcionando."),
+      teste === "erro" &&
+        zh("div", { style: { marginTop: 12 }, role: "status" }, (0, r.jsx)(Do, { tipo: "aviso", children: "N\xE3o conseguimos usar a c\xE2mera. Confira se o navegador tem permiss\xE3o. Voc\xEA ainda pode entrar s\xF3 com o \xE1udio." })),
+      zh("h2", { className: "h-pequeno", style: { marginTop: 32 } }, "Como voc\xEA quer entrar"),
+      zh(
+        "div",
+        { className: "sala-controles" },
+        botao(cam, "C\xE2mera ligada", "C\xE2mera desligada", "video", setCam),
+        botao(mic, "Microfone ligado", "Microfone desligado", "microfone", setMic),
+        botao(leg, "Legendas ligadas", "Legendas desligadas", "legenda", setLeg),
+      ),
+      zh("p", { className: "apoio medida", style: { marginTop: 8 } }, "As legendas escrevem na tela o que o profissional fala."),
+      zh(
+        "div",
+        { className: "acoes", style: { marginTop: 32 } },
+        (0, r.jsx)(ia, { icone: "video", onClick: () => setFase("chamada"), children: "Entrar na sala" }),
+        zh("button", { type: "button", className: "link", "aria-expanded": sup, onClick: () => setSup(!sup) }, "Preciso de ajuda com a chamada"),
+      ),
+      ajuda,
+    );
+  }
+
+  // ---------- 4. Notificações ----------
+  function zNotificacoes({ lista, papel, abrir, marcarTodas }) {
+    let [f, setF] = (0, L.useState)("todas"),
+      tipos = [["todas", "Todas"], ["forum", "F\xF3rum"], ["atend", "Atendimentos"], ...(papel === "voluntario" ? [["cadastro", "Cadastro"]] : [])],
+      ic = { forum: "forum", atend: "calendario", cadastro: "elo" },
+      itens = lista.filter((n) => f === "todas" || n.tipo === f),
+      novas = lista.filter((n) => !n.lida).length;
+    return zh(
+      "section",
+      { className: "entra" },
+      zh(
+        "header",
+        { className: "cabeca cabeca-linha", style: { marginBottom: 24 } },
+        zh(
+          "div",
+          null,
+          zh("h1", { tabIndex: -1 }, "Notifica\xE7\xF5es"),
+          zh(
+            "p",
+            { className: "lead", style: { fontSize: 18 } },
+            papel === "voluntario"
+              ? "Respostas do f\xF3rum, avisos da sua agenda e do seu cadastro ficam guardados aqui."
+              : "Respostas do f\xF3rum e avisos dos seus atendimentos ficam guardados aqui.",
+          ),
+        ),
+      ),
+      zh(
+        "div",
+        { className: "filtros", role: "group", "aria-label": "Mostrar" },
+        tipos.map(([k, t]) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": f === k, icone: f === k ? "confirmar" : void 0, onClick: () => setF(k), children: t }, k)),
+      ),
+      novas > 0 && zh("p", { style: { marginTop: 16 } }, zh("button", { type: "button", className: "link", onClick: marcarTodas }, "Marcar todas como lidas")),
+      itens.length
+        ? zh(
+            "ul",
+            { className: "lista", style: { marginTop: 16 } },
+            itens.map((n) =>
+              zh(
+                "li",
+                { key: n.id },
+                zh(
+                  "button",
+                  { type: "button", className: "linha notif" + (n.lida ? "" : " notif--nova"), onClick: () => abrir(n) },
+                  zh("span", { className: "notif-icone", "aria-hidden": "true" }, (0, r.jsx)(la, { n: ic[n.tipo], size: 22 })),
+                  zh(
+                    "span",
+                    { className: "linha-texto" },
+                    zh("span", { className: "linha-titulo" }, n.titulo, !n.lida && zh("span", { className: "so-leitor" }, ", nova")),
+                    zh("span", { className: "linha-meta" }, n.texto),
+                    zh("span", { className: "apoio linha-meta" }, n.quando),
+                  ),
+                  !n.lida && zh("span", { className: "etiquetas" }, (0, r.jsx)(Bo, { forte: !0, children: "Nova" })),
+                ),
+              ),
+            ),
+          )
+        : zh("div", { className: "vazio", style: { marginTop: 24 } }, zh("h3", null, "Nada por aqui"), zh("p", null, "Quando algu\xE9m responder no f\xF3rum ou um atendimento mudar, voc\xEA v\xEA aqui.")),
+      zh("p", { className: "apoio medida", style: { marginTop: 24 } }, "Os avisos de atendimento tamb\xE9m chegam no seu e-mail."),
+    );
+  }
   function Dm() {
     let [a, o] = (0, L.useState)("objetivo"),
       [e, t] = (0, L.useState)(
@@ -4232,7 +5042,15 @@
       [p, d] = (0, L.useState)(null),
       [S, b] = (0, L.useState)(null),
       [O, T] = (0, L.useState)(z2),
-      [E, oa] = (0, L.useState)(zAgendaInicial),
+      [ag, setAg] = (0, L.useState)(zAgInicial),
+      E = ag.filter((x) => x.familia === "voce" && x.status !== "cancelado"),
+      [rem, setRem] = (0, L.useState)(null),
+      [sala, setSala] = (0, L.useState)(null),
+      [salaVolta, setSalaVolta] = (0, L.useState)("atendimentos"),
+      [nt, setNt] = (0, L.useState)(zNotifsIniciais),
+      [pend, setPend] = (0, L.useState)(zPendentes),
+      [lg, setLg] = (0, L.useState)([]),
+      [disp, setDisp] = (0, L.useState)(zDispInicial),
       [z, ja] = (0, L.useState)(0),
       [Fr, wl] = (0, L.useState)("buscar"),
       [k2, _2] = (0, L.useState)(null),
@@ -4241,6 +5059,28 @@
       [cv, setCv] = (0, L.useState)(0),
       Hm = (0, L.useRef)(!1);
     xr = zAtalhos(c);
+    // Novidades: agenda de todos, notificações, registro da equipe
+    let para = zPara(n),
+      ativos = ag.filter((x) => x.status !== "cancelado"),
+      volProf = {
+        id: "pv",
+        nome: s.nome || "L\xEDvia Prado",
+        iniciais: zIniciais(s.nome) || "EU",
+        area: s.area || "Psicologia",
+        registro: s.registro || "",
+        onde: disp.modos.join(" ou "),
+        modos: disp.modos.length > 1 ? disp.modos : null,
+        dias: disp.dias,
+        horas: disp.horas,
+        agora: !1,
+      },
+      profDe = (f) => (f.profId === "pv" ? volProf : f.prof),
+      avisar = (pp, tipo, titulo, texto, extra) =>
+        setNt((l0) => [{ id: "n" + Date.now() + Math.random(), para: pp, tipo, titulo, texto, quando: "agora, " + zAgora(), lida: !1, ...extra }, ...l0]),
+      registrar = (texto) => setLg((l0) => [{ hora: zAgora(), texto }, ...l0]),
+      mudarAt = (f, mud) => setAg((l0) => l0.map((x) => (x.id === f.id ? { ...x, ...mud } : x))),
+      novoHorario = (s0) => ({ diaId: s0.dia, dia: zDiaRotulo(s0.dia), hora: s0.hora, remarcado: !0 }),
+      abrirSala = (f, volta) => (setSala(f), setSalaVolta(volta || "atendimentos"), o("sala"));
     (0, L.useEffect)(() => {
       a === "chat" && cv !== O.msgs.length && setCv(O.msgs.length);
     }, [a, O.msgs.length]);
@@ -4265,6 +5105,7 @@
         a !== "login" &&
         a !== "cadastro" &&
         a !== "status-voluntario" &&
+        a !== "painel" &&
         !(a === "diagnostico" && u === "inicio"),
       bt = (H) => {
         if (H === "atendimentos-meus")
@@ -4276,12 +5117,13 @@
       },
       Om = (H) => {
         (_2(H),
+          setRem(null),
           Bm({ dia: null, hora: null }),
           ja(1),
           Nl(!1),
           o("atendimentos"));
       },
-      Z2 = () => o(P2 ? "inicio" : "objetivo"),
+      Z2 = () => o(n === "equipe" && a === "painel" ? "painel" : P2 ? "inicio" : "objetivo"),
       j2 = (H) => {
         let ae = H.split("@")[0].split(/[._-]/)[0] || "voc\xEA";
         return ae.charAt(0).toUpperCase() + ae.slice(1);
@@ -4329,7 +5171,10 @@
           i({ nome: "", email: "" }),
           m(R2),
           T(z2),
-          oa(zAgendaInicial),
+          setAg(zAgInicial),
+          setNt(zNotifsIniciais),
+          setDisp(zDispInicial),
+          setRem(null),
           setCv(0),
           wl("buscar"),
           ja(0),
@@ -4342,6 +5187,7 @@
           a === "chat"
             ? 0
             : O.msgs.slice(cv).filter((mm) => mm.de === "ana").length,
+        notif: nt.filter((x) => x.para === para && !x.lida).length,
       },
       K2 = a === "ajuda" ? "ajuda" : US[a],
       J2 = y.find((H) => H.id === p),
@@ -4354,7 +5200,8 @@
           tema: v,
           setTema: A,
           escolher: (H) => {
-            (l(H), o(H === "voluntario" ? "cadastro" : "login"));
+            (l(H),
+              o(H === "voluntario" ? "cadastro" : H === "equipe" ? "painel" : "login"));
           },
         });
         break;
@@ -4386,7 +5233,21 @@
           voltar: () => o("objetivo"),
           entrar: () => o("login"),
           enviar: (H) => {
-            (i({ nome: H.nome.trim(), email: H.email }),
+            (i({ nome: H.nome.trim(), email: H.email, area: H.area, registro: H.registro.trim() }),
+              setPend((l0) => [
+                {
+                  id: "eu",
+                  nome: H.nome.trim(),
+                  area: H.area,
+                  registro: H.registro.trim(),
+                  cidade: H.cidade.trim(),
+                  enviado: "agora",
+                  arquivo: "documento enviado no cadastro",
+                  checagem: zChecar(H.registro),
+                  status: "pendente",
+                },
+                ...l0.filter((x) => x.id !== "eu"),
+              ]),
               o("status-voluntario"));
           },
         });
@@ -4394,7 +5255,12 @@
       case "status-voluntario":
         xa = (0, r.jsx)(PS, {
           nome: s.nome,
-          aprovar: () => o("inicio"),
+          aprovar: () => {
+            (setPend((l0) => l0.map((x) => (x.id === "eu" ? { ...x, status: "aprovado", apagadoEm: zAgora() } : x))),
+              setNt((l0) => l0.filter((x) => x.id !== "n4")),
+              avisar("voluntario", "cadastro", "Cadastro aprovado", "Uma pessoa da equipe conferiu o seu registro. O documento que voc\xEA enviou foi apagado.", { tela: "inicio" }),
+              o("inicio"));
+          },
           voltar: () => o("objetivo"),
         });
         break;
@@ -4476,14 +5342,31 @@
         break;
       case "atendimentos":
         xa =
-          z === 0
+          z === 0 && n === "voluntario"
+            ? (0, r.jsx)(zMinhaAgenda, {
+                prof: volProf,
+                agenda: ativos.filter((x) => x.profId === "pv"),
+                ocupados: ativos,
+                disp,
+                setDisp,
+                sala: (f) => abrirSala(f),
+                cancelar: (f, m) => mudarAt(f, { status: "cancelado", motivo: "A pedido do profissional (" + m.toLowerCase() + ")" }),
+                remarcar: (f, s0) => mudarAt(f, novoHorario(s0)),
+              })
+            : z === 0
             ? (0, r.jsx)(o4, {
                 agenda: E,
                 tab: Fr,
                 setTab: wl,
                 abrirProf: Om,
                 confirmado: V2,
-                cancelar: (H) => oa(E.filter((ae) => ae !== H)),
+                sala: (f) => abrirSala(f),
+                remarcar: (f) => (Om(f.profId), setRem(f)),
+                cancelar: (H) => {
+                  (mudarAt(H, { status: "cancelado", motivo: "A pedido da fam\xEDlia" }),
+                    Nl("cancelado"),
+                    avisar("familia", "atend", "Atendimento cancelado", "Voc\xEA cancelou " + H.dia.toLowerCase() + ", \xE0s " + H.hora + ", com " + H.prof.nome + ". O hor\xE1rio ficou livre.", { tela: "atendimentos-meus", lida: !0 }));
+                },
               })
             : (0, r.jsx)(e4, {
                 prof: At.find((H) => H.id === k2),
@@ -4492,14 +5375,84 @@
                 setPasso: ja,
                 sel: G2,
                 setSel: Bm,
-                sair: () => ja(0),
+                ocupados: ativos,
+                remarcando: rem,
+                sair: () => (ja(0), setRem(null)),
                 confirmar: (H) => {
-                  (oa([...E, H]), Nl(!0), wl("meus"), ja(0));
+                  (rem
+                    ? (mudarAt(rem, { ...H, remarcado: !0 }),
+                      Nl("remarcado"),
+                      avisar("familia", "atend", "Atendimento remarcado", "Agora \xE9 " + H.dia.toLowerCase() + ", \xE0s " + H.hora + ", com " + H.prof.nome + ".", { tela: "atendimentos-meus", lida: !0 }))
+                    : (setAg([...ag, { ...H, id: "a" + Date.now(), familia: "voce", status: "confirmado" }]),
+                      Nl("marcado"),
+                      avisar("familia", "atend", "Atendimento marcado", H.dia + ", \xE0s " + H.hora + ", com " + H.prof.nome + ". Voc\xEA recebe um lembrete um dia antes.", { tela: "atendimentos-meus", lida: !0 })),
+                    setRem(null),
+                    wl("meus"),
+                    ja(0));
                 },
               });
         break;
       case "ajuda":
         xa = (0, r.jsx)(t4, { irPara: bt, pedir });
+        break;
+      case "sala": {
+        let outroLado =
+          sala && sala.profId === "pv"
+            ? { nome: sala.familia, iniciais: zIniciais(sala.familia.replace(/^Fam\xEDlia de /, "")) }
+            : sala && sala.prof;
+        xa = sala
+          ? (0, r.jsx)(zSala, { at: sala, outro: outroLado, voltar: () => bt(salaVolta === "atendimentos" && n !== "voluntario" ? "atendimentos-meus" : salaVolta) }, sala.id)
+          : null;
+        break;
+      }
+      case "notificacoes":
+        xa = (0, r.jsx)(zNotificacoes, {
+          lista: nt.filter((x) => x.para === para),
+          papel: n,
+          marcarTodas: () => setNt((l0) => l0.map((x) => (x.para === para ? { ...x, lida: !0 } : x))),
+          abrir: (x) => {
+            (setNt((l0) => l0.map((y) => (y.id === x.id ? { ...y, lida: !0 } : y))),
+              x.topico ? kr(x.topico) : bt(x.tela || "inicio"));
+          },
+        });
+        break;
+      case "painel":
+        xa = (0, r.jsx)(zPainel, {
+          ag,
+          profDe,
+          ocupados: ativos,
+          pend,
+          log: lg,
+          sair: Y2,
+          cancelar: (f, m) => {
+            (mudarAt(f, { status: "cancelado", motivo: m }),
+              registrar("Cancelou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " (" + f.dia.toLowerCase() + ", " + f.hora + "). Motivo: " + m.toLowerCase() + "."),
+              f.familia === "voce" &&
+                avisar("familia", "atend", "A equipe zElo cancelou um atendimento", "O de " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ", com " + profDe(f).nome + ". Motivo: " + m.toLowerCase() + ".", { tela: "atendimentos-meus" }));
+          },
+          remarcar: (f, s0) => {
+            let nh = novoHorario(s0);
+            (mudarAt(f, nh),
+              registrar("Remarcou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " para " + nh.dia.toLowerCase() + ", " + nh.hora + "."),
+              f.familia === "voce" &&
+                avisar("familia", "atend", "A equipe zElo remarcou seu atendimento", "Agora \xE9 " + nh.dia.toLowerCase() + ", \xE0s " + nh.hora + ", com " + profDe(f).nome + ".", { tela: "atendimentos-meus" }));
+          },
+          agendar: (d) => {
+            let novo = zNovoAt({ ...d, id: "a" + Date.now() });
+            (setAg((l0) => [...l0, novo]),
+              registrar("Agendou para " + d.familia + " com " + novo.prof.nome + " (" + novo.dia.toLowerCase() + ", " + d.hora + ")."));
+          },
+          verDoc: (v) => registrar("Abriu o documento de " + v.nome + "."),
+          decidir: (v, dec, m) => {
+            (setPend((l0) => l0.map((x) => (x.id === v.id ? { ...x, status: dec, motivo: m, apagadoEm: zAgora() } : x))),
+              registrar(
+                { aprovado: "Aprovou o cadastro de ", recusado: "Recusou o cadastro de ", "novo-doc": "Pediu outro documento a " }[dec] + v.nome + (m ? ". Motivo: " + m.toLowerCase() : "") + ". Documento apagado.",
+              ),
+              v.id === "eu" &&
+                dec === "aprovado" &&
+                avisar("voluntario", "cadastro", "Cadastro aprovado", "Uma pessoa da equipe conferiu o seu registro. O documento que voc\xEA enviou foi apagado.", { tela: "inicio" }));
+          },
+        });
         break;
       default:
         xa = null;
