@@ -1,59 +1,23 @@
   var P = N(yt()),
-    OS = {
-      conversa: Qu,
-      forum: Ju,
-      ajuda: ym,
-      perfil: gm,
-      busca: rm,
-      enviar: mm,
-      voltar: Zu,
-      avancar: Xu,
-      fechar: bm,
-      confirmar: $u,
-      atencao: Cm,
-      informacao: tm,
-      adicionar: Im,
-      apoio: om,
-      telefone: pm,
-      local: cm,
-      elo: lm,
-    };
-  function zIc(paths) {
-    return function ({ size: s = 24, className: c }) {
-      return (0, P.jsx)("svg", {
-        className: c,
-        width: s,
-        height: s,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
-        strokeWidth: 1.9,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-        "aria-hidden": "true",
-        focusable: "false",
-        dangerouslySetInnerHTML: { __html: paths },
-      });
-    };
-  }
-  Object.assign(OS, {
-    casa: zIc('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>'),
-    calendario: zIc('<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'),
-    dica: zIc('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>'),
-    cadeado: zIc('<rect x="4.5" y="10.5" width="15" height="10.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>'),
-    video: zIc('<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/>'),
-    mensagem: zIc('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'),
-  });
-  function la({ n: a, size: o = 24 }) {
+    // Nome usado nas telas -> ícone da biblioteca Solar (codigo/icones-solar.js)
+    OS = Object.assign({}, zSolar, { mensagem: zSolar.chat, dica: zSolar.orientacoes, elo: zSolar.verificado });
+  // Ícone Solar: traço no uso normal, cheio (cheio: true) no item atual do menu.
+  // É sempre decorativo: quem usa o ícone põe uma palavra ao lado ou um nome acessível no botão.
+  function la({ n: a, size: o = 20, cheio: c }) {
     let e = OS[a];
-    return (0, P.jsx)(e, {
+    if (!e) return null;
+    return (0, P.jsx)("svg", {
       className: "ic",
-      size: o,
-      weight: "regular",
+      width: o,
+      height: o,
+      viewBox: "0 0 24 24",
       "aria-hidden": "true",
       focusable: "false",
+      dangerouslySetInnerHTML: { __html: e[c ? 1 : 0] },
     });
   }
+  // Botão. Sem "sec" é a ação principal (cheio); com "sec" é de contorno.
+  // Regra: um só botão cheio por tela. "ocupado" trava o botão e troca o texto ("Salvando…").
   function ia({
     children: a,
     sec: o,
@@ -61,54 +25,189 @@
     icone: t,
     fim: n,
     className: l = "",
+    ocupado: oc,
+    textoOcupado: to,
     ...s
   }) {
-    let i = ["btn", o ? "btn--sec" : "", e ? "btn--peq" : "", l]
+    let i = ["btn", o ? "btn--sec" : "", e ? "btn--peq" : "", oc ? "btn--ocupado" : "", l]
       .filter(Boolean)
       .join(" ");
     return (0, P.jsxs)("button", {
       type: "button",
       className: i,
       ...s,
-      children: [
-        t && (0, P.jsx)(la, { n: t, size: e ? 20 : 24 }),
-        a,
-        n && (0, P.jsx)(la, { n, size: e ? 20 : 24 }),
-      ],
+      ...(oc ? { disabled: !0, "aria-busy": "true" } : {}),
+      children: oc
+        ? [(0, P.jsx)("span", { className: "giro", "aria-hidden": "true" }, "g"), to || "Aguarde…"]
+        : [
+            t && (0, P.jsx)(la, { n: t, size: 20 }, "i"),
+            a,
+            n && (0, P.jsx)(la, { n, size: 20 }, "f"),
+          ],
     });
   }
+  // Ação com retorno: trava o botão, mostra o texto de espera e só depois conclui.
+  function zUseAcao(ms = 700) {
+    let [oc, setOc] = (0, L.useState)(!1),
+      t = (0, L.useRef)(null);
+    (0, L.useEffect)(() => () => clearTimeout(t.current), []);
+    return [
+      oc,
+      (fn) => {
+        if (oc) return;
+        setOc(!0);
+        t.current = setTimeout(() => {
+          setOc(!1);
+          fn();
+        }, ms);
+      },
+    ];
+  }
+  // "‹ Voltar" para as telas de entrada. Nas outras, a volta fica na barra do topo.
   function Ye({ onClick: a, children: o = "Voltar" }) {
     return (0, P.jsxs)("button", {
       type: "button",
       className: "link-voltar",
       onClick: a,
-      children: [(0, P.jsx)(la, { n: "voltar", size: 22 }), o],
+      children: [(0, P.jsx)(la, { n: "voltar", size: 20 }), o],
     });
   }
   function Do({ tipo: a = "info", palavra: o, children: e, ...t }) {
     let n = {
-        info: ["informacao", "Informa\xE7\xE3o:"],
-        ok: ["confirmar", "Confirmado:"],
+        info: ["informacao", ""],
+        ok: ["confirmar", ""],
         aviso: ["atencao", "Aten\xE7\xE3o:"],
         erro: ["fechar", "Erro:"],
       },
-      [l, s] = n[a];
+      [l, s] = n[a],
+      w = o || s;
     return (0, P.jsxs)("div", {
       className: `alerta alerta--${a}`,
       role: a === "erro" ? "alert" : "status",
       ...t,
       children: [
-        (0, P.jsx)(la, { n: l, size: 24 }),
+        (0, P.jsx)(la, { n: l, size: 20 }),
         (0, P.jsxs)("p", {
-          children: [(0, P.jsx)("b", { children: o || s }), " ", e],
+          children: [w && (0, P.jsx)("b", { children: w }), w ? " " : "", e],
         }),
       ],
     });
   }
-  function Bo({ children: a, forte: o, icone: e }) {
+  // Etiqueta neutra para categorias (área, assunto). Sem cor.
+  function Bo({ children: a, icone: e }) {
     return (0, P.jsxs)("span", {
-      className: `etiqueta${o ? " etiqueta--forte" : ""}`,
+      className: "etiqueta",
       children: [e && (0, P.jsx)(la, { n: e, size: 16 }), a],
+    });
+  }
+  // Status: etiqueta neutra com ponto colorido. Cada status tem sempre a mesma palavra, cor e ícone.
+  var zStatusTipos = {
+    confirmado: ["Confirmado", "verde", "confirmar"],
+    aguardando: ["Aguardando", "ambar", "relogio"],
+    cancelado: ["Cancelado", "vermelho", "cancelado"],
+    novo: ["Novo", "azul", "novo"],
+    hoje: ["Atende hoje", "azul", "calendario"],
+    resolvido: ["Resolvido", "verde", "confirmar"],
+    encerrado: ["Encerrado", "cinza", "historico"],
+  };
+  function zStatus({ s: k, extra: x }) {
+    let [txt, cor, ic] = zStatusTipos[k];
+    return (0, P.jsxs)("span", {
+      className: "status status--" + cor,
+      children: [
+        (0, P.jsx)("span", { className: "status-ponto", "aria-hidden": "true" }),
+        (0, P.jsx)(la, { n: ic, size: 16 }),
+        txt,
+        x && (0, P.jsx)("span", { className: "status-extra", children: x }),
+      ],
+    });
+  }
+  // Selo de profissional verificado (ícone de selo, não de link)
+  function zSelo({ nome: n }) {
+    return (0, P.jsxs)("span", {
+      className: "selo",
+      children: [(0, P.jsx)(la, { n: "verificado", size: 16 }), n ? "Verificado por " + n : "Verificado"],
+    });
+  }
+  // Janela por cima da tela, para ações rápidas. Esc ou o X fecham. O foco fica dentro dela.
+  function zJanela({ titulo: tt, sub: sb, fechar: f, children: c, larga: lg, rodape: rp }) {
+    let ref = (0, L.useRef)(null),
+      idt = (0, L.useId)();
+    (0, L.useEffect)(() => {
+      let antes = document.activeElement,
+        el = ref.current;
+      requestAnimationFrame(() => el && el.querySelector("h2")?.focus());
+      let tecla = (e) => {
+        if (e.key === "Escape") return (e.stopPropagation(), f());
+        if (e.key !== "Tab" || !el) return;
+        let fs = [...el.querySelectorAll('button:not([disabled]), input, select, textarea, [href], [tabindex="0"]')].filter((x) => x.offsetParent !== null);
+        if (!fs.length) return;
+        let pri = fs[0],
+          ult = fs[fs.length - 1];
+        e.shiftKey && document.activeElement === pri
+          ? (e.preventDefault(), ult.focus())
+          : !e.shiftKey && document.activeElement === ult && (e.preventDefault(), pri.focus());
+      };
+      document.addEventListener("keydown", tecla);
+      document.documentElement.classList.add("com-janela");
+      return () => {
+        document.removeEventListener("keydown", tecla);
+        document.documentElement.classList.remove("com-janela");
+        antes && antes.focus && antes.focus({ preventScroll: !0 });
+      };
+    }, []);
+    // Vai direto no body, para cobrir a tela inteira mesmo dentro de um bloco com animação
+    return df().createPortal((0, P.jsx)("div", {
+      className: "janela-veu",
+      onMouseDown: (e) => e.target === e.currentTarget && f(),
+      children: (0, P.jsxs)("div", {
+        ref,
+        className: "janela" + (lg ? " janela--larga" : ""),
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": idt,
+        children: [
+          (0, P.jsxs)("div", {
+            className: "janela-topo",
+            children: [
+              (0, P.jsxs)("div", {
+                children: [
+                  (0, P.jsx)("h2", { id: idt, tabIndex: -1, children: tt }),
+                  sb && (0, P.jsx)("p", { className: "apoio", children: sb }),
+                ],
+              }),
+              (0, P.jsx)("button", {
+                type: "button",
+                className: "janela-fechar",
+                onClick: f,
+                "aria-label": "Fechar",
+                children: (0, P.jsx)(la, { n: "fechar", size: 24 }),
+              }),
+            ],
+          }),
+          (0, P.jsx)("div", { className: "janela-corpo", children: c }),
+          rp && (0, P.jsx)("div", { className: "janela-rodape", children: rp }),
+        ],
+      }),
+    }), document.body);
+  }
+  // Esqueleto no formato do conteúdo, mostrado por um instante ao trocar de tela
+  function zEsqueleto({ tipo: t }) {
+    let b = (cl, k) => (0, P.jsx)("span", { className: "esq " + cl }, k),
+      linhas = (n) => Array.from({ length: n }, (_, k) => (0, P.jsxs)("div", { className: "esq-linha", children: [b("esq-t", 1), b("esq-m", 2)] }, k)),
+      cartoes = (n) => (0, P.jsx)("div", { className: "esq-grade", children: Array.from({ length: n }, (_, k) => (0, P.jsxs)("div", { className: "esq-cartao", children: [b("esq-av", 1), b("esq-t", 2), b("esq-m", 3), b("esq-m esq-curto", 4)] }, k)) });
+    return (0, P.jsxs)("div", {
+      className: "esqueleto",
+      role: "status",
+      "aria-label": "Carregando",
+      children: [
+        b("esq-h1", "h"),
+        t === "inicio" && (0, P.jsx)("div", { className: "esq-faixa", children: Array.from({ length: 3 }, (_, k) => b("esq-num", k)) }),
+        t === "inicio" && b("esq-semana", "s"),
+        (t === "grade" || t === "inicio") && cartoes(t === "inicio" ? 3 : 6),
+        t === "lista" && (0, P.jsx)("div", { className: "esq-lista", children: linhas(6) }),
+        t === "texto" && (0, P.jsx)("div", { className: "esq-lista", children: linhas(3) }),
+      ],
     });
   }
   var Za = L2.default.forwardRef(function (
@@ -173,15 +272,16 @@
       ],
     });
   });
-  function Tm({ itens: a, valor: o, onChange: e, multi: t, rotulo: n }) {
+  // Lista de opções. "depois" põe um campo logo abaixo da opção que o abre (ex.: Outra).
+  function Tm({ itens: a, valor: o, onChange: e, multi: t, rotulo: n, depois: dp }) {
     let l = (s) => (t ? o.includes(s) : o === s);
     return (0, P.jsx)("div", {
       className: "opcoes",
       role: t ? "group" : "radiogroup",
       "aria-label": n,
       children: a.map((s) => {
-        let i = l(s.id);
-        return (0, P.jsxs)(
+        let i = l(s.id),
+          bt = (0, P.jsxs)(
           "button",
           {
             type: "button",
@@ -201,22 +301,16 @@
                     }),
                 ],
               }),
-              i
-                ? (0, P.jsxs)("span", {
-                    className: "opcao-estado",
-                    children: [
-                      (0, P.jsx)(la, { n: "confirmar", size: 22 }),
-                      "Escolhido",
-                    ],
-                  })
-                : (0, P.jsx)("span", {
-                    className: `opcao-vazio${t ? " opcao-vazio--q" : ""}`,
-                    "aria-hidden": "true",
-                  }),
+              (0, P.jsx)("span", {
+                className: `opcao-marca${t ? " opcao-marca--q" : ""}`,
+                "aria-hidden": "true",
+                children: i && (0, P.jsx)(la, { n: "confirmar", size: 20, cheio: !0 }),
+              }),
             ],
           },
           s.id,
         );
+        return dp && dp[s.id] ? (0, P.jsxs)(L.default.Fragment, { children: [bt, dp[s.id]] }, s.id) : bt;
       }),
     });
   }
@@ -950,20 +1044,15 @@
       ["188", "CVV", "Apoio emocional, 24 horas."],
     ];
   var r = N(yt()),
+    // Menu na ordem de uso: chat, atendimentos, fórum. Perfil fica no pé do menu e as notificações no sino.
     zS = [
       { id: "inicio", rotulo: "In\xEDcio", ic: "casa", tela: "inicio" },
+      { id: "chat", rotulo: "Chat", ic: "chat", tela: "chat" },
+      { id: "atend", rotulo: "Atendimentos", ic: "calendario", tela: "atendimentos" },
       { id: "forum", rotulo: "F\xF3rum", ic: "forum", tela: "forum" },
-      { id: "chat", rotulo: "Chat", ic: "mensagem", tela: "chat" },
-      { id: "dicas", rotulo: "Dicas", ic: "dica", tela: "dicas" },
-      {
-        id: "atend",
-        rotulo: "Atendimentos",
-        ic: "calendario",
-        tela: "atendimentos",
-      },
-      { id: "notif", rotulo: "Notifica\xE7\xF5es", ic: "sino", tela: "notificacoes" },
-      { id: "perfil", rotulo: "Perfil", ic: "perfil", tela: "perfil" },
+      { id: "dicas", rotulo: "Orienta\xE7\xF5es", ic: "orientacoes", tela: "dicas" },
     ],
+    zItemPerfil = { id: "perfil", rotulo: "Perfil", ic: "perfil", tela: "perfil" },
     US = {
       inicio: "inicio",
       perfil: "perfil",
@@ -978,6 +1067,23 @@
       sala: "atend",
       notificacoes: "notif",
     },
+    // Nome de cada tela, para a barra do topo e para o "‹ Tela de origem"
+    zNomeTela = {
+      inicio: "In\xEDcio",
+      chat: "Chat",
+      atendimentos: "Atendimentos",
+      forum: "F\xF3rum",
+      "forum-topico": "T\xF3pico",
+      dicas: "Orienta\xE7\xF5es",
+      dica: "Orienta\xE7\xE3o",
+      perfil: "Perfil",
+      notificacoes: "Notifica\xE7\xF5es",
+      ajuda: "Preciso de ajuda",
+      sala: "Sala de v\xEDdeo",
+      painel: "Painel da equipe",
+    },
+    // Telas fora do menu: mostram "‹ Tela de origem" na barra do topo
+    zForaDoMenu = ["forum-topico", "dica", "notificacoes", "ajuda", "sala"],
     xS = [
       "objetivo",
       "login",
@@ -991,55 +1097,121 @@
     if (!p.length) return "";
     return ((p[0][0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
   }
+  // Logo em uma cor só, que segue o tema (a cor vem da variável --logo)
+  function zLogo() {
+    return (0, r.jsx)("span", { className: "logo", role: "img", "aria-label": "zElo" });
+  }
+  // Atalho de tema na barra do topo: claro, escuro e alto contraste
+  function zTemaMenu({ tema: v, setTema: A }) {
+    let [ab, setAb] = (0, L.useState)(!1),
+      ref = (0, L.useRef)(null),
+      atual = jS.find((x) => x.id === v) || jS[0];
+    (0, L.useEffect)(() => {
+      if (!ab) return;
+      let fora = (e) => ref.current && !ref.current.contains(e.target) && setAb(!1),
+        esc = (e) => e.key === "Escape" && (setAb(!1), ref.current?.querySelector("button")?.focus());
+      document.addEventListener("mousedown", fora);
+      document.addEventListener("keydown", esc);
+      return () => (document.removeEventListener("mousedown", fora), document.removeEventListener("keydown", esc));
+    }, [ab]);
+    return (0, r.jsxs)("div", {
+      className: "tema-menu",
+      ref,
+      children: [
+        (0, r.jsx)("button", {
+          type: "button",
+          className: "topo-botao",
+          "aria-haspopup": "true",
+          "aria-expanded": ab,
+          "aria-label": "Tema: " + atual.rotulo + ". Trocar tema",
+          onClick: () => setAb(!ab),
+          children: (0, r.jsx)(la, { n: atual.ic, size: 24 }),
+        }),
+        ab &&
+          (0, r.jsxs)("div", {
+            className: "tema-pop",
+            role: "group",
+            "aria-label": "Tema",
+            children: [
+              (0, r.jsx)("p", { className: "tema-pop-titulo", children: "Tema" }),
+              jS.map((x) =>
+                (0, r.jsxs)(
+                  "button",
+                  {
+                    type: "button",
+                    className: "tema-op",
+                    "aria-pressed": v === x.id,
+                    onClick: () => (A(x.id), setAb(!1)),
+                    children: [(0, r.jsx)(la, { n: x.ic, size: 20 }), x.rotulo, v === x.id && (0, r.jsx)(la, { n: "confirmar", size: 20, cheio: !0 })],
+                  },
+                  x.id,
+                ),
+              ),
+            ],
+          }),
+      ],
+    });
+  }
   function qS({
     tema: a,
+    setTema: st,
     atual: o,
     comMenu: e,
     irInicio: t,
     irPara: n,
     contadores: l,
     usuario: u,
-    frase: fr,
+    titulo: tt,
+    voltar: vt,
     children: s,
   }) {
     let ini = zIniciais(u && u.nome),
-      itemMenu = (c, baixo) =>
-        (0, r.jsx)(
+      novos = { chat: 1, forum: 1 },
+      itemMenu = (c, baixo) => {
+        let at = o === c.id,
+          q = l[c.id] || 0;
+        return (0, r.jsx)(
           "li",
           {
             children: (0, r.jsxs)("button", {
               type: "button",
               className: baixo ? "aba-baixo" : "menu-item",
               onClick: () => n(c.tela),
-              "aria-current": o === c.id ? "page" : void 0,
-              "aria-label": l[c.id] > 0 ? c.rotulo + ", " + zNovos(c.id, l[c.id]) : void 0,
+              "aria-current": at ? "page" : void 0,
+              "aria-label": q > 0 ? c.rotulo + ", " + zNovos(c.id, q) : void 0,
               children: [
                 (0, r.jsxs)("span", {
                   className: "menu-icone",
                   children: [
-                    (0, r.jsx)(la, { n: c.ic, size: baixo ? 24 : 22 }),
-                    l[c.id] > 0 &&
-                      (0, r.jsxs)("span", {
-                        className: "contador",
-                        children: [
-                          (0, r.jsx)("span", {
-                            "aria-hidden": "true",
-                            children: l[c.id],
-                          }),
-                        ],
-                      }),
+                    (0, r.jsx)(la, { n: c.ic, size: baixo ? 24 : 20, cheio: at }),
+                    baixo && q > 0 && (0, r.jsx)("span", { className: "contador contador--bolha" + (novos[c.id] ? " contador--novo" : ""), "aria-hidden": "true", children: q }),
                   ],
                 }),
                 (0, r.jsx)("span", { className: "menu-rotulo", children: c.rotulo }),
+                !baixo && q > 0 && (0, r.jsx)("span", { className: "contador" + (novos[c.id] ? " contador--novo" : ""), "aria-hidden": "true", children: q }),
               ],
             }),
           },
           c.id,
         );
+      },
+      sino =
+        e &&
+        (0, r.jsxs)("button", {
+          type: "button",
+          className: "topo-botao",
+          onClick: () => n("notificacoes"),
+          "aria-current": o === "notif" ? "page" : void 0,
+          "aria-label": l.notif > 0 ? "Notifica\xE7\xF5es, " + l.notif + (l.notif === 1 ? " nova" : " novas") : "Notifica\xE7\xF5es",
+          children: [
+            (0, r.jsx)(la, { n: "sino", size: 24, cheio: o === "notif" }),
+            l.notif > 0 && (0, r.jsx)("span", { className: "contador contador--bolha contador--novo", "aria-hidden": "true", children: l.notif }),
+          ],
+        });
     return (0, r.jsxs)("div", {
       className: "app" + (e ? " app--menu" : " app--entrada"),
       children: [
-        // An\xFAncio para leitores de tela quando chega mensagem nova no Chat fora da tela do Chat
+        // Anúncio para leitores de tela quando chega mensagem nova no Chat fora da tela do Chat
         (0, r.jsx)("div", {
           className: "so-leitor",
           role: "status",
@@ -1062,36 +1234,29 @@
               className: "logo-link",
               onClick: t,
               "aria-label": "zElo. Ir para a tela inicial",
-              children: (0, r.jsx)("img", {
-                src: a === "escuro" ? "logo-escuro.png" : "logo-claro.png",
-                alt: "zElo",
-                width: "1132",
-                height: "665",
-              }),
+              children: (0, r.jsx)(zLogo, {}),
             }),
-            e
-              ? (0, r.jsx)("nav", {
-                  "aria-label": "Menu principal",
-                  children: (0, r.jsx)("ul", {
-                    className: "menu",
-                    children: zS.map((c) => itemMenu(c, !1)),
-                  }),
-                })
-              : fr &&
-                (0, r.jsx)("p", { className: "coluna-fim", children: fr }),
             e &&
-              (0, r.jsx)("div", {
-                className: "coluna-ajuda",
-                children: (0, r.jsxs)("button", {
-                  type: "button",
-                  className: "btn-emergencia",
-                  onClick: () => n("ajuda"),
-                  "aria-current": o === "ajuda" ? "page" : void 0,
-                  children: [
-                    (0, r.jsx)(la, { n: "ajuda", size: 22 }),
-                    "Preciso de ajuda",
-                  ],
+              (0, r.jsx)("nav", {
+                "aria-label": "Menu principal",
+                children: (0, r.jsx)("ul", {
+                  className: "menu",
+                  children: zS.map((c) => itemMenu(c, !1)),
                 }),
+              }),
+            e &&
+              (0, r.jsxs)("div", {
+                className: "coluna-fim",
+                children: [
+                  (0, r.jsx)("ul", { className: "menu", children: itemMenu(zItemPerfil, !1) }),
+                  (0, r.jsxs)("button", {
+                    type: "button",
+                    className: "btn-emergencia",
+                    onClick: () => n("ajuda"),
+                    "aria-current": o === "ajuda" ? "page" : void 0,
+                    children: [(0, r.jsx)(la, { n: "ajuda", size: 20 }), "Preciso de ajuda"],
+                  }),
+                ],
               }),
           ],
         }),
@@ -1106,48 +1271,44 @@
                   className: "topo-logo",
                   onClick: t,
                   "aria-label": "zElo. Ir para a tela inicial",
-                  children: (0, r.jsx)("img", {
-                    src: a === "escuro" ? "logo-escuro.png" : "logo-claro.png",
-                    alt: "zElo",
-                    width: "1132",
-                    height: "665",
-                  }),
+                  children: (0, r.jsx)(zLogo, {}),
                 }),
                 e &&
-                  (0, r.jsxs)("button", {
-                    type: "button",
-                    className: "topo-sino",
-                    onClick: () => n("notificacoes"),
-                    "aria-current": o === "notif" ? "page" : void 0,
-                    "aria-label": l.notif > 0 ? "Notifica\xE7\xF5es, " + l.notif + (l.notif === 1 ? " nova" : " novas") : "Notifica\xE7\xF5es",
+                  (0, r.jsxs)("div", {
+                    className: "topo-titulo",
                     children: [
-                      (0, r.jsx)(la, { n: "sino", size: 22 }),
-                      l.notif > 0 && (0, r.jsx)("span", { className: "contador", "aria-hidden": "true", children: l.notif }),
+                      vt &&
+                        (0, r.jsxs)("button", {
+                          type: "button",
+                          className: "topo-voltar",
+                          onClick: vt.ir,
+                          children: [(0, r.jsx)(la, { n: "voltar", size: 20 }), vt.rotulo],
+                        }),
+                      (0, r.jsx)("p", { className: vt ? "topo-nome topo-nome--sub" : "topo-nome", children: tt }),
                     ],
                   }),
-                e &&
-                  (0, r.jsx)("button", {
-                    type: "button",
-                    className: "topo-avatar",
-                    onClick: () => n("perfil"),
-                    "aria-current": o === "perfil" ? "page" : void 0,
-                    "aria-label": "Perfil",
-                    children: ini || (0, r.jsx)(la, { n: "perfil", size: 22 }),
-                  }),
+                (0, r.jsxs)("div", {
+                  className: "topo-acoes",
+                  children: [
+                    (0, r.jsx)(zTemaMenu, { tema: a, setTema: st }),
+                    sino,
+                    e &&
+                      (0, r.jsx)("button", {
+                        type: "button",
+                        className: "topo-avatar",
+                        onClick: () => n("perfil"),
+                        "aria-current": o === "perfil" ? "page" : void 0,
+                        "aria-label": "Perfil",
+                        children: ini || (0, r.jsx)(la, { n: "perfil", size: 20 }),
+                      }),
+                  ],
+                }),
               ],
             }),
             (0, r.jsx)("main", { id: "principal", tabIndex: -1, children: s }),
-            (0, r.jsxs)("footer", {
+            (0, r.jsx)("footer", {
               className: "rodape",
-              children: [
-                (0, r.jsx)("span", {
-                  children:
-                    "zElo. Dire\xE7\xE3o, ajuda e apoio para quem cuida de pessoas com defici\xEAncia (PcD).",
-                }),
-                (0, r.jsx)("span", {
-                  children: "Prot\xF3tipo com dados fict\xEDcios.",
-                }),
-              ],
+              children: (0, r.jsx)("span", { children: "Prot\xF3tipo com dados fict\xEDcios." }),
             }),
           ],
         }),
@@ -1164,145 +1325,63 @@
             className: "barra-baixo",
             "aria-label": "Menu principal (celular)",
             children: (0, r.jsx)("ul", {
-              children: zS
-                .filter((c) => c.id !== "perfil" && c.id !== "notif")
-                .map((c) => itemMenu(c, !0)),
+              children: zS.map((c) => itemMenu(c, !0)),
             }),
           }),
       ],
     });
   }
-  // Tema: o que a pessoa escolheu antes; sen\xE3o, o que o celular pede (alto contraste ou modo escuro)
+  // Tema: o claro é o padrão. Vale o que a pessoa escolheu antes; quem pede alto contraste no aparelho já começa nele.
   function zTemaInicial() {
     try {
       let t = localStorage.getItem("zelo-tema");
       if (t && jS.some((x) => x.id === t)) return t;
     } catch (x) {}
     let mq = (q) => window.matchMedia && window.matchMedia(q).matches;
-    return mq("(prefers-contrast: more)") || mq("(forced-colors: active)")
-      ? "alto-contraste"
-      : mq("(prefers-color-scheme: dark)")
-        ? "escuro"
-        : "claro";
+    return mq("(prefers-contrast: more)") || mq("(forced-colors: active)") ? "alto-contraste" : "claro";
   }
-  function zTemaRapido({ tema: v, setTema: A }) {
-    return (0, r.jsxs)("div", {
-      className: "tema-rapido",
-      role: "radiogroup",
-      "aria-labelledby": "tema-rapido-h",
-      children: [
-        (0, r.jsx)("span", { id: "tema-rapido-h", children: "Tela" }),
-        jS.map((x) =>
-          (0, r.jsx)(
-            "button",
-            {
-              type: "button",
-              role: "radio",
-              "aria-checked": v === x.id,
-              className: "tema-rapido-op",
-              onClick: () => A(x.id),
-              children: x.rotulo,
-            },
-            x.id,
-          ),
-        ),
-      ],
-    });
+  function zLetraInicial() {
+    try {
+      let t = localStorage.getItem("zelo-letra");
+      if (t && zLetras.some((x) => x.id === t)) return t;
+    } catch (x) {}
+    return "padrao";
   }
-  function FS({ escolher: a, tema: tm, setTema: st }) {
+  function FS({ escolher: a }) {
+    let op = (id, ic, tit, sub) =>
+      (0, r.jsxs)(
+        "button",
+        {
+          type: "button",
+          className: "opcao opcao--entrada",
+          onClick: () => a(id),
+          children: [
+            (0, r.jsx)("span", { className: "opcao-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic, size: 24 }) }),
+            (0, r.jsxs)("span", {
+              className: "opcao-texto",
+              children: [tit, (0, r.jsx)("span", { className: "opcao-sub", children: sub })],
+            }),
+            (0, r.jsx)(la, { n: "avancar", size: 20 }),
+          ],
+        },
+        id,
+      );
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsxs)("div", {
-          className: "hero-mobile",
-          "aria-hidden": "true",
-          children: [
-            (0, r.jsx)("img", { src: "logo-claro.png", alt: "", width: "1132", height: "665" }),
-            (0, r.jsx)("p", { children: "Voc\xEA n\xE3o est\xE1 s\xF3" }),
-          ],
-        }),
-        (0, r.jsx)("h1", {
-          className: "display",
-          tabIndex: -1,
-          children: "Como voc\xEA quer usar o zElo?",
-        }),
+        (0, r.jsx)("h1", { tabIndex: -1, children: "Como voc\xEA quer usar o zElo?" }),
         (0, r.jsxs)("div", {
           className: "objetivo-opcoes opcoes",
           children: [
-            (0, r.jsxs)("button", {
-              type: "button",
-              className: "opcao",
-              onClick: () => a("responsavel"),
-              children: [
-                (0, r.jsxs)("span", {
-                  children: [
-                    "Sou respons\xE1vel",
-                    (0, r.jsx)("span", {
-                      className: "opcao-sub",
-                      children:
-                        "Cuido de uma pessoa com defici\xEAncia e quero dire\xE7\xE3o e apoio.",
-                    }),
-                  ],
-                }),
-                (0, r.jsx)("span", {
-                  className: "opcao-estado",
-                  children: (0, r.jsx)(la, { n: "avancar", size: 28 }),
-                }),
-              ],
-            }),
-            (0, r.jsxs)("button", {
-              type: "button",
-              className: "opcao",
-              onClick: () => a("pcd"),
-              children: [
-                (0, r.jsxs)("span", {
-                  children: [
-                    "Sou a pessoa com defici\xEAncia",
-                    (0, r.jsx)("span", {
-                      className: "opcao-sub",
-                      children:
-                        "Uso o zElo por conta pr\xF3pria para cuidar da minha sa\xFAde.",
-                    }),
-                  ],
-                }),
-                (0, r.jsx)("span", {
-                  className: "opcao-estado",
-                  children: (0, r.jsx)(la, { n: "avancar", size: 28 }),
-                }),
-              ],
-            }),
-            (0, r.jsxs)("button", {
-              type: "button",
-              className: "opcao",
-              onClick: () => a("voluntario"),
-              children: [
-                (0, r.jsxs)("span", {
-                  children: [
-                    "Sou volunt\xE1rio",
-                    (0, r.jsx)("span", {
-                      className: "opcao-sub",
-                      children:
-                        "Sou profissional de sa\xFAde ou educa\xE7\xE3o e quero ajudar.",
-                    }),
-                  ],
-                }),
-                (0, r.jsx)("span", {
-                  className: "opcao-estado",
-                  children: (0, r.jsx)(la, { n: "avancar", size: 28 }),
-                }),
-              ],
-            }),
+            op("responsavel", "perfil", "Sou respons\xE1vel", "Cuido de uma pessoa com defici\xEAncia."),
+            op("pcd", "apoio", "Sou a pessoa com defici\xEAncia", "Uso o zElo para cuidar da minha sa\xFAde."),
+            op("voluntario", "verificado", "Sou volunt\xE1rio", "Sou profissional de sa\xFAde e quero ajudar."),
           ],
         }),
-        (0, r.jsx)("div", {
-          style: { marginTop: 32 },
-          children: (0, r.jsx)(Do, {
-            tipo: "info",
-            children:
-              "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
-          }),
+        (0, r.jsx)("p", {
+          className: "apoio nota-cras",
+          children: "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
         }),
-        st && (0, r.jsx)(zTemaRapido, { tema: tm, setTema: st }),
         (0, r.jsxs)("p", {
           className: "apoio equipe-link",
           children: [
@@ -1325,6 +1404,7 @@
       [n, l] = (0, L.useState)(""),
       [s, i] = (0, L.useState)({}),
       [enviado, setEnviado] = (0, L.useState)(""),
+      [ocupado, agir] = zUseAcao(),
       limpa = (k) => s[k] && i({ ...s, [k]: void 0 }),
       trocar = (m) => {
         (setModo(m), i({}), setEnviado(""));
@@ -1341,8 +1421,8 @@
       leads = {
         entrar: vol
           ? "Use o e-mail e a senha do seu cadastro."
-          : "Entre para ver seus atendimentos, conversas e dicas.",
-        criar: "Depois, tr\xEAs perguntas r\xE1pidas para organizar o que mostramos primeiro.",
+          : "Entre para ver seus atendimentos, conversas e orienta\xE7\xF5es.",
+        criar: "Depois, tr\xEAs perguntas r\xE1pidas para mostrar primeiro o que importa.",
         esqueci: "Digite o e-mail da sua conta. Enviamos um link para voc\xEA criar uma senha nova.",
       };
     return (0, r.jsxs)(
@@ -1374,8 +1454,7 @@
               if (modo === "entrar" && !n)
                 I.senha = "Falta a senha. Escreva a senha da sua conta.";
               if ((i(I), Object.keys(I).length)) return Or();
-              if (modo === "esqueci") return setEnviado(e.trim());
-              o(e.trim(), modo === "criar" ? nome.trim() : "");
+              agir(() => (modo === "esqueci" ? setEnviado(e.trim()) : o(e.trim(), modo === "criar" ? nome.trim() : "")));
             },
             noValidate: !0,
             children: [
@@ -1439,7 +1518,8 @@
                 className: "acoes acoes--cheia",
                 children: (0, r.jsx)(ia, {
                   type: "submit",
-                  fim: "avancar",
+                  ocupado,
+                  textoOcupado: modo === "criar" ? "Criando conta\u2026" : modo === "esqueci" ? "Enviando\u2026" : "Entrando\u2026",
                   children:
                     modo === "criar"
                       ? "Criar conta"
@@ -1491,18 +1571,16 @@
   var _S = [
     {
       campo: "tipo",
-      titulo: "Qual \xE9 o tipo de defici\xEAncia?",
-      ajuda:
-        "Pode escolher mais de uma. Se ainda n\xE3o h\xE1 diagn\xF3stico, escolha Ainda n\xE3o sei.",
+      titulo: "Qual \xE9 a defici\xEAncia?",
+      ajuda: "Pode escolher mais de uma. Sem diagn\xF3stico, escolha Ainda n\xE3o sei.",
       itens: Em,
       multi: !0,
-      aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar. Se escolheu Outra, escreva qual \xE9.",
+      aviso: "Escolha pelo menos uma op\xE7\xE3o. Se escolheu Outra, escreva qual \xE9.",
     },
     {
       campo: "direcionamento",
       titulo: "Com que parte da sa\xFAde voc\xEA quer ajuda primeiro?",
-      ajuda:
-        "Escolha uma ou mais op\xE7\xF5es. Isso define o que aparece primeiro para voc\xEA.",
+      ajuda: "Pode escolher mais de uma. O que aparece primeiro no zElo segue esta resposta.",
       itens: El,
       multi: !0,
       aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar.",
@@ -1516,6 +1594,11 @@
       aviso: "Escolha pelo menos uma op\xE7\xE3o para continuar.",
     },
   ];
+  // Perguntas iniciais. Para o responsável, as perguntas usam o nome da pessoa cuidada.
+  function zDe(diag, papel) {
+    let nm = ((diag && diag.pessoa) || "").trim();
+    return papel === "pcd" ? null : nm ? "de " + nm : "da pessoa que voc\xEA cuida";
+  }
   function GS({
     passo: a,
     setPasso: o,
@@ -1523,10 +1606,22 @@
     setDiag: t,
     concluir: n,
     sair: l,
+    papel: pp,
+    naJanela: nj,
   }) {
     let s = _S[a - 1],
       i = e[s.campo],
-      c = (s.multi ? i.length > 0 : !!i) && !(s.campo === "tipo" && i.includes("outra") && !(e.tipoOutra || "").trim()),
+      resp = pp !== "pcd",
+      de = zDe(e, pp),
+      titulo =
+        s.campo === "tipo"
+          ? resp ? "Qual \xE9 a defici\xEAncia " + de + "?" : "Qual \xE9 a sua defici\xEAncia?"
+          : s.campo === "especificidades"
+            ? resp ? "Quais destas situa\xE7\xF5es fazem parte do dia a dia " + de + "?" : "Quais destas situa\xE7\xF5es fazem parte do seu dia a dia?"
+            : s.titulo,
+      faltaNome = s.campo === "tipo" && resp && !(e.pessoa || "").trim(),
+      c = (s.multi ? i.length > 0 : !!i) && !faltaNome && !(s.campo === "tipo" && i.includes("outra") && !(e.tipoOutra || "").trim()),
+      [ocupado, agir] = zUseAcao(500),
       m = (I) => {
         if (!s.multi) return t({ ...e, [s.campo]: I });
         let f;
@@ -1537,16 +1632,30 @@
           f = u.includes(I) ? u.filter((g) => g !== I) : [...u, I];
         }
         t({ ...e, [s.campo]: f });
-      };
+      },
+      outra = (0, r.jsxs)("div", {
+        className: "campo outra-campo",
+        children: [
+          (0, r.jsx)("label", { className: "campo-rotulo", htmlFor: "tipo-outra", children: "Qual defici\xEAncia?" }),
+          (0, r.jsx)("input", {
+            id: "tipo-outra",
+            className: "campo-entrada",
+            value: e.tipoOutra || "",
+            maxLength: 80,
+            autoComplete: "off",
+            onChange: (I) => t({ ...e, tipoOutra: I.target.value }),
+          }),
+          (0, r.jsx)("span", { className: "campo-ajuda", children: "Se n\xE3o souber o nome, descreva do seu jeito." }),
+        ],
+      });
     return (0, r.jsxs)(
       "section",
       {
         className: "entra",
         children: [
-          (0, r.jsx)(Ye, { onClick: () => (a === 1 ? l() : o(a - 1)) }),
+          !nj && (0, r.jsx)(Ye, { onClick: () => (a === 1 ? l() : o(a - 1)) }),
           (0, r.jsxs)("header", {
             className: "cabeca",
-            style: { marginBottom: 32 },
             children: [
               (0, r.jsx)("div", {
                 className: "progresso",
@@ -1557,62 +1666,51 @@
               }),
               (0, r.jsxs)("p", {
                 className: "passo",
-                children: ["Passo ", a, " de ", _S.length],
+                children: ["Passo ", a, " de ", _S.length, a === 1 ? " \xB7 leva menos de 2 minutos" : ""],
               }),
-              a === 1 &&
-                (0, r.jsxs)("span", {
-                  className: "selo-tempo",
-                  children: [(0, r.jsx)(la, { n: "apoio", size: 16 }), "Leva menos de 2 minutos"],
-                }),
-              (0, r.jsx)("h1", { tabIndex: -1, children: s.titulo }),
-              s.ajuda &&
-                (0, r.jsx)("p", {
-                  className: "lead",
-                  style: { fontSize: 18 },
-                  children: s.ajuda,
-                }),
+              (0, r.jsx)(nj ? "h3" : "h1", { tabIndex: -1, children: titulo }),
+              s.ajuda && (0, r.jsx)("p", { className: "lead", children: s.ajuda }),
             ],
           }),
+          s.campo === "tipo" &&
+            resp &&
+            (0, r.jsx)(Za, {
+              id: "pessoa-nome",
+              rotulo: "Nome da pessoa que voc\xEA cuida",
+              ajuda: "Usamos o nome nos textos sobre ela. Pode ser um apelido.",
+              value: e.pessoa || "",
+              maxLength: 40,
+              autoComplete: "off",
+              onChange: (I) => t({ ...e, pessoa: I.target.value }),
+            }),
           (0, r.jsx)(Tm, {
             itens: s.itens,
             valor: i,
             onChange: m,
             multi: s.multi,
-            rotulo: s.titulo,
+            rotulo: titulo,
+            depois: s.campo === "tipo" && i.includes("outra") ? { outra } : null,
           }),
-          s.campo === "tipo" &&
-            i.includes("outra") &&
-            (0, r.jsxs)("div", {
-              className: "campo outra-campo",
-              children: [
-                (0, r.jsx)("label", { htmlFor: "tipo-outra", children: "Qual defici\xEAncia?" }),
-                (0, r.jsx)("input", {
-                  id: "tipo-outra",
-                  className: "campo-entrada",
-                  value: e.tipoOutra || "",
-                  maxLength: 80,
-                  autoComplete: "off",
-                  onChange: (I) => t({ ...e, tipoOutra: I.target.value }),
-                }),
-                (0, r.jsx)("span", { className: "apoio", children: "Se n\xE3o souber o nome, descreva do seu jeito." }),
-              ],
-            }),
           (0, r.jsxs)("div", {
             className: "acoes",
-            style: { marginTop: 40 },
             children: [
               (0, r.jsx)(ia, {
                 disabled: !c,
                 "aria-disabled": !c,
-                onClick: () => c && (a === _S.length ? n() : o(a + 1)),
-                fim: "avancar",
+                "aria-describedby": c ? void 0 : "diag-aviso",
+                ocupado,
+                textoOcupado: "Salvando…",
+                onClick: () => c && (a === _S.length ? agir(n) : o(a + 1)),
+                fim: a === _S.length ? void 0 : "avancar",
                 children: a === _S.length ? "Concluir" : "Continuar",
               }),
+              nj && a > 1 && (0, r.jsx)(ia, { sec: !0, onClick: () => o(a - 1), children: "Voltar" }),
               !c &&
                 (0, r.jsx)("span", {
+                  id: "diag-aviso",
                   className: "aviso",
                   role: "status",
-                  children: s.aviso,
+                  children: faltaNome ? "Escreva o nome da pessoa e escolha pelo menos uma op\xE7\xE3o." : s.aviso,
                 }),
             ],
           }),
@@ -1633,6 +1731,7 @@
       [n, l] = (0, L.useState)(""),
       [s, i] = (0, L.useState)({}),
       c = (0, L.useRef)(null),
+      [ocupado, agir] = zUseAcao(),
       m = (f) => (u) => {
         (t({ ...e, [f]: u.target.value }), s[f] && i({ ...s, [f]: void 0 }));
       };
@@ -1650,7 +1749,7 @@
             (0, r.jsx)("p", {
               className: "lead",
               children:
-                "Pedimos seus dados b\xE1sicos e a comprova\xE7\xE3o do t\xEDtulo profissional.",
+                "Pedimos seus dados e o comprovante do seu registro profissional.",
             }),
           ],
         }),
@@ -1672,7 +1771,7 @@
                 (u.arquivo =
                   "Falta a comprova\xE7\xE3o do t\xEDtulo. Envie uma foto ou PDF do diploma ou da carteira do conselho."),
               i(u),
-              Object.keys(u).length ? Or() : o(e));
+              Object.keys(u).length ? Or() : agir(() => o(e)));
           },
           noValidate: !0,
           children: [
@@ -1794,7 +1893,8 @@
               style: { marginTop: 32 },
               children: (0, r.jsx)(ia, {
                 type: "submit",
-                fim: "avancar",
+                ocupado,
+                textoOcupado: "Enviando\u2026",
                 children: "Enviar cadastro",
               }),
             }),
@@ -1816,75 +1916,43 @@
     });
   }
   function PS({ nome: a, aprovar: o, voltar: e }) {
+    let [ocupado, agir] = zUseAcao(),
+      etapa = (txt, st) =>
+        (0, r.jsxs)("li", {
+          children: [(0, r.jsx)("span", { children: txt }), st ? (0, r.jsx)(zStatus, { s: st }) : (0, r.jsx)("span", { className: "apoio", children: "Depois da an\xE1lise" })],
+        });
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsx)("header", {
+        (0, r.jsxs)("header", {
           className: "cabeca",
-          style: { marginBottom: 32 },
-          children: (0, r.jsxs)("h1", {
-            tabIndex: -1,
-            children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0]],
-          }),
-        }),
-        (0, r.jsx)(Do, {
-          tipo: "info",
-          children:
-            "Uma pessoa da equipe zElo confere o seu documento em at\xE9 24 horas.",
+          children: [
+            (0, r.jsxs)("h1", {
+              tabIndex: -1,
+              children: ["Recebemos seu cadastro, ", (a || "").split(" ")[0]],
+            }),
+            (0, r.jsx)("p", { className: "lead", children: "Uma pessoa da equipe zElo confere o seu documento em at\xE9 24 horas." }),
+          ],
         }),
         (0, r.jsxs)("ul", {
           className: "etapas",
           children: [
-            (0, r.jsxs)("li", {
-              children: [
-                (0, r.jsx)("span", { children: "Cadastro enviado" }),
-                (0, r.jsx)(Bo, { icone: "confirmar", children: "Feito" }),
-              ],
-            }),
-            (0, r.jsxs)("li", {
-              children: [
-                (0, r.jsx)("span", {
-                  children: "Consulta do registro no conselho profissional",
-                }),
-                (0, r.jsx)(Bo, { icone: "confirmar", children: "Feito" }),
-              ],
-            }),
-            (0, r.jsxs)("li", {
-              children: [
-                (0, r.jsx)("span", {
-                  children: "An\xE1lise do documento por uma pessoa da equipe",
-                }),
-                (0, r.jsx)(Bo, { forte: !0, children: "Em andamento" }),
-              ],
-            }),
-            (0, r.jsxs)("li", {
-              children: [
-                (0, r.jsx)("span", { children: "Acesso liberado" }),
-                (0, r.jsx)(Bo, { children: "Aguardando" }),
-              ],
-            }),
+            etapa("Cadastro enviado", "confirmado"),
+            etapa("Consulta do registro no conselho", "confirmado"),
+            etapa("An\xE1lise do documento pela equipe", "aguardando"),
+            etapa("Acesso liberado", null),
           ],
         }),
         (0, r.jsx)("p", {
           className: "apoio medida",
-          style: { marginTop: 24 },
           children:
-            "Enviaremos o resultado para o seu e-mail. Depois da an\xE1lise, o documento \xE9 apagado. Guardamos s\xF3 o seu nome, o n\xFAmero do registro e a data da verifica\xE7\xE3o.",
+            "O resultado chega no seu e-mail. Depois da an\xE1lise, o documento \xE9 apagado. Guardamos s\xF3 o seu nome, o n\xFAmero do registro e a data.",
         }),
         (0, r.jsxs)("div", {
           className: "acoes",
           children: [
-            (0, r.jsx)(ia, {
-              onClick: o,
-              fim: "avancar",
-              children: "Simular aprova\xE7\xE3o",
-            }),
-            (0, r.jsx)("button", {
-              type: "button",
-              className: "link",
-              onClick: e,
-              children: "Voltar ao in\xEDcio",
-            }),
+            (0, r.jsx)(ia, { onClick: () => agir(o), ocupado, textoOcupado: "Aprovando\u2026", children: "Simular aprova\xE7\xE3o" }),
+            (0, r.jsx)(ia, { sec: !0, onClick: e, children: "Voltar ao in\xEDcio" }),
           ],
         }),
       ],
@@ -1897,6 +1965,142 @@
       children: a.iniciais,
     });
   }
+  // Cabeçalho de seção: título colado ao conteúdo e o atalho na mesma linha, à direita
+  function zSecaoTopo({ id, titulo: t, sub: sb, atalho: at }) {
+    return (0, r.jsxs)("div", {
+      className: "secao-topo",
+      children: [
+        (0, r.jsxs)("div", {
+          children: [(0, r.jsx)("h2", { id, children: t }), sb && (0, r.jsx)("p", { className: "apoio", children: sb })],
+        }),
+        at && (0, r.jsx)("button", { type: "button", className: "link secao-atalho", onClick: at[1], children: at[0] }),
+      ],
+    });
+  }
+  // Faixa de números: rótulo pequeno e número grande. Cada um leva à sua tela.
+  function zNumeros({ itens: it, rotulo: rt }) {
+    return (0, r.jsx)("ul", {
+      className: "numeros",
+      "aria-label": rt,
+      children: it.map((x) =>
+        (0, r.jsx)(
+          "li",
+          {
+            children: (0, r.jsxs)("button", {
+              type: "button",
+              className: "numero",
+              onClick: x.ir,
+              children: [
+                (0, r.jsx)("span", { className: "numero-rotulo", children: x.rotulo }),
+                (0, r.jsx)("span", { className: "numero-valor", children: x.n }),
+              ],
+            }),
+          },
+          x.rotulo,
+        ),
+      ),
+    });
+  }
+  // Faixa da semana com os dias que têm atendimento. O próximo fica em destaque.
+  var zDiasSemana = [
+    { id: "d2", sem: "Seg", n: 2 },
+    { id: "d3", sem: "Ter", n: 3 },
+    { id: "d4", sem: "Qua", n: 4 },
+    { id: "d5", sem: "Qui", n: 5 },
+    { id: "d6", sem: "Sex", n: 6 },
+    { id: "d7", sem: "S\xE1b", n: 7 },
+    { id: "d8", sem: "Dom", n: 8 },
+  ];
+  function zSemanaFaixa({ agenda: ag, proximo: m, ver: vr, agendar: agd }) {
+    return (0, r.jsxs)("div", {
+      className: "semana",
+      children: [
+        (0, r.jsx)("ol", {
+          className: "semana-dias",
+          "aria-label": "Esta semana, de 2 a 8 de novembro",
+          children: zDiasSemana.map((d) => {
+            let tem = ag.filter((x) => x.diaId === d.id),
+              prox = m && m.diaId === d.id;
+            return (0, r.jsxs)(
+              "li",
+              {
+                className: "semana-dia" + (prox ? " semana-dia--prox" : "") + (d.id === "d2" ? " semana-dia--hoje" : ""),
+                "aria-label": (d.id === "d2" ? "Hoje, " : "") + d.sem + " " + d.n + (tem.length ? ", " + tem.length + (tem.length === 1 ? " atendimento" : " atendimentos") : ""),
+                children: [
+                  (0, r.jsx)("span", { className: "semana-sem", "aria-hidden": "true", children: d.id === "d2" ? "Hoje" : d.sem }),
+                  (0, r.jsx)("span", { className: "semana-n", "aria-hidden": "true", children: d.n }),
+                  (0, r.jsx)("span", { className: "semana-ponto" + (tem.length ? " semana-ponto--on" : ""), "aria-hidden": "true" }),
+                ],
+              },
+              d.id,
+            );
+          }),
+        }),
+        m
+          ? (0, r.jsxs)("div", {
+              className: "semana-detalhe",
+              children: [
+                (0, r.jsxs)("div", {
+                  children: [
+                    (0, r.jsxs)("p", { className: "semana-quando", children: ["O pr\xF3ximo atendimento \xE9 ", m.dia.toLowerCase().replace(/^hoje/, "hoje"), ", \xE0s ", m.hora] }),
+                    (0, r.jsxs)("p", { className: "apoio", children: [m.prof.area, " com ", m.prof.nome, ". ", zOndeTexto(m), "."] }),
+                  ],
+                }),
+                (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: vr, children: "Ver agendamento" }),
+              ],
+            })
+          : (0, r.jsxs)("div", {
+              className: "semana-detalhe",
+              children: [
+                (0, r.jsx)("p", { className: "apoio", children: "Nenhum atendimento marcado nesta semana. Escolha um profissional para marcar." }),
+                (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: agd, children: "Ver profissionais" }),
+              ],
+            }),
+      ],
+    });
+  }
+  // Cartão de profissional, para a grade (Início e Atendimentos)
+  function zCartaoProf({ p: f, agenda: ag, abrir: ab }) {
+    let livres = M2(f, ag),
+      ja = ag.some((x) => x.profId === f.id),
+      online = /Online/.test(f.onde);
+    return (0, r.jsxs)("article", {
+      className: "cartao-prof",
+      "aria-labelledby": "cp-" + f.id,
+      children: [
+        (0, r.jsxs)("div", {
+          className: "cartao-prof-topo",
+          children: [
+            (0, r.jsx)(qr, { p: f }),
+            f.agora && (0, r.jsx)(zStatus, { s: "hoje" }),
+          ],
+        }),
+        (0, r.jsx)("h3", { id: "cp-" + f.id, className: "cartao-prof-nome", children: f.nome }),
+        (0, r.jsx)(zSelo, {}),
+        (0, r.jsxs)("p", { className: "cartao-prof-area", children: [f.area, (0, r.jsxs)("span", { className: "apoio", children: [" \xB7 ", f.foco] })] }),
+        (0, r.jsxs)("p", {
+          className: "cartao-prof-info",
+          children: [(0, r.jsx)(la, { n: online && !f.modos ? "video" : "local", size: 16 }), f.modos ? "Presencial ou online" : online ? "Online por v\xEDdeo" : f.onde.replace(/^Presencial (em|na|no) /, "Presencial: ")],
+        }),
+        (0, r.jsxs)("p", {
+          className: "cartao-prof-info",
+          children: [(0, r.jsx)(la, { n: "relogio", size: 16 }), livres ? D2(f, ag).replace("Hoje, segunda, 2 de novembro", "Hoje") : "Sem hor\xE1rios livres nesta semana"],
+        }),
+        ja && (0, r.jsx)("p", { className: "cartao-prof-ja", children: "Voc\xEA j\xE1 tem hor\xE1rio marcado." }),
+        (0, r.jsx)("div", {
+          className: "cartao-prof-acao",
+          children: (0, r.jsx)(ia, {
+            sec: !0,
+            peq: !0,
+            disabled: !livres,
+            "aria-disabled": !livres,
+            onClick: () => livres && ab(f.id),
+            children: livres ? "Ver hor\xE1rios" : "Sem hor\xE1rios",
+          }),
+        }),
+      ],
+    });
+  }
   function ZS({
     usuario: a,
     papel: o,
@@ -1906,6 +2110,7 @@
     abrirTopico: l,
     abrirDica: s,
     abrirProf: i,
+    numeros: nums,
   }) {
     let zAreas = {
         terapias: ["Terapia ocupacional", "Fisioterapia", "Fonoaudiologia"],
@@ -1926,13 +2131,14 @@
             (k += 1));
         return k;
       },
-      online = At.filter((f) => f.agora),
       c = [...At]
         .map((f, k) => ({ f, k, rel: zRel(f) }))
         .filter((x) => x.rel > 0 || x.f.agora)
         .sort((x, y) => y.rel - x.rel || y.f.agora - x.f.agora || x.k - y.k)
         .map((x) => x.f),
       m = zSort(t)[0],
+      pessoa = o === "responsavel" && (e.pessoa || "").trim(),
+      ic = { "F\xF3rum": "forum", "Orienta\xE7\xE3o": "orientacoes", Atendimento: "calendario" },
       I = (0, L.useMemo)(() => {
         let f = e.direcionamento,
           u = Object.fromEntries(Nm.map((d) => [d.id, d])),
@@ -1949,9 +2155,9 @@
           }),
           y = (d) => ({
             k: d,
-            tipo: "Dica",
+            tipo: "Orienta\xE7\xE3o",
             titulo: g[d].titulo,
-            meta: `${g[d].autor}, ${g[d].area.toLowerCase()} \xB7 ${g[d].tempo}`,
+            meta: `${g[d].autor} \xB7 ${g[d].area}`,
             dir: g[d].dir,
             go: () => s(d),
           }),
@@ -1985,10 +2191,10 @@
           return [
             ...[A("t1"), A("t4"), A("t2")].map((S) => ({
               ...S,
-              motivo: "Pergunta aberta que espera uma resposta de profissional",
+              motivo: "Espera a resposta de um profissional",
             })),
             { ...A("t5"), motivo: "Conversa de quem cuida" },
-            { ...y("d1"), motivo: "Dica recente da sua \xE1rea" },
+            { ...y("d1"), motivo: "Orienta\xE7\xE3o recente da sua \xE1rea" },
           ].slice(0, 5);
         let p = (d) => (f.includes(d.dir) ? 0 : 1);
         return h
@@ -1997,233 +2203,95 @@
           .slice(0, 5)
           .map((d) => ({
             ...d,
-            motivo: f.includes(d.dir)
-              ? `Porque voc\xEA escolheu: ${w2[d.dir]}`
-              : "Sugest\xE3o para come\xE7ar",
+            motivo: f.includes(d.dir) ? `Voc\xEA escolheu ${w2[d.dir].toLowerCase()}` : "Para come\xE7ar",
           }));
       }, [e.direcionamento, o]);
     return (0, r.jsxs)("section", {
       className: "entra inicio",
       children: [
         (0, r.jsxs)("header", {
-          className: "cabeca",
-          style: { marginBottom: 40 },
+          className: "cabeca cabeca-linha",
           children: [
-            (0, r.jsx)("h1", {
-              className: "display",
-              tabIndex: -1,
-              children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}` : "Ol\xE1",
+            (0, r.jsxs)("div", {
+              children: [
+                (0, r.jsx)("h1", {
+                  tabIndex: -1,
+                  children: a.nome ? `Ol\xE1, ${a.nome.split(" ")[0]}` : "Ol\xE1",
+                }),
+                (0, r.jsx)("p", {
+                  className: "lead",
+                  children:
+                    o === "voluntario"
+                      ? "Veja onde a sua resposta pode ajudar hoje."
+                      : pessoa
+                        ? "Respons\xE1vel por " + pessoa + "."
+                        : o === "pcd"
+                          ? "Sua conta pessoal."
+                          : "Respons\xE1vel.",
+                }),
+              ],
             }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              children:
-                o === "voluntario"
-                  ? "Veja onde a sua resposta pode ajudar hoje."
-                  : o === "pcd"
-                    ? "Como est\xE1 a sua sa\xFAde hoje? Comece por um destes caminhos."
-                    : "Como a sa\xFAde de voc\xEAs est\xE1 hoje? Comece por um destes caminhos.",
-            }),
-            !a.nome &&
-              (0, r.jsxs)("p", {
-                className: "apoio",
-                style: { marginTop: 8 },
-                children: [
-                  "Ainda n\xE3o sabemos o seu nome. ",
-                  (0, r.jsx)("button", {
-                    type: "button",
-                    className: "link",
-                    onClick: () => n("perfil"),
-                    children: "Diga como podemos te chamar",
-                  }),
-                ],
-              }),
+            o === "voluntario"
+              ? (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Ver minha agenda" })
+              : (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Agendar consulta" }),
           ],
         }),
+        nums && (0, r.jsx)(zNumeros, { itens: nums, rotulo: "Resumo" }),
         o !== "voluntario" &&
-          m &&
           (0, r.jsxs)("div", {
-            className: "proximo",
+            className: "secao",
             children: [
-              (0, r.jsxs)("div", {
-                children: [
-                  (0, r.jsx)("h2", {
-                    className: "proximo-titulo",
-                    children: "Seu pr\xF3ximo atendimento",
-                  }),
-                  (0, r.jsxs)("p", {
-                    className: "proximo-quando",
-                    children: [m.dia, ", \xE0s ", m.hora],
-                  }),
-                  (0, r.jsxs)("p", {
-                    className: "proximo-quem",
-                    children: [
-                      m.prof.area,
-                      " com ",
-                      m.prof.nome,
-                      ". ",
-                      m.onde || m.prof.onde,
-                      ".",
-                    ],
-                  }),
-                ],
-              }),
-              (0, r.jsx)(ia, {
-                sec: !0,
-                peq: !0,
-                fim: "avancar",
-                onClick: () => n("atendimentos-meus"),
-                children: "Ver agendamento",
-              }),
+              (0, r.jsx)(zSecaoTopo, { id: "semana-h", titulo: "Esta semana", atalho: ["Ver agendamentos", () => n("atendimentos-meus")] }),
+              (0, r.jsx)(zSemanaFaixa, { agenda: t, proximo: m, ver: () => n("atendimentos-meus"), agendar: () => n("atendimentos") }),
             ],
           }),
         o !== "voluntario" &&
           (0, r.jsxs)("div", {
-            className: "secao disponiveis",
-            style: { marginTop: m ? 64 : 0 },
+            className: "secao",
             children: [
-              (0, r.jsxs)("div", {
-                className: "disp-topo",
-                children: [
-                  (0, r.jsxs)("div", {
-                    children: [
-                      (0, r.jsx)("h2", {
-                        id: "disp-h",
-                        children: "Profissionais para voc\xEA",
-                      }),
-                      (0, r.jsxs)("p", {
-                        className: "apoio disp-sub",
-                        children: [
-                          "Escolhidos pelas suas respostas. ",
-                          (0, r.jsxs)("span", {
-                            className: "online-ponto",
-                            children: [online.length, " volunt\xE1rios atendem hoje"],
-                          }),
-                          ", com hor\xE1rios ainda hoje.",
-                        ],
-                      }),
-                    ],
-                  }),
-                ],
+              (0, r.jsx)(zSecaoTopo, {
+                id: "disp-h",
+                titulo: pessoa ? "Profissionais para " + pessoa : "Profissionais para voc\xEA",
+                sub: "Escolhidos pelas suas respostas.",
+                atalho: ["Ver todos", () => n("atendimentos")],
               }),
-              (0, r.jsx)("ul", {
-                className: "lista",
+              (0, r.jsx)("div", {
+                className: "grade-prof",
+                role: "list",
                 "aria-labelledby": "disp-h",
-                children: c
-                  .slice(0, 4)
-                  .map((f) =>
-                    (0, r.jsx)(
-                      "li",
-                      {
-                        children: (0, r.jsxs)("button", {
-                          type: "button",
-                          className: "linha linha-prof",
-                          onClick: () => i(f.id),
-                          children: [
-                            (0, r.jsx)(qr, { p: f }),
-                            (0, r.jsxs)("span", {
-                              className: "linha-texto",
-                              children: [
-                                (0, r.jsxs)("span", {
-                                  className: "linha-titulo",
-                                  children: [
-                                    f.nome,
-                                    f.agora &&
-                                      (0, r.jsxs)(r.Fragment, {
-                                        children: [" ", (0, r.jsx)(Bo, { forte: !0, children: "Atende hoje" })],
-                                      }),
-                                  ],
-                                }),
-                                (0, r.jsxs)("span", {
-                                  className: "apoio linha-meta",
-                                  children: [f.area, " \xB7 ", f.foco],
-                                }),
-                                (0, r.jsxs)("span", {
-                                  className: "apoio linha-meta",
-                                  style: {
-                                    color: "var(--texto)",
-                                    fontWeight: 600,
-                                  },
-                                  children: [
-                                    "Pr\xF3ximo hor\xE1rio: ",
-                                    D2(f, t),
-                                  ],
-                                }),
-                              ],
-                            }),
-                            (0, r.jsxs)("span", {
-                              className: "linha-fim",
-                              children: [
-                                (0, r.jsx)(la, { n: "avancar", size: 24 }),
-                              ],
-                            }),
-                          ],
-                        }),
-                      },
-                      f.id,
-                    ),
-                  ),
-              }),
-              (0, r.jsx)("p", {
-                style: { marginTop: 16 },
-                children: (0, r.jsx)("button", {
-                  type: "button",
-                  className: "link",
-                  onClick: () => n("atendimentos"),
-                  children: "Ver todos os profissionais",
-                }),
+                children: c.slice(0, 3).map((f) => (0, r.jsx)("div", { role: "listitem", children: (0, r.jsx)(zCartaoProf, { p: f, agenda: t, abrir: i }) }, f.id)),
               }),
             ],
           }),
         (0, r.jsxs)("div", {
           className: "secao",
           children: [
-            (0, r.jsx)("h2", {
+            (0, r.jsx)(zSecaoTopo, {
               id: "feed-h",
-              children:
-                o === "voluntario" ? "Para voc\xEA responder" : "Para voc\xEA",
-            }),
-            (0, r.jsx)("p", {
-              className: "secao-sub",
-              children:
-                o === "voluntario"
-                  ? "Os temas em que a sua \xE1rea mais ajuda."
-                  : "Os conte\xFAdos mais \xFAteis, de acordo com as suas respostas.",
+              titulo: o === "voluntario" ? "Para voc\xEA responder" : "Para voc\xEA",
+              sub: o === "voluntario" ? "Os temas em que a sua \xE1rea mais ajuda." : null,
             }),
             (0, r.jsx)("ul", {
-              className: "lista feed",
+              className: "lista-linhas",
               "aria-labelledby": "feed-h",
-              children: I.map((f, u) =>
+              children: I.map((f) =>
                 (0, r.jsx)(
                   "li",
                   {
-                    style: { "--i": u },
                     children: (0, r.jsxs)("button", {
                       type: "button",
-                      className: "linha",
+                      className: "item-linha",
                       onClick: f.go,
                       children: [
+                        (0, r.jsx)("span", { className: "item-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic[f.tipo], size: 20 }) }),
                         (0, r.jsxs)("span", {
                           className: "linha-texto",
                           children: [
-                            (0, r.jsx)("span", {
-                              className: "linha-titulo",
-                              children: f.titulo,
-                            }),
-                            (0, r.jsxs)("span", {
-                              className: "apoio linha-meta",
-                              children: [f.tipo, ". ", f.meta],
-                            }),
-                            (0, r.jsx)("span", {
-                              className: "apoio linha-meta",
-                              style: { color: "var(--texto)", fontWeight: 600 },
-                              children: f.motivo,
-                            }),
+                            (0, r.jsx)("span", { className: "linha-titulo", children: f.titulo }),
+                            (0, r.jsxs)("span", { className: "apoio linha-meta", children: [f.tipo, " \xB7 ", f.meta, " \xB7 ", f.motivo] }),
                           ],
                         }),
-                        (0, r.jsx)("span", {
-                          className: "linha-fim",
-                          children: (0, r.jsx)(la, { n: "avancar", size: 24 }),
-                        }),
+                        (0, r.jsx)(la, { n: "avancar", size: 20 }),
                       ],
                     }),
                   },
@@ -2234,15 +2302,19 @@
           ],
         }),
         (0, r.jsxs)("p", {
-          className: "apoio medida",
-          style: { marginTop: 56, fontSize: 18, color: "var(--texto)" },
+          className: "aviso-192",
           children: [
-            "Em risco de vida, ligue 192. ",
-            (0, r.jsx)("button", {
-              type: "button",
-              className: "link",
-              onClick: () => n("ajuda"),
-              children: "Ver telefones e orienta\xE7\xF5es",
+            (0, r.jsx)(la, { n: "telefone", size: 20 }),
+            (0, r.jsxs)("span", {
+              children: [
+                "Em risco de vida, ligue 192. ",
+                (0, r.jsx)("button", {
+                  type: "button",
+                  className: "link",
+                  onClick: () => n("ajuda"),
+                  children: "Ver telefones e orienta\xE7\xF5es",
+                }),
+              ],
             }),
           ],
         }),
@@ -2250,71 +2322,93 @@
     });
   }
   var jS = [
-    {
-      id: "claro",
-      rotulo: "Claro",
-      sub: "Fundo claro. \xC9 o tema padr\xE3o.",
-    },
-    {
-      id: "escuro",
-      rotulo: "Escuro",
-      sub: "Fundo escuro, que cansa menos a vista \xE0 noite ou com pouca luz.",
-    },
-    {
-      id: "alto-contraste",
-      rotulo: "Alto contraste",
-      sub: "Preto no branco, com bordas grossas. Para quem enxerga pouco.",
-    },
-  ];
+      { id: "claro", rotulo: "Claro", ic: "sol", sub: "\xC9 o tema padr\xE3o." },
+      { id: "escuro", rotulo: "Escuro", ic: "lua", sub: "Cansa menos a vista \xE0 noite." },
+      { id: "alto-contraste", rotulo: "Alto contraste", ic: "contraste", sub: "Preto no branco, para quem enxerga pouco." },
+    ],
+    zLetras = [
+      { id: "padrao", rotulo: "Padr\xE3o" },
+      { id: "grande", rotulo: "Grande" },
+      { id: "maior", rotulo: "Maior" },
+    ];
+  // Escolha em faixa (tema, tamanho da letra). Usa o mesmo estilo de selecionado do resto do app.
+  function zSegmento({ itens: it, valor: v, mudar: md, rotulo: rt }) {
+    return (0, r.jsx)("div", {
+      className: "segmentado",
+      role: "radiogroup",
+      "aria-label": rt,
+      children: it.map((x) =>
+        (0, r.jsxs)(
+          "button",
+          {
+            type: "button",
+            role: "radio",
+            "aria-checked": v === x.id,
+            onClick: () => md(x.id),
+            children: [x.ic && (0, r.jsx)(la, { n: x.ic, size: 20 }), x.rotulo],
+          },
+          x.id,
+        ),
+      ),
+    });
+  }
   function XS({
     usuario: a,
     setUsuario: o,
     diag: e,
+    setDiag: sd,
     papel: t,
     tema: n,
     setTema: l,
-    refazer: s,
+    letra: lt,
+    setLetra: slt,
     sair: i,
   }) {
     let [c, m] = (0, L.useState)(a.nome),
       [I, f] = (0, L.useState)(!1),
       [u, g] = (0, L.useState)(""),
+      [ocupado, agir] = zUseAcao(),
+      [refazer, setRefazer] = (0, L.useState)(null),
+      [passo, setPasso] = (0, L.useState)(1),
       v = (y) => {
         if ((y.preventDefault(), !c.trim()))
           return g("Falta o nome. Exemplo: Marina");
-        (g(""), o({ ...a, nome: c.trim() }), f(!0));
+        (g(""), agir(() => (o({ ...a, nome: c.trim() }), f(!0))));
       },
       A = (y, h) =>
         h
           .map((p) => y.find((d) => d.id === p)?.rotulo)
           .filter(Boolean)
-          .join(", ") || "N\xE3o informado";
+          .join(", ") || "N\xE3o informado",
+      resp = t === "responsavel",
+      pessoa = (e.pessoa || "").trim(),
+      papelTxt = { responsavel: "Respons\xE1vel", pcd: "Pessoa com defici\xEAncia", voluntario: "Volunt\xE1rio" }[t] || "";
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsxs)("header", {
+        (0, r.jsx)("header", {
           className: "cabeca",
-          style: { marginBottom: 40 },
-          children: [
-            (0, r.jsx)("h1", { tabIndex: -1, children: "Perfil" }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              children:
-                "Ajuste o seu nome, o que o zElo mostra primeiro e o tema de cor.",
-            }),
-          ],
+          children: (0, r.jsx)("h1", { tabIndex: -1, children: "Perfil" }),
         }),
         (0, r.jsxs)("div", {
-          className: "perfil-bloco",
+          className: "bloco",
           children: [
-            (0, r.jsx)("h2", { children: "Seus dados" }),
+            (0, r.jsxs)("div", {
+              className: "bloco-topo",
+              children: [
+                (0, r.jsx)("span", { className: "avatar", "aria-hidden": "true", children: zIniciais(a.nome) || (0, r.jsx)(la, { n: "perfil", size: 20 }) }),
+                (0, r.jsxs)("div", {
+                  children: [(0, r.jsx)("h2", { children: "Voc\xEA" }), (0, r.jsx)("p", { className: "apoio", children: papelTxt })],
+                }),
+              ],
+            }),
             (0, r.jsxs)("form", {
               onSubmit: v,
               noValidate: !0,
               children: [
                 (0, r.jsx)(Za, {
                   id: "p-nome",
-                  rotulo: "Nome",
+                  rotulo: "Seu nome",
                   value: c,
                   onChange: (y) => {
                     (m(y.target.value), f(!1), u && g(""));
@@ -2325,121 +2419,98 @@
                   id: "p-email",
                   rotulo: (0, r.jsxs)("span", {
                     className: "rotulo-bloqueado",
-                    children: [(0, r.jsx)(la, { n: "cadeado", size: 18 }), "E-mail (n\xE3o pode ser editado aqui)"],
+                    children: [(0, r.jsx)(la, { n: "cadeado", size: 16 }), "E-mail"],
                   }),
                   value: a.email,
                   readOnly: !0,
                   "aria-readonly": "true",
-                  ajuda:
-                    "Para trocar o e-mail, pe\xE7a pelo chat. A equipe confere e faz a troca.",
+                  ajuda: "Para trocar o e-mail, pe\xE7a pelo chat.",
                 }),
-                I &&
-                  (0, r.jsx)("div", {
-                    className: "alerta-bloco",
-                    children: (0, r.jsx)(Do, {
-                      tipo: "ok",
-                      children: "Altera\xE7\xF5es salvas.",
-                    }),
-                  }),
-                (0, r.jsx)(ia, {
-                  type: "submit",
-                  children: "Salvar altera\xE7\xF5es",
-                }),
+                I && (0, r.jsx)("div", { className: "alerta-bloco", children: (0, r.jsx)(Do, { tipo: "ok", children: "Altera\xE7\xF5es salvas." }) }),
+                (0, r.jsx)(ia, { type: "submit", ocupado, textoOcupado: "Salvando…", children: "Salvar altera\xE7\xF5es" }),
               ],
             }),
           ],
         }),
         t !== "voluntario" &&
           (0, r.jsxs)("div", {
-            className: "perfil-bloco",
+            className: "bloco",
             children: [
-              (0, r.jsx)("h2", {
-                children: "Prefer\xEAncias do diagn\xF3stico",
+              (0, r.jsxs)("div", {
+                className: "bloco-topo",
+                children: [
+                  (0, r.jsx)("span", { className: "avatar avatar--pessoa", "aria-hidden": "true", children: resp && pessoa ? zIniciais(pessoa) : (0, r.jsx)(la, { n: "apoio", size: 20 }) }),
+                  (0, r.jsxs)("div", {
+                    children: [
+                      (0, r.jsx)("h2", { children: resp ? pessoa || "Pessoa cuidada" : "Sua sa\xFAde" }),
+                      (0, r.jsx)("p", { className: "apoio", children: resp ? "Pessoa cuidada" : "O que o zElo mostra primeiro" }),
+                    ],
+                  }),
+                ],
               }),
               (0, r.jsxs)("dl", {
                 children: [
                   (0, r.jsxs)("div", {
                     className: "pref-linha",
                     children: [
-                      (0, r.jsx)("dt", { children: "Tipo de defici\xEAncia" }),
+                      (0, r.jsx)("dt", { children: "Defici\xEAncia" }),
                       (0, r.jsx)("dd", {
-                        children:
-                          A(Em, e.tipo || []).replace("Outra", e.tipoOutra ? "Outra: " + e.tipoOutra : "Outra"),
+                        children: A(Em, e.tipo || []).replace("Outra", e.tipoOutra ? "Outra: " + e.tipoOutra : "Outra"),
                       }),
                     ],
                   }),
                   (0, r.jsxs)("div", {
                     className: "pref-linha",
-                    children: [
-                      (0, r.jsx)("dt", { children: "\xC1reas de sa\xFAde" }),
-                      (0, r.jsx)("dd", { children: A(El, e.direcionamento) }),
-                    ],
+                    children: [(0, r.jsx)("dt", { children: "\xC1reas de sa\xFAde" }), (0, r.jsx)("dd", { children: A(El, e.direcionamento) })],
                   }),
                   (0, r.jsxs)("div", {
                     className: "pref-linha",
-                    children: [
-                      (0, r.jsx)("dt", { children: "Especificidades" }),
-                      (0, r.jsx)("dd", { children: A(Lm, e.especificidades) }),
-                    ],
+                    children: [(0, r.jsx)("dt", { children: "Dia a dia" }), (0, r.jsx)("dd", { children: A(Lm, e.especificidades) })],
                   }),
-
                 ],
               }),
-              (0, r.jsx)("p", {
-                style: { marginTop: 16 },
-                children: (0, r.jsx)("button", {
-                  type: "button",
-                  className: "link",
-                  onClick: s,
+              (0, r.jsx)("div", {
+                className: "acoes",
+                children: (0, r.jsx)(ia, {
+                  sec: !0,
+                  icone: "editar",
+                  onClick: () => (setRefazer({ ...e }), setPasso(1)),
                   children: "Refazer as perguntas",
                 }),
               }),
             ],
           }),
         (0, r.jsxs)("div", {
-          className: "perfil-bloco",
+          className: "bloco",
           children: [
-            (0, r.jsx)("h2", { id: "tema-h", children: "Customiza\xE7\xE3o" }),
-            (0, r.jsx)("p", {
-              className: "secao-sub",
-              style: { marginBottom: 16 },
-              children:
-                "Escolha um tema. A mudan\xE7a aparece na hora, em toda a tela.",
-            }),
-            (0, r.jsx)(Tm, {
-              itens: jS,
-              valor: n,
-              onChange: l,
-              rotulo: "Tema de cor",
-            }),
-            (0, r.jsxs)("div", {
-              className: "previa",
-              "aria-label": "Pr\xE9via do tema escolhido",
-              role: "group",
-              children: [
-                (0, r.jsx)("p", { className: "previa-rotulo", children: "Pr\xE9via do tema" }),
-                (0, r.jsx)("p", { children: "Assim ficam os textos, as etiquetas e os bot\xF5es." }),
-                (0, r.jsxs)("div", {
-                  className: "previa-linha",
-                  children: [
-                    (0, r.jsx)(Bo, { forte: !0, children: "Verificado" }),
-                    (0, r.jsx)(Bo, { children: "Rotina" }),
-                    (0, r.jsx)("span", { className: "btn btn--peq", "aria-hidden": "true", children: "Bot\xE3o" }),
-                  ],
-                }),
-              ],
-            }),
+            (0, r.jsx)("h2", { id: "acess-h", children: "Acessibilidade" }),
+            (0, r.jsx)("h3", { className: "h-pequeno", children: "Tema" }),
+            (0, r.jsx)(zSegmento, { itens: jS, valor: n, mudar: l, rotulo: "Tema" }),
+            (0, r.jsx)("p", { className: "apoio campo-ajuda", children: (jS.find((x) => x.id === n) || jS[0]).sub }),
+            (0, r.jsx)("h3", { className: "h-pequeno", style: { marginTop: 24 }, children: "Tamanho da letra" }),
+            (0, r.jsx)(zSegmento, { itens: zLetras, valor: lt, mudar: slt, rotulo: "Tamanho da letra" }),
           ],
         }),
         (0, r.jsx)(zSemRespostaBloco, {}),
         (0, r.jsx)("div", {
-          className: "perfil-bloco",
-          children: (0, r.jsx)(ia, {
-            sec: !0,
-            onClick: i,
-            children: "Sair do zElo",
-          }),
+          className: "bloco bloco--fim",
+          children: (0, r.jsx)(ia, { sec: !0, icone: "sair", onClick: i, children: "Sair do zElo" }),
         }),
+        refazer &&
+          (0, r.jsx)(zJanela, {
+            titulo: "Refazer as perguntas",
+            fechar: () => setRefazer(null),
+            children: (0, r.jsx)(GS, {
+              naJanela: !0,
+              papel: t,
+              passo,
+              setPasso: setPasso,
+              diag: refazer,
+              setDiag: setRefazer,
+              concluir: () => (sd(refazer), setRefazer(null)),
+              sair: () => setRefazer(null),
+            }),
+          }),
       ],
     });
   }
@@ -2455,13 +2526,13 @@
         );
       };
     return (0, r.jsxs)("div", {
-      className: "perfil-bloco",
+      className: "bloco",
       children: [
         (0, r.jsx)("h2", { children: "Perguntas que a Ana n\xE3o soube responder" }),
         (0, r.jsx)("p", {
           className: "secao-sub",
           children:
-            "A equipe usa esta lista para acrescentar respostas na base. Neste prot\xF3tipo ela fica s\xF3 neste aparelho.",
+            "A equipe usa esta lista para ensinar respostas novas \xE0 Ana. Neste prot\xF3tipo ela fica s\xF3 neste aparelho.",
         }),
         l.length
           ? (0, r.jsxs)(r.Fragment, {
@@ -2492,7 +2563,7 @@
                 }),
               ],
             })
-          : (0, r.jsx)("p", { className: "apoio", children: "Nenhuma por enquanto." }),
+          : (0, r.jsx)("p", { className: "apoio", children: "Nenhuma por enquanto. Quando a Ana n\xE3o souber responder, a pergunta aparece aqui." }),
       ],
     });
   }
@@ -2550,7 +2621,7 @@
       ],
     },
     zLinkAtend = { rotulo: "Abrir Atendimentos", tela: "atendimentos" },
-    zLinkDicas = { rotulo: "Abrir Dicas", tela: "dicas" },
+    zLinkDicas = { rotulo: "Abrir Orienta\xE7\xF5es", tela: "dicas" },
     zLink192 = { rotulo: "Ver telefones de emerg\xEAncia", tela: "ajuda" },
     Ll = (a) =>
       a
@@ -2592,7 +2663,7 @@
   var zRotuloTela = {
     atendimentos: "Abrir Atendimentos",
     forum: "Abrir F\xF3rum",
-    dicas: "Abrir Dicas",
+    dicas: "Abrir Orienta\xE7\xF5es",
     ajuda: "Ver telefones de emerg\xEAncia",
     perfil: "Abrir Perfil",
   };
@@ -2702,7 +2773,7 @@
       return {
         texto: resp,
         opcoes: oferecer
-          ? ["Continuar conversando", "Quero falar com um profissional", "Ver dicas para quem cuida"]
+          ? ["Continuar conversando", "Quero falar com um profissional", "Ver orienta\xE7\xF5es para quem cuida"]
           : [],
         ctx: { f: "conversa", n },
         extra: oferecer
@@ -2767,7 +2838,7 @@
     let m = (I) => {
       let f = I.trim();
       if (!f || l) return;
-      if (/^ver dicas para quem cuida$/i.test(f)) return ir("dicas");
+      if (/^ver (dicas|orienta\xE7\xF5es) para quem cuida$/i.test(f)) return ir("dicas");
       let u = o.msgs.length,
         g = [...o.msgs, { de: "voce", texto: f, hora: Mm(u * 2) }];
       (e({ ...o, msgs: g, opcoes: [] }), n(""), s(!0));
@@ -2940,19 +3011,16 @@
     return (0, r.jsx)("span", {
       className: "etiquetas",
       children: a.etiquetas.map((o) =>
-        (0, r.jsx)(
-          Bo,
-          {
-            forte: o === "Novo",
-            icone: o === "Resolvido" ? "confirmar" : void 0,
-            children: o,
-          },
-          o,
-        ),
+        o === "Novo"
+          ? (0, r.jsx)(zStatus, { s: "novo" }, o)
+          : o === "Resolvido"
+            ? (0, r.jsx)(zStatus, { s: "resolvido" }, o)
+            : (0, r.jsx)(Bo, { children: o }, o),
       ),
     });
   }
-  function KS({ topicos: a, abrir: o, novo: e }) {
+  function KS({ topicos: a, abrir: o, publicar: pb }) {
+    let [novo, setNovo] = (0, L.useState)(!1);
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
@@ -2961,57 +3029,35 @@
           children: [
             (0, r.jsxs)("div", {
               children: [
-                (0, r.jsx)("h1", {
-                  tabIndex: -1,
-                  children: "F\xF3rum",
-                }),
-                (0, r.jsx)("p", {
-                  className: "lead",
-                  style: { fontSize: 18 },
-                  children:
-                    "Conversas entre fam\xEDlias, pessoas com defici\xEAncia e profissionais, das mais recentes para as mais antigas.",
-                }),
+                (0, r.jsx)("h1", { tabIndex: -1, children: "F\xF3rum" }),
+                (0, r.jsx)("p", { className: "lead", children: "Conversas entre fam\xEDlias, pessoas com defici\xEAncia e profissionais." }),
               ],
             }),
-            (0, r.jsx)(ia, {
-              icone: "adicionar",
-              onClick: e,
-              children: "Novo t\xF3pico",
-            }),
+            (0, r.jsx)(ia, { icone: "adicionar", onClick: () => setNovo(!0), children: "Novo t\xF3pico" }),
           ],
         }),
+        (0, r.jsx)("p", { className: "apoio lista-legenda", children: "Mais recentes primeiro." }),
         (0, r.jsx)("ul", {
-          className: "lista",
+          className: "lista-linhas",
+          "aria-label": "T\xF3picos do f\xF3rum",
           children: a.map((t) =>
             (0, r.jsx)(
               "li",
               {
                 children: (0, r.jsxs)("button", {
                   type: "button",
-                  className: "linha",
+                  className: "item-linha item-linha--topico",
                   onClick: () => o(t.id),
                   children: [
                     (0, r.jsxs)("span", {
                       className: "linha-texto",
                       children: [
-                        (0, r.jsx)("span", {
-                          className: "linha-titulo",
-                          children: t.titulo,
-                        }),
-                        (0, r.jsx)("span", {
-                          className: "apoio topico-meta",
-                          children: (0, r.jsx)(U2, { t }),
-                        }),
-                        (0, r.jsx)("span", {
-                          className: "linha-etiquetas",
-                          children: (0, r.jsx)(x2, { t }),
-                        }),
+                        (0, r.jsx)("span", { className: "linha-titulo", children: t.titulo }),
+                        (0, r.jsx)("span", { className: "apoio linha-meta", children: (0, r.jsx)(U2, { t }) }),
+                        (0, r.jsx)("span", { className: "linha-etiquetas", children: (0, r.jsx)(x2, { t }) }),
                       ],
                     }),
-                    (0, r.jsx)("span", {
-                      className: "linha-fim",
-                      children: (0, r.jsx)(la, { n: "avancar", size: 24 }),
-                    }),
+                    (0, r.jsx)(la, { n: "avancar", size: 20 }),
                   ],
                 }),
               },
@@ -3019,13 +3065,15 @@
             ),
           ),
         }),
+        novo && (0, r.jsx)(WS, { fechar: () => setNovo(!1), publicar: (H) => (setNovo(!1), pb(H)) }),
       ],
     });
   }
-  function JS({ t: a, voltar: o, atualizar: e, usuario: t, papel: n }) {
+  function JS({ t: a, atualizar: e, usuario: t, papel: n }) {
     let [l, s] = (0, L.useState)(""),
       [i, c] = (0, L.useState)(null),
       [m, I] = (0, L.useState)(""),
+      [ocupado, agir] = zUseAcao(),
       f = (0, L.useRef)(null),
       u = (y) =>
         e({
@@ -3046,53 +3094,44 @@
       },
       v = (y) => {
         if ((y.preventDefault(), !l.trim()))
-          return I(
-            "Falta escrever a resposta. Conte em poucas frases o que voc\xEA viveu ou sabe sobre o assunto.",
-          );
+          return I("Falta escrever a resposta. Conte em poucas frases o que voc\xEA viveu ou sabe.");
         (I(""),
-          e({
-            ...a,
-            respostas: [
-              ...a.respostas,
-              {
-                id: `r${Date.now()}`,
-                autor: t.nome,
-                cidade: "Recife",
-                quando: "agora",
-                apoio: 0,
-                texto: l.trim(),
-                em: i,
-                profissional: n === "voluntario",
-              },
-            ],
-          }),
-          s(""),
-          c(null));
+          agir(() => {
+            (e({
+              ...a,
+              respostas: [
+                ...a.respostas,
+                {
+                  id: `r${Date.now()}`,
+                  autor: t.nome || "Voc\xEA",
+                  cidade: "Recife",
+                  quando: "agora",
+                  apoio: 0,
+                  texto: l.trim(),
+                  em: i,
+                  profissional: n === "voluntario",
+                },
+              ],
+            }),
+              s(""),
+              c(null));
+          }));
       },
       A = (y) => {
         (c(y.autor), f.current?.focus());
-      };
+      },
+      // Respostas de profissionais primeiro
+      ordem = [...a.respostas.filter((x) => x.profissional), ...a.respostas.filter((x) => !x.profissional)];
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsx)(Ye, { onClick: o, children: "Voltar ao f\xF3rum" }),
         (0, r.jsxs)("article", {
           className: "post",
           children: [
             (0, r.jsx)("h1", { tabIndex: -1, children: a.titulo }),
-            (0, r.jsx)("span", {
-              className: "apoio post-meta",
-              children: (0, r.jsx)(U2, { t: a }),
-            }),
-            (0, r.jsx)("div", {
-              style: { marginTop: 12 },
-              children: (0, r.jsx)(x2, { t: a }),
-            }),
-            (0, r.jsx)("div", {
-              className: "leitura",
-              style: { marginTop: 24 },
-              children: (0, r.jsx)("p", { children: a.corpo }),
-            }),
+            (0, r.jsx)("span", { className: "apoio post-meta", children: (0, r.jsx)(U2, { t: a }) }),
+            (0, r.jsx)("div", { className: "post-etiquetas", children: (0, r.jsx)(x2, { t: a }) }),
+            (0, r.jsx)("p", { className: "post-corpo", children: a.corpo }),
             (0, r.jsxs)("div", {
               className: "reacoes",
               children: [
@@ -3116,50 +3155,25 @@
             }),
           ],
         }),
-        (0, r.jsxs)("h2", {
-          style: { marginTop: 48 },
-          children: [
-            a.respostas.length,
-            " ",
-            a.respostas.length === 1 ? "resposta" : "respostas",
-          ],
+        (0, r.jsx)("h2", {
+          className: "respostas-titulo",
+          children: a.respostas.length ? [a.respostas.length, " ", a.respostas.length === 1 ? "resposta" : "respostas"] : "Ainda sem respostas",
         }),
+        !a.respostas.length && (0, r.jsx)("p", { className: "apoio", children: "Seja a primeira pessoa a responder. Conte o que voc\xEA viveu ou sabe." }),
         (0, r.jsx)("ul", {
-          children: a.respostas.map((y) =>
+          className: "respostas",
+          children: ordem.map((y) =>
             (0, r.jsxs)(
               "li",
               {
-                className: "resposta",
+                className: "resposta" + (y.profissional ? " resposta--prof" : ""),
                 children: [
+                  y.profissional && (0, r.jsx)(zSelo, { nome: y.autor }),
                   (0, r.jsxs)("span", {
-                    className: "apoio",
-                    children: [
-                      (0, r.jsx)("b", {
-                        style: { color: "var(--texto)" },
-                        children: y.autor,
-                      }),
-                      " \xB7 ",
-                      y.cidade,
-                      " \xB7 ",
-                      y.quando,
-                      y.profissional &&
-                        (0, r.jsxs)(r.Fragment, {
-                          children: [
-                            " ",
-                            (0, r.jsx)(Bo, {
-                              forte: !0,
-                              icone: "elo",
-                              children: "Verificado",
-                            }),
-                          ],
-                        }),
-                    ],
+                    className: "apoio resposta-meta",
+                    children: [(0, r.jsx)("b", { children: y.autor }), " \xB7 ", y.cidade, " \xB7 ", y.quando],
                   }),
-                  y.em &&
-                    (0, r.jsxs)("span", {
-                      className: "apoio resposta-em",
-                      children: ["Em resposta a ", y.em],
-                    }),
+                  y.em && (0, r.jsxs)("span", { className: "apoio resposta-em", children: ["Em resposta a ", y.em] }),
                   (0, r.jsx)("p", { children: y.texto }),
                   (0, r.jsxs)("div", {
                     className: "acoes-resposta",
@@ -3169,21 +3183,13 @@
                         className: "acao-texto",
                         "aria-pressed": !!y.meuApoio,
                         onClick: () => u(y.id),
-                        children: [
-                          (0, r.jsx)(la, { n: "apoio", size: 20 }),
-                          "Apoiar (",
-                          y.apoio,
-                          ")",
-                        ],
+                        children: [(0, r.jsx)(la, { n: "apoio", size: 20 }), "Apoiar (", y.apoio, ")"],
                       }),
                       (0, r.jsxs)("button", {
                         type: "button",
                         className: "acao-texto",
                         onClick: () => A(y),
-                        children: [
-                          (0, r.jsx)(la, { n: "conversa", size: 20 }),
-                          "Responder",
-                        ],
+                        children: [(0, r.jsx)(la, { n: "conversa", size: 20 }), "Responder"],
                       }),
                     ],
                   }),
@@ -3198,26 +3204,13 @@
           onSubmit: v,
           noValidate: !0,
           children: [
-            (0, r.jsx)("h2", {
-              className: "composer-titulo",
-              children: "Sua resposta",
-            }),
+            (0, r.jsx)("h2", { className: "composer-titulo", children: "Sua resposta" }),
             i &&
               (0, r.jsxs)("div", {
                 className: "contexto-resposta",
                 children: [
-                  (0, r.jsxs)("span", {
-                    children: [
-                      "Respondendo a ",
-                      (0, r.jsx)("b", { children: i }),
-                    ],
-                  }),
-                  (0, r.jsx)("button", {
-                    type: "button",
-                    className: "link",
-                    onClick: () => c(null),
-                    children: "Cancelar",
-                  }),
+                  (0, r.jsxs)("span", { children: ["Respondendo a ", (0, r.jsx)("b", { children: i })] }),
+                  (0, r.jsx)("button", { type: "button", className: "link", onClick: () => c(null), children: "Cancelar" }),
                 ],
               }),
             (0, r.jsx)(Za, {
@@ -3229,97 +3222,107 @@
               onChange: (y) => (s(y.target.value), m && I("")),
               erro: m,
             }),
-            (0, r.jsx)(ia, {
-              type: "submit",
-              icone: "enviar",
-              children: "Enviar resposta",
-            }),
+            (0, r.jsx)(ia, { type: "submit", icone: "enviar", ocupado, textoOcupado: "Enviando…", children: "Enviar resposta" }),
           ],
         }),
       ],
     });
   }
-  function WS({ voltar: a, publicar: o }) {
+  // Novo tópico: janela por cima do fórum, com o formulário e a prévia do tópico
+  function WS({ fechar: a, publicar: o }) {
     let [e, t] = (0, L.useState)({ titulo: "", dir: "", corpo: "" }),
-      [n, l] = (0, L.useState)({});
-    return (0, r.jsxs)("section", {
-      className: "entra",
-      children: [
-        (0, r.jsx)(Ye, { onClick: a, children: "Voltar ao f\xF3rum" }),
-        (0, r.jsxs)("header", {
-          className: "cabeca",
-          style: { marginBottom: 32 },
-          children: [
-            (0, r.jsx)("h1", { tabIndex: -1, children: "Novo t\xF3pico" }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              style: { fontSize: 18 },
-              children:
-                "Pergunte ou conte uma experi\xEAncia. N\xE3o publique exames, documentos ou dados que identifiquem a pessoa.",
-            }),
-          ],
-        }),
-        (0, r.jsxs)("form", {
-          onSubmit: (i) => {
-            i.preventDefault();
-            let c = {};
-            (e.titulo.trim() ||
-              (c.titulo =
-                "Falta o t\xEDtulo. Exemplo: O que ajuda a dormir melhor?"),
-              e.dir || (c.dir = "Escolha um assunto na lista."),
-              e.corpo.trim() ||
-                (c.corpo =
-                  "Falta contar o que aconteceu. Duas ou tr\xEAs frases bastam."),
-              l(c),
-              Object.keys(c).length ? Or() : o(e));
-          },
-          noValidate: !0,
-          style: { maxWidth: 760 },
-          children: [
-            (0, r.jsx)(Za, {
-              id: "n-titulo",
-              rotulo: "T\xEDtulo",
-              value: e.titulo,
-              onChange: (i) => (t({ ...e, titulo: i.target.value }), n.titulo && l({ ...n, titulo: void 0 })),
-              erro: n.titulo,
-            }),
-            (0, r.jsxs)(Za, {
-              id: "n-dir",
-              rotulo: "Assunto",
-              como: "select",
-              value: e.dir,
-              onChange: (i) => (t({ ...e, dir: i.target.value }), n.dir && l({ ...n, dir: void 0 })),
-              erro: n.dir,
-              children: [
-                (0, r.jsx)("option", {
-                  value: "",
-                  children: "Escolha um assunto",
-                }),
-                El.map((i) =>
-                  (0, r.jsx)(
-                    "option",
-                    { value: i.id, children: i.rotulo },
-                    i.id,
-                  ),
-                ),
-              ],
-            }),
-            (0, r.jsx)(Za, {
-              id: "n-corpo",
-              como: "textarea",
-              rotulo: "O que voc\xEA quer contar ou perguntar",
-              value: e.corpo,
-              onChange: (i) => (t({ ...e, corpo: i.target.value }), n.corpo && l({ ...n, corpo: void 0 })),
-              erro: n.corpo,
-            }),
-            (0, r.jsx)(ia, {
-              type: "submit",
-              icone: "enviar",
-              children: "Publicar t\xF3pico",
-            }),
-          ],
-        }),
-      ],
+      [n, l] = (0, L.useState)({}),
+      [ocupado, agir] = zUseAcao(),
+      enviar = (i) => {
+        i.preventDefault();
+        let c = {};
+        (e.titulo.trim() || (c.titulo = "Falta o t\xEDtulo. Exemplo: O que ajuda a dormir melhor?"),
+          e.dir || (c.dir = "Escolha um assunto na lista."),
+          e.corpo.trim() || (c.corpo = "Falta contar o que aconteceu. Duas ou tr\xEAs frases bastam."),
+          l(c),
+          Object.keys(c).length ? Or() : agir(() => o(e)));
+      };
+    return (0, r.jsx)(zJanela, {
+      titulo: "Novo t\xF3pico",
+      sub: "N\xE3o publique exames, documentos ou dados que identifiquem a pessoa.",
+      fechar: a,
+      larga: !0,
+      children: (0, r.jsxs)("div", {
+        className: "novo-topico",
+        children: [
+          (0, r.jsxs)("form", {
+            onSubmit: enviar,
+            noValidate: !0,
+            children: [
+              (0, r.jsx)(Za, {
+                id: "n-titulo",
+                rotulo: "T\xEDtulo",
+                value: e.titulo,
+                onChange: (i) => (t({ ...e, titulo: i.target.value }), n.titulo && l({ ...n, titulo: void 0 })),
+                erro: n.titulo,
+              }),
+              (0, r.jsxs)(Za, {
+                id: "n-dir",
+                rotulo: "Assunto",
+                como: "select",
+                value: e.dir,
+                onChange: (i) => (t({ ...e, dir: i.target.value }), n.dir && l({ ...n, dir: void 0 })),
+                erro: n.dir,
+                children: [
+                  (0, r.jsx)("option", { value: "", children: "Escolha um assunto" }),
+                  El.map((i) => (0, r.jsx)("option", { value: i.id, children: i.rotulo }, i.id)),
+                ],
+              }),
+              (0, r.jsx)(Za, {
+                id: "n-corpo",
+                como: "textarea",
+                rotulo: "O que voc\xEA quer contar ou perguntar",
+                value: e.corpo,
+                onChange: (i) => (t({ ...e, corpo: i.target.value }), n.corpo && l({ ...n, corpo: void 0 })),
+                erro: n.corpo,
+              }),
+              (0, r.jsxs)("div", {
+                className: "acoes",
+                children: [
+                  (0, r.jsx)(ia, { type: "submit", icone: "enviar", ocupado, textoOcupado: "Publicando…", children: "Publicar t\xF3pico" }),
+                  (0, r.jsx)(ia, { sec: !0, onClick: a, children: "Cancelar" }),
+                ],
+              }),
+            ],
+          }),
+          (0, r.jsxs)("div", {
+            className: "previa-topico",
+            "aria-label": "Pr\xE9via do t\xF3pico",
+            role: "group",
+            children: [
+              (0, r.jsx)("p", { className: "previa-rotulo", children: "Assim o t\xF3pico aparece no f\xF3rum" }),
+              (0, r.jsxs)("div", {
+                className: "previa-cartao",
+                children: [
+                  (0, r.jsx)("p", { className: "linha-titulo", children: e.titulo.trim() || "O t\xEDtulo aparece aqui" }),
+                  (0, r.jsx)("p", { className: "apoio", children: "Voc\xEA \xB7 Recife \xB7 agora" }),
+                  (0, r.jsxs)("span", {
+                    className: "etiquetas",
+                    children: [(0, r.jsx)(zStatus, { s: "novo" }), e.dir && (0, r.jsx)(Bo, { children: N2[e.dir] })],
+                  }),
+                  e.corpo.trim() && (0, r.jsx)("p", { className: "previa-corpo", children: e.corpo.trim() }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+    });
+  }
+  // Filtros em linha: um só estilo de selecionado (fundo claro, borda e check)
+  function zFiltros({ itens: it, valor: v, mudar: md, rotulo: rt }) {
+    return (0, r.jsx)("div", {
+      className: "filtros",
+      role: "group",
+      "aria-label": rt,
+      children: it.map(([k, t]) =>
+        (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": v === k, icone: v === k ? "confirmar" : void 0, onClick: () => md(k), children: t }, k),
+      ),
     });
   }
   function $S({ abrir: a, irPara: ir }) {
@@ -3337,48 +3340,23 @@
       children: [
         (0, r.jsxs)("header", {
           className: "cabeca",
-          style: { marginBottom: 32 },
           children: [
-            (0, r.jsx)("h1", {
-              tabIndex: -1,
-              children: "Dicas de profissionais",
-            }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              style: { fontSize: 18 },
-              children: "Materiais prontos, escritos para quem cuida.",
-            }),
+            (0, r.jsx)("h1", { tabIndex: -1, children: "Orienta\xE7\xF5es de profissionais" }),
+            (0, r.jsx)("p", { className: "lead", children: "Textos curtos, escritos por volunt\xE1rios para quem cuida." }),
           ],
         }),
         (0, r.jsx)("div", {
           className: "busca",
           children: (0, r.jsx)(Za, {
             id: "busca",
-            rotulo: "Buscar dicas",
+            rotulo: "Buscar orienta\xE7\xF5es",
             value: o,
             onChange: (s) => e(s.target.value),
             autoComplete: "off",
+            placeholder: "Ex.: sono, fala, crise",
           }),
         }),
-        (0, r.jsx)("div", {
-          className: "filtros",
-          role: "group",
-          "aria-label": "Filtrar por \xE1rea",
-          children: ["Todas", ...Rr].map((s) =>
-            (0, r.jsx)(
-              ia,
-              {
-                sec: !0,
-                peq: !0,
-                "aria-pressed": t === s,
-                onClick: () => n(s),
-                icone: t === s ? "confirmar" : void 0,
-                children: s,
-              },
-              s,
-            ),
-          ),
-        }),
+        (0, r.jsx)(zFiltros, { itens: [["Todas", "Todas"], ...Rr.map((x) => [x, x])], valor: t, mudar: n, rotulo: "Filtrar por \xE1rea" }),
         urg &&
           (0, r.jsxs)("button", {
             type: "button",
@@ -3389,45 +3367,28 @@
               (0, r.jsxs)("span", {
                 children: [
                   (0, r.jsx)("b", { children: "\xC9 uma emerg\xEAncia?" }),
-                  (0, r.jsx)("span", { children: "Veja o que fazer agora e ligue 192 (SAMU)." }),
+                  (0, r.jsx)("span", { children: "Veja o que fazer agora e ligue 192." }),
                 ],
               }),
-              (0, r.jsx)(la, { n: "avancar", size: 22 }),
+              (0, r.jsx)(la, { n: "avancar", size: 20 }),
             ],
           }),
         l.length
           ? (0, r.jsx)("ul", {
-              className: "lista",
+              className: "grade-dicas",
+              "aria-label": "Orienta\xE7\xF5es",
               children: l.map((s) =>
                 (0, r.jsx)(
                   "li",
                   {
                     children: (0, r.jsxs)("button", {
                       type: "button",
-                      className: "linha",
+                      className: "cartao-dica",
                       onClick: () => a(s.id),
                       children: [
-                        (0, r.jsxs)("span", {
-                          className: "linha-texto",
-                          children: [
-                            (0, r.jsx)("span", {
-                              className: "linha-titulo",
-                              children: s.titulo,
-                            }),
-                            (0, r.jsxs)("span", {
-                              className: "apoio linha-meta",
-                              children: [s.autor, " \xB7 leitura de ", s.tempo],
-                            }),
-                            (0, r.jsx)("span", {
-                              className: "linha-etiquetas",
-                              children: (0, r.jsx)(Bo, { children: s.area }),
-                            }),
-                          ],
-                        }),
-                        (0, r.jsx)("span", {
-                          className: "linha-fim",
-                          children: (0, r.jsx)(la, { n: "avancar", size: 24 }),
-                        }),
+                        (0, r.jsx)("span", { className: "cartao-dica-cat", children: s.area }),
+                        (0, r.jsx)("span", { className: "cartao-dica-titulo", children: s.titulo }),
+                        (0, r.jsxs)("span", { className: "apoio cartao-dica-meta", children: [s.autor, " \xB7 ", s.tempo, " de leitura"] }),
                       ],
                     }),
                   },
@@ -3438,64 +3399,34 @@
           : (0, r.jsxs)("div", {
               className: "vazio",
               children: [
-                (0, r.jsx)("h3", { children: "Nenhuma dica encontrada" }),
+                (0, r.jsx)("h3", { children: "Nenhuma orienta\xE7\xE3o encontrada" }),
                 (0, r.jsx)("p", {
-                  children:
-                    t === "Todas"
-                      ? "Tente outra palavra, como sono, fala ou crise."
-                      : "Tente outra palavra ou escolha Todas as \xE1reas.",
+                  children: t === "Todas" ? "Tente outra palavra, como sono, fala ou crise." : "Tente outra palavra ou escolha Todas.",
                 }),
                 t !== "Todas" &&
-                  (0, r.jsx)("p", {
-                    children: (0, r.jsx)("button", {
-                      type: "button",
-                      className: "link",
-                      onClick: () => n("Todas"),
-                      children: "Mostrar todas as \xE1reas",
-                    }),
+                  (0, r.jsx)("div", {
+                    className: "acoes",
+                    children: (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: () => n("Todas"), children: "Mostrar todas as \xE1reas" }),
                   }),
               ],
             }),
       ],
     });
   }
-  function a4({ d: a, voltar: o }) {
+  function a4({ d: a }) {
     return (0, r.jsxs)("section", {
       className: "entra artigo",
       children: [
-        (0, r.jsx)(Ye, { onClick: o, children: "Voltar \xE0s dicas" }),
+        (0, r.jsx)("span", { className: "cartao-dica-cat", children: a.area }),
         (0, r.jsx)("h1", { tabIndex: -1, children: a.titulo }),
-        (0, r.jsxs)("p", {
-          className: "apoio",
-          style: { marginBottom: 12 },
-          children: [a.autor, " \xB7 ", a.area, " \xB7 leitura de ", a.tempo],
-        }),
-        (0, r.jsx)("div", {
-          style: { marginBottom: 24 },
-          children: (0, r.jsx)(Bo, { children: a.area }),
-        }),
+        (0, r.jsxs)("p", { className: "apoio artigo-meta", children: [a.autor, " \xB7 ", a.tempo, " de leitura"] }),
         (0, r.jsx)("div", {
           className: "leitura",
           children: a.secoes.map(([e, t]) =>
-            (0, r.jsxs)(
-              L.default.Fragment,
-              {
-                children: [
-                  (0, r.jsx)("h2", { children: e }),
-                  (0, r.jsx)("p", { children: t }),
-                ],
-              },
-              e,
-            ),
+            (0, r.jsxs)(L.default.Fragment, { children: [(0, r.jsx)("h2", { children: e }), (0, r.jsx)("p", { children: t })] }, e),
           ),
         }),
-        (0, r.jsx)("div", {
-          style: { marginTop: 24 },
-          children: (0, r.jsx)(Do, {
-            tipo: "aviso",
-            children: "Isto n\xE3o substitui um profissional de sa\xFAde.",
-          }),
-        }),
+        (0, r.jsx)(Do, { tipo: "aviso", children: "Isto n\xE3o substitui um profissional de sa\xFAde." }),
       ],
     });
   }
@@ -3518,22 +3449,13 @@
             Ll(`${f.nome} ${f.area} ${f.foco}`).includes(Ll(s.trim()))),
       );
     return (0, r.jsxs)("section", {
-      className: "entra",
+      className: "entra entra--larga",
       children: [
         (0, r.jsxs)("header", {
           className: "cabeca",
-          style: { marginBottom: 24 },
           children: [
-            (0, r.jsx)("h1", {
-              tabIndex: -1,
-              children: "Atendimentos e consultas",
-            }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              style: { fontSize: 18 },
-              children:
-                "Fale, sem custo, com profissionais volunt\xE1rios verificados da sa\xFAde.",
-            }),
+            (0, r.jsx)("h1", { tabIndex: -1, children: "Atendimentos" }),
+            (0, r.jsx)("p", { className: "lead", children: "Consultas sem custo com profissionais volunt\xE1rios verificados." }),
           ],
         }),
         l &&
@@ -3542,217 +3464,63 @@
             children: (0, r.jsx)(Do, {
               tipo: "ok",
               children: {
-                marcado: "Atendimento marcado. Enviamos um lembrete para o seu e-mail.",
+                marcado: "Atendimento marcado. O lembrete vai para o seu e-mail.",
                 remarcado: "Atendimento remarcado. O profissional recebeu um aviso.",
-                cancelado: "Atendimento cancelado. O profissional recebeu um aviso e o hor\xE1rio ficou livre.",
+                cancelado: "Atendimento cancelado. O hor\xE1rio ficou livre.",
               }[l],
             }),
           }),
-        (0, r.jsxs)("div", {
-          className: "abas",
-          role: "tablist",
-          "aria-label": "Atendimentos",
-          children: [
-            (0, r.jsx)("button", {
-              type: "button",
-              role: "tab",
-              id: "aba-buscar",
-              "aria-selected": o === "buscar",
-              "aria-controls": "painel-atend",
-              className: "aba",
-              onClick: () => e("buscar"),
-              children: "Buscar especialistas",
-            }),
-            (0, r.jsxs)("button", {
-              type: "button",
-              role: "tab",
-              id: "aba-meus",
-              "aria-selected": o === "meus",
-              "aria-controls": "painel-atend",
-              className: "aba",
-              onClick: () => e("meus"),
-              children: [
-                "Meus agendamentos ",
-                a.length > 0 &&
-                  (0, r.jsxs)("span", {
-                    className: "contador aba-contador",
-                    children: [
-                      (0, r.jsx)("span", {
-                        "aria-hidden": "true",
-                        children: a.length,
-                      }),
-                      (0, r.jsxs)("span", {
-                        className: "so-leitor",
-                        children: [a.length, " marcados"],
-                      }),
-                    ],
-                  }),
-              ],
-            }),
-          ],
+        (0, r.jsx)(zAbas, {
+          id: "atend",
+          rotulo: "Atendimentos",
+          atual: o,
+          setAtual: e,
+          abas: [["buscar", "Buscar especialistas"], ["meus", "Meus agendamentos", a.length]],
         }),
         (0, r.jsx)("div", {
-          id: "painel-atend",
+          id: "atend-painel",
           role: "tabpanel",
-          "aria-labelledby": o === "buscar" ? "aba-buscar" : "aba-meus",
+          "aria-labelledby": "atend-aba-" + o,
           children:
             o === "buscar"
               ? (0, r.jsxs)(r.Fragment, {
                   children: [
                     (0, r.jsx)("div", {
                       className: "busca",
-                      style: { marginTop: 32 },
                       children: (0, r.jsx)(Za, {
                         id: "busca-prof",
                         rotulo: "Buscar por nome ou especialidade",
                         value: s,
                         onChange: (f) => i(f.target.value),
                         autoComplete: "off",
+                        placeholder: "Ex.: fono, psicologia",
                       }),
                     }),
-                    (0, r.jsx)("div", {
-                      className: "filtros",
-                      role: "group",
-                      "aria-label": "Filtrar por \xE1rea",
-                      children: ["Todas", ...Rr].map((f) =>
-                        (0, r.jsx)(
-                          ia,
-                          {
-                            sec: !0,
-                            peq: !0,
-                            "aria-pressed": c === f,
-                            onClick: () => m(f),
-                            icone: c === f ? "confirmar" : void 0,
-                            children: f === "Todas" ? "Todas as \xE1reas" : f,
-                          },
-                          f,
-                        ),
-                      ),
-                    }),
+                    (0, r.jsx)(zFiltros, { itens: [["Todas", "Todas as \xE1reas"], ...Rr.map((x) => [x, x])], valor: c, mudar: m, rotulo: "Filtrar por \xE1rea" }),
                     I.length
-                      ? (0, r.jsx)("ul", {
-                          className: "lista profs",
-                          children: I.map((f) => {
-                            let u = M2(f, a);
-                            return (0, r.jsxs)(
-                              "li",
-                              {
-                                className: "prof",
-                                children: [
-                                  (0, r.jsx)(qr, { p: f }),
-                                  (0, r.jsxs)("div", {
-                                    className: "prof-corpo",
-                                    children: [
-                                      (0, r.jsxs)("h3", {
-                                        className: "prof-nome",
-                                        children: [
-                                          f.nome,
-                                          (0, r.jsxs)("span", {
-                                            className: "etiquetas",
-                                            children: [
-                                              (0, r.jsx)(Bo, {
-                                                icone: "elo",
-                                                children: "Verificado",
-                                              }),
-                                              f.agora &&
-                                                (0, r.jsx)(Bo, {
-                                                  forte: !0,
-                                                  children: "Atende hoje",
-                                                }),
-                                              a.some((x) => x.profId === f.id) &&
-                                                (0, r.jsx)(Bo, {
-                                                  icone: "calendario",
-                                                  children: "J\xE1 agendado",
-                                                }),
-                                            ],
-                                          }),
-                                        ],
-                                      }),
-                                      (0, r.jsxs)("p", {
-                                        className: "prof-foco",
-                                        children: [f.area, ": ", f.foco],
-                                      }),
-                                      (0, r.jsxs)("p", {
-                                        className: "apoio prof-meta",
-                                        children: [
-                                          f.registro,
-                                          " \xB7 ",
-                                          f.onde,
-                                        ],
-                                      }),
-                                      (0, r.jsx)("p", {
-                                        className: "prof-bio",
-                                        children: f.bio,
-                                      }),
-                                      (0, r.jsxs)("p", {
-                                        className: "prof-dias",
-                                        children: [
-                                          (0, r.jsx)("b", {
-                                            children: "Dias de atendimento:",
-                                          }),
-                                          " ",
-                                          f.dias.join(", "),
-                                        ],
-                                      }),
-                                    ],
-                                  }),
-                                  (0, r.jsxs)("div", {
-                                    className: "prof-acao",
-                                    children: [
-                                      (0, r.jsxs)("p", {
-                                        className: "prof-abertos",
-                                        children: [
-                                          "Hor\xE1rios abertos",
-                                          (0, r.jsx)("br", {}),
-                                          (0, r.jsxs)("b", {
-                                            children: [
-                                              u,
-                                              " ",
-                                              u === 1
-                                                ? "op\xE7\xE3o"
-                                                : "op\xE7\xF5es",
-                                            ],
-                                          }),
-                                        ],
-                                      }),
-                                      (0, r.jsx)(ia, {
-                                        sec: !0,
-                                        peq: !0,
-                                        icone: "calendario",
-                                        disabled: u === 0,
-                                        "aria-disabled": u === 0,
-                                        onClick: () => u > 0 && t(f.id),
-                                        children: "Agendar consulta",
-                                      }),
-                                    ],
-                                  }),
-                                ],
-                              },
-                              f.id,
-                            );
-                          }),
+                      ? (0, r.jsx)("div", {
+                          className: "grade-prof",
+                          role: "list",
+                          "aria-label": "Profissionais",
+                          children: I.map((f) => (0, r.jsx)("div", { role: "listitem", children: (0, r.jsx)(zCartaoProf, { p: f, agenda: a, abrir: t }) }, f.id)),
                         })
                       : (0, r.jsxs)("div", {
                           className: "vazio",
                           children: [
-                            (0, r.jsx)("h3", {
-                              children: "Nenhum profissional encontrado",
-                            }),
+                            (0, r.jsx)("h3", { children: "Nenhum profissional encontrado" }),
                             (0, r.jsx)("p", {
-                              children:
-                                c === "Todas"
-                                  ? "Tente outra palavra, como fono, psicologia ou sono."
-                                  : "Tente outra palavra ou escolha Todas as \xE1reas.",
+                              children: c === "Todas" ? "Tente outra palavra, como fono, psicologia ou sono." : "Tente outra palavra ou escolha Todas as \xE1reas.",
                             }),
                           ],
                         }),
                   ],
                 })
-              : (0, r.jsx)(zMeusAgend, { agenda: a, cancelar: n, remarcar: rm, sala: sl }),
+              : (0, r.jsx)(zMeusAgend, { agenda: a, cancelar: n, remarcar: rm, sala: sl, buscar: () => e("buscar") }),
         }),
       ],
     });
   }
+  // Escolha de dia e horário: janela por cima de Atendimentos
   function e4({
     prof: a,
     agenda: o,
@@ -3770,222 +3538,109 @@
       modos = a.modos || null,
       ja = rmc ? [] : zSort(o.filter((x) => x.profId === a.id)),
       I = e === 1 ? !!(n.dia && n.hora && (!modos || n.modo)) : !0,
-      ondeEscolhido = modos ? n.modo : a.onde;
-    return (0, r.jsxs)(
-      "section",
-      {
-        className: "entra",
+      ondeEscolhido = modos ? n.modo : a.onde,
+      [ocupado, agir] = zUseAcao(),
+      falta = modos && !n.modo ? "Escolha se vai ser presencial ou online e um hor\xE1rio." : "Escolha um hor\xE1rio para continuar.";
+    return (0, r.jsx)(zJanela, {
+      titulo: rmc ? "Remarcar com " + a.nome : "Agendar com " + a.nome,
+      sub: "Passo " + e + " de 2: " + (e === 1 ? "escolha o dia e o hor\xE1rio" : "confira e confirme"),
+      fechar: s,
+      rodape: (0, r.jsxs)("div", {
+        className: "acoes",
         children: [
-          (0, r.jsx)(Ye, { onClick: () => (e === 1 ? s() : t(1)) }),
-          (0, r.jsxs)("header", {
-            className: "cabeca",
-            style: { marginBottom: 24 },
-            children: [
-              (0, r.jsxs)("p", {
-                className: "passo",
-                children: ["Passo ", e, " de 2"],
-              }),
-              (0, r.jsx)("h1", {
-                tabIndex: -1,
-                children:
-                  e === 1
-                    ? rmc
-                      ? "Escolha o novo dia e hor\xE1rio"
-                      : "Escolha o dia e o hor\xE1rio"
-                    : "Confira e confirme",
-              }),
-            ],
-          }),
-          (0, r.jsxs)("div", {
-            className: "prof-resumo",
-            children: [
-              (0, r.jsx)(qr, { p: a }),
-              (0, r.jsxs)("div", {
-                children: [
-                  (0, r.jsx)("p", {
-                    className: "linha-titulo",
-                    children: a.nome,
-                  }),
-                  (0, r.jsxs)("p", {
-                    className: "apoio",
-                    children: [a.area, " \xB7 ", a.registro],
-                  }),
-                  (0, r.jsx)("p", { className: "apoio", children: a.onde }),
-                ],
-              }),
-            ],
-          }),
-          ja.length > 0 &&
-            (0, r.jsx)("div", {
-              className: "alerta-bloco",
-              children: (0, r.jsxs)(Do, {
-                tipo: "aviso",
-                children: [
-                  "Voc\xEA j\xE1 tem um atendimento com ",
-                  a.nome,
-                  " em ",
-                  ja[0].dia.toLowerCase(),
-                  ", \xE0s ",
-                  ja[0].hora,
-                  ". Se quiser trocar o hor\xE1rio, use Remarcar em Meus agendamentos. Se precisa de mais uma consulta, pode continuar.",
-                ],
-              }),
-            }),
-          rmc &&
-            (0, r.jsx)("div", {
-              className: "alerta-bloco",
-              children: (0, r.jsxs)(Do, {
-                tipo: "info",
-                children: [
-                  "Voc\xEA est\xE1 remarcando o atendimento de ",
-                  rmc.dia.toLowerCase(),
-                  ", \xE0s ",
-                  rmc.hora,
-                  ". O hor\xE1rio antigo fica livre quando voc\xEA confirmar o novo.",
-                ],
-              }),
-            }),
-          e === 1 &&
-            modos &&
-            (0, r.jsxs)("div", {
-              className: "modo-escolha",
-              children: [
-                (0, r.jsx)("h2", { className: "h-pequeno", children: "Como vai ser?" }),
-                (0, r.jsx)("div", {
-                  className: "segmentado",
-                  role: "radiogroup",
-                  "aria-label": "Como vai ser o atendimento",
-                  children: modos.map((md) =>
-                    (0, r.jsxs)(
-                      "button",
-                      {
-                        type: "button",
-                        role: "radio",
-                        "aria-checked": n.modo === md,
-                        onClick: () => l({ ...n, modo: md }),
-                        children: [
-                          (0, r.jsx)(la, { n: /Online/.test(md) ? "video" : "local", size: 20 }),
-                          md,
-                        ],
-                      },
-                      md,
-                    ),
-                  ),
-                }),
-              ],
-            }),
-          e === 1 &&
-            (0, r.jsx)("div", {
-              role: "group",
-              "aria-label": "Datas e hor\xE1rios",
-              children: c.map((f) =>
-                (0, r.jsxs)(
-                  "div",
-                  {
-                    className: "dia",
-                    children: [
-                      (0, r.jsx)("h3", { children: f.rotulo }),
-                      (0, r.jsx)("div", {
-                        className: "horarios",
-                        children: f.horas.map((u) =>
-                          (0, r.jsx)(
-                            ia,
-                            {
-                              sec: !0,
-                              peq: !0,
-                              "aria-pressed": n.dia === f.id && n.hora === u,
-                              icone:
-                                n.dia === f.id && n.hora === u
-                                  ? "confirmar"
-                                  : void 0,
-                              onClick: () => l({ ...n, dia: f.id, hora: u }),
-                              children: u,
-                            },
-                            u,
-                          ),
-                        ),
-                      }),
-                    ],
-                  },
-                  f.id,
-                ),
-              ),
-            }),
-          e === 2 &&
-            m &&
-            (0, r.jsxs)("dl", {
-              className: "resumo",
-              children: [
-                (0, r.jsxs)("div", {
-                  children: [
-                    (0, r.jsx)("dt", { children: "Especialidade" }),
-                    (0, r.jsx)("dd", { children: a.area }),
-                  ],
-                }),
-                (0, r.jsxs)("div", {
-                  children: [
-                    (0, r.jsx)("dt", { children: "Profissional" }),
-                    (0, r.jsx)("dd", { children: a.nome }),
-                  ],
-                }),
-                (0, r.jsxs)("div", {
-                  children: [
-                    (0, r.jsx)("dt", { children: "Quando" }),
-                    (0, r.jsxs)("dd", {
-                      children: [m.rotulo, ", \xE0s ", n.hora],
+          (0, r.jsx)(ia, {
+            disabled: !I,
+            "aria-disabled": !I,
+            "aria-describedby": I ? void 0 : "hor-falta",
+            ocupado,
+            textoOcupado: rmc ? "Remarcando…" : "Agendando…",
+            fim: e === 1 ? "avancar" : void 0,
+            onClick: () =>
+              I &&
+              (e === 1
+                ? t(2)
+                : agir(() =>
+                    i({
+                      profId: a.id,
+                      prof: a,
+                      diaId: m.id,
+                      dia: m.rotulo,
+                      hora: n.hora,
+                      onde: ondeEscolhido,
                     }),
-                  ],
-                }),
-                (0, r.jsxs)("div", {
-                  children: [
-                    (0, r.jsx)("dt", { children: "Onde" }),
-                    (0, r.jsx)("dd", { children: ondeEscolhido }),
-                  ],
-                }),
+                  )),
+            children: e === 2 ? (rmc ? "Confirmar novo hor\xE1rio" : "Confirmar agendamento") : "Continuar",
+          }),
+          e === 2 && (0, r.jsx)(ia, { sec: !0, onClick: () => t(1), children: "Voltar" }),
+          !I && (0, r.jsx)("span", { id: "hor-falta", className: "aviso", role: "status", children: falta }),
+        ],
+      }),
+      children: [
+        (0, r.jsxs)("div", {
+          className: "prof-resumo",
+          children: [
+            (0, r.jsx)(qr, { p: a }),
+            (0, r.jsxs)("div", {
+              children: [
+                (0, r.jsx)(zSelo, {}),
+                (0, r.jsxs)("p", { className: "apoio", children: [a.area, " \xB7 ", a.registro] }),
+                e === 1 && a.bio && (0, r.jsx)("p", { className: "prof-bio", children: a.bio }),
               ],
             }),
+          ],
+        }, "r"),
+        ja.length > 0 &&
+          (0, r.jsx)("div", {
+            className: "alerta-bloco",
+            children: (0, r.jsxs)(Do, {
+              tipo: "aviso",
+              children: [
+                "Voc\xEA j\xE1 tem um atendimento com ",
+                a.nome,
+                " em ",
+                ja[0].dia.toLowerCase(),
+                ", \xE0s ",
+                ja[0].hora,
+                ". Para trocar o hor\xE1rio, use Remarcar em Meus agendamentos. Para uma consulta a mais, pode continuar.",
+              ],
+            }),
+          }, "j"),
+        rmc &&
+          (0, r.jsx)("div", {
+            className: "alerta-bloco",
+            children: (0, r.jsxs)(Do, {
+              tipo: "info",
+              children: ["Hoje est\xE1 marcado para ", rmc.dia.toLowerCase(), ", \xE0s ", rmc.hora, ". Esse hor\xE1rio fica livre quando voc\xEA confirmar o novo."],
+            }),
+          }, "m"),
+        e === 1 &&
+          modos &&
           (0, r.jsxs)("div", {
-            className: "acoes",
-            style: { marginTop: 40 },
+            className: "modo-escolha",
             children: [
-              (0, r.jsx)(ia, {
-                disabled: !I,
-                "aria-disabled": !I,
-                fim: e === 2 ? "confirmar" : "avancar",
-                onClick: () =>
-                  I &&
-                  (e === 1
-                    ? t(2)
-                    : i({
-                        profId: a.id,
-                        prof: a,
-                        diaId: m.id,
-                        dia: m.rotulo,
-                        hora: n.hora,
-                        onde: ondeEscolhido,
-                      })),
-                children:
-                  e === 2
-                    ? rmc
-                      ? "Confirmar novo hor\xE1rio"
-                      : "Confirmar agendamento"
-                    : "Continuar",
+              (0, r.jsx)("h3", { className: "h-pequeno", children: "Como vai ser?" }),
+              (0, r.jsx)(zSegmento, {
+                itens: modos.map((md) => ({ id: md, rotulo: md, ic: /Online/.test(md) ? "video" : "local" })),
+                valor: n.modo,
+                mudar: (md) => l({ ...n, modo: md }),
+                rotulo: "Como vai ser o atendimento",
               }),
-              !I &&
-                (0, r.jsx)("span", {
-                  className: "aviso",
-                  role: "status",
-                  children:
-                    modos && !n.modo
-                      ? "Escolha se vai ser presencial ou online e um hor\xE1rio."
-                      : "Escolha um hor\xE1rio para continuar.",
-                }),
             ],
-          }),
-        ],
-      },
-      e,
-    );
+          }, "o"),
+        e === 1 && (0, r.jsx)(zEscolherHorario, { prof: a, ocupados: oc || o, sel: n, setSel: l, rotulo: "Datas e hor\xE1rios" }, "h"),
+        e === 2 &&
+          m &&
+          (0, r.jsxs)("dl", {
+            className: "resumo",
+            children: [
+              (0, r.jsxs)("div", { children: [(0, r.jsx)("dt", { children: "Especialidade" }), (0, r.jsx)("dd", { children: a.area })] }),
+              (0, r.jsxs)("div", { children: [(0, r.jsx)("dt", { children: "Profissional" }), (0, r.jsx)("dd", { children: a.nome })] }),
+              (0, r.jsxs)("div", { children: [(0, r.jsx)("dt", { children: "Quando" }), (0, r.jsxs)("dd", { children: [m.rotulo, ", \xE0s ", n.hora] })] }),
+              (0, r.jsxs)("div", { children: [(0, r.jsx)("dt", { children: "Onde" }), (0, r.jsx)("dd", { children: zOnline({ onde: ondeEscolhido }) ? "Online, na sala de v\xEDdeo do zElo" : ondeEscolhido })] }),
+            ],
+          }, "s"),
+      ],
+    });
   }
   function t4({ irPara: a, pedir: pd }) {
     let [sit, setSit] = (0, L.useState)(null),
@@ -4010,19 +3665,9 @@
       children: [
         (0, r.jsxs)("header", {
           className: "cabeca",
-          style: { marginBottom: 24 },
           children: [
-            (0, r.jsx)("p", { className: "sobretitulo sobretitulo--perigo", children: "Preciso de ajuda" }),
-            (0, r.jsx)("h1", {
-              className: "display",
-              tabIndex: -1,
-              children: "Respire. Estamos com voc\xEA.",
-            }),
-            (0, r.jsx)("p", {
-              className: "lead",
-              children:
-                "Se \xE9 uma emerg\xEAncia, ligue agora. O SAMU atende 24 horas, de gra\xE7a.",
-            }),
+            (0, r.jsx)("h1", { tabIndex: -1, children: "Preciso de ajuda" }),
+            (0, r.jsx)("p", { className: "lead", children: "Se \xE9 uma emerg\xEAncia, ligue 192. O SAMU atende 24 horas, de gra\xE7a." }),
           ],
         }),
         (0, r.jsxs)("button", {
@@ -4030,8 +3675,8 @@
           className: "btn-ligar",
           onClick: () => ligar("192"),
           children: [
-            (0, r.jsx)(la, { n: "telefone", size: 28 }),
-            "Ligar para o SAMU \xB7 192",
+            (0, r.jsx)(la, { n: "telefone", size: 24 }),
+            "Ligar para o SAMU: 192",
           ],
         }),
         aviso("192"),
@@ -4047,7 +3692,7 @@
             (0, r.jsxs)("span", {
               className: "cartao-acao-texto",
               children: [
-                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia m\xE9dica? Pe\xE7a apoio pelo chat" }),
+                (0, r.jsx)("b", { children: "N\xE3o \xE9 emerg\xEAncia? Pe\xE7a apoio pelo chat" }),
                 (0, r.jsxs)("span", {
                   className: "apoio",
                   children: [
@@ -4057,7 +3702,7 @@
                 }),
               ],
             }),
-            (0, r.jsx)(la, { n: "avancar", size: 22 }),
+            (0, r.jsx)(la, { n: "avancar", size: 20 }),
           ],
         }),
         (0, r.jsxs)("div", {
@@ -4159,7 +3804,7 @@
   function n4({ tema: a, fim: o }) {
     return (
       (0, L.useEffect)(() => {
-        let t = setTimeout(o, 2700),
+        let t = setTimeout(o, 1500),
           n = () => o();
         return (
           window.addEventListener("keydown", n),
@@ -4173,21 +3818,12 @@
         "aria-hidden": "true",
         onClick: o,
         children: [
-          (0, r.jsx)("img", {
-            src: a === "escuro" ? "logo-escuro.png" : "logo-claro.png",
-            alt: "",
-            width: "1132",
-            height: "665",
-          }),
-          (0, r.jsx)("p", {
-            className: "splash-frase",
-            children: "Dire\xE7\xE3o, ajuda e apoio para quem cuida",
-          }),
+          (0, r.jsx)(zLogo, {}),
         ],
       })
     );
   }
-  var R2 = { tipo: [], direcionamento: [], especificidades: [], quem: null },
+  var R2 = { tipo: [], direcionamento: [], especificidades: [], quem: null, pessoa: "" },
     z2 = {
       msgs: [
         {
@@ -4199,14 +3835,6 @@
       ],
       opcoes: null,
       ctx: null,
-    },
-    zFrases = {
-      objetivo: "Voc\xEA n\xE3o est\xE1 s\xF3",
-      login: "Que bom ter voc\xEA aqui",
-      cadastro: "Obrigado por querer ajudar",
-      "status-voluntario": "Falta pouco para voc\xEA come\xE7ar",
-      painel: "Painel da equipe",
-      diagnostico: "Leva menos de 2 minutos",
     };
   // ===================================================================
   // Novidades (sugestões da monitora Millena, novembro de 2026)
@@ -4217,13 +3845,6 @@
   //    conselho e uma pessoa da equipe aprova. O arquivo é apagado depois.
   // 4. Notificações do fórum, dos atendimentos e do cadastro.
   // ===================================================================
-  Object.assign(OS, {
-    sino: zIc('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2.5h-15z"/><path d="M10 21h4"/>'),
-    microfone: zIc('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
-    legenda: zIc('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 12h4M13 12h4M7 15.5h7"/>'),
-    documento: zIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'),
-    sair: zIc('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8l-4 4 4 4M6 12h10"/>'),
-  });
 
   // Atalho para escrever as telas novas sem repetir (0, r.jsx)(...).
   function zh(t, p, ...c) {
@@ -4321,46 +3942,53 @@
       ),
     );
   }
-  function zCancelar({ idp, motivos, aviso, confirmar, voltar }) {
-    let [m, setM] = (0, L.useState)(motivos ? motivos[0] : "");
-    return zh(
-      "div",
-      { className: "painel-acao", role: "group", "aria-label": "Cancelar atendimento" },
-      zh("p", { className: "linha-titulo" }, "Cancelar este atendimento?"),
-      aviso && zh("p", { className: "apoio" }, aviso),
-      motivos &&
-        (0, r.jsx)(Za, {
-          id: "motivo-" + idp,
-          como: "select",
-          rotulo: "Motivo",
-          value: m,
-          onChange: (e) => setM(e.target.value),
-          children: motivos.map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
-        }),
-      zh(
+  function zCancelar({ idp, motivos, aviso, confirmar, voltar, titulo }) {
+    let [m, setM] = (0, L.useState)(motivos ? motivos[0] : ""),
+      [ocupado, agir] = zUseAcao();
+    return (0, r.jsxs)(zJanela, {
+      titulo: "Cancelar este atendimento?",
+      sub: titulo,
+      fechar: voltar,
+      rodape: zh(
         "div",
-        { className: "acoes--linha" },
-        (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", onClick: () => confirmar(m), children: "Sim, cancelar" }),
-        (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: voltar, children: "N\xE3o, manter" }),
+        { className: "acoes" },
+        (0, r.jsx)(ia, { className: "btn--perigo", ocupado, textoOcupado: "Cancelando\u2026", onClick: () => agir(() => confirmar(m)), children: "Sim, cancelar" }),
+        (0, r.jsx)(ia, { sec: !0, onClick: voltar, children: "N\xE3o, manter" }),
       ),
-    );
+      children: [
+        aviso && zh("p", { className: "apoio", key: "a" }, aviso),
+        motivos &&
+          (0, r.jsx)(Za, {
+            id: "motivo-" + idp,
+            como: "select",
+            rotulo: "Motivo",
+            value: m,
+            onChange: (e) => setM(e.target.value),
+            children: motivos.map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
+          }, "m"),
+      ],
+    });
   }
-  function zRemarcarBloco({ prof: p, ocupados: oc, confirmar, voltar, aviso }) {
+  function zRemarcarBloco({ prof: p, ocupados: oc, confirmar, voltar, aviso, titulo }) {
     let [s, ss] = (0, L.useState)({ dia: null, hora: null }),
+      [ocupado, agir] = zUseAcao(),
       pronto = !!(s.dia && s.hora);
-    return zh(
-      "div",
-      { className: "painel-acao", role: "group", "aria-label": "Remarcar atendimento" },
-      zh("p", { className: "linha-titulo" }, "Escolha o novo dia e hor\xE1rio"),
-      aviso && zh("p", { className: "apoio" }, aviso),
-      (0, r.jsx)(zEscolherHorario, { prof: p, ocupados: oc, sel: s, setSel: ss, rotulo: "Novo dia e hor\xE1rio" }),
-      zh(
+    return (0, r.jsxs)(zJanela, {
+      titulo: "Escolha o novo dia e hor\xE1rio",
+      sub: titulo,
+      fechar: voltar,
+      rodape: zh(
         "div",
-        { className: "acoes--linha" },
-        (0, r.jsx)(ia, { peq: !0, disabled: !pronto, "aria-disabled": !pronto, icone: "confirmar", onClick: () => pronto && confirmar(s), children: "Confirmar novo hor\xE1rio" }),
-        (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: voltar, children: "Voltar" }),
+        { className: "acoes" },
+        (0, r.jsx)(ia, { disabled: !pronto, "aria-disabled": !pronto, ocupado, textoOcupado: "Remarcando\u2026", onClick: () => pronto && agir(() => confirmar(s)), children: "Confirmar novo hor\xE1rio" }),
+        (0, r.jsx)(ia, { sec: !0, onClick: voltar, children: "Voltar" }),
+        !pronto && zh("span", { className: "aviso", role: "status", key: "f" }, "Escolha um hor\xE1rio para continuar."),
       ),
-    );
+      children: [
+        aviso && zh("p", { className: "apoio", key: "a" }, aviso),
+        (0, r.jsx)(zEscolherHorario, { prof: p, ocupados: oc, sel: s, setSel: ss, rotulo: "Novo dia e hor\xE1rio" }, "h"),
+      ],
+    });
   }
   function zAbas({ abas, atual, setAtual, rotulo, id }) {
     return zh(
@@ -4378,55 +4006,62 @@
   }
 
   // ---------- 1a. Meus agendamentos (família) ----------
-  function zMeusAgend({ agenda: a, cancelar, remarcar, sala }) {
-    let [ab, setAb] = (0, L.useState)(null);
+  function zMeusAgend({ agenda: a, cancelar, remarcar, sala, buscar }) {
+    let [ab, setAb] = (0, L.useState)(null),
+      lista = zSort(a),
+      // Um só botão cheio: "Entrar na sala" do atendimento online mais próximo
+      primeiroOnline = (lista.find(zOnline) || {}).id,
+      cancelando = ab && lista.find((x) => x.id === ab);
     if (!a.length)
       return zh(
         "div",
-        { className: "vazio", style: { marginTop: 32 } },
-        zh("h3", null, "Voc\xEA ainda n\xE3o tem atendimentos marcados"),
-        zh("p", null, "Use Buscar especialistas para escolher um profissional e um hor\xE1rio."),
+        { className: "vazio" },
+        zh("h3", null, "Nenhum atendimento marcado"),
+        zh("p", null, "Escolha um profissional e um hor\xE1rio em Buscar especialistas."),
+        zh("div", { className: "acoes" }, (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: buscar, children: "Buscar especialistas" })),
       );
     return zh(
-      "ul",
-      { className: "lista", style: { marginTop: 32 } },
-      zSort(a).map((f) =>
-        zh(
-          "li",
-          { key: f.id },
+      r.Fragment,
+      null,
+      zh(
+        "ul",
+        { className: "lista-linhas", key: "l" },
+        lista.map((f) =>
           zh(
-            "div",
-            { className: "linha linha--agenda" },
-            (0, r.jsx)(qr, { p: f.prof }),
+            "li",
+            { key: f.id, className: "agenda-item" },
             zh(
-              "span",
+              "div",
+              { className: "agenda-quando" },
+              zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
+              zh("span", { className: "agenda-hora" }, f.hora),
+            ),
+            zh(
+              "div",
               { className: "linha-texto" },
-              zh("span", { className: "linha-titulo" }, f.prof.area, " com ", f.prof.nome),
-              zh("span", { className: "linha-meta linha-quando" }, f.dia, ", \xE0s ", f.hora),
-              zh("span", { className: "apoio linha-meta" }, zOndeTexto(f)),
+              zh("p", { className: "linha-titulo" }, f.prof.area, " com ", f.prof.nome),
+              zh("p", { className: "apoio linha-meta" }, f.dia, ", \xE0s ", f.hora, " \xB7 ", zOndeTexto(f)),
+              zh("p", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: "confirmado", extra: f.remarcado ? "remarcado" : null })),
               zh(
-                "span",
-                { className: "linha-etiquetas" },
-                (0, r.jsx)(Bo, { forte: !0, icone: "confirmar", children: f.remarcado ? "Remarcado" : "Confirmado" }),
+                "div",
+                { className: "agenda-acoes" },
+                zOnline(f) && (0, r.jsx)(ia, { sec: f.id !== primeiroOnline, peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
+                (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => remarcar(f), children: "Remarcar" }),
+                (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => setAb(f.id), children: "Cancelar" }),
               ),
-              ab === f.id
-                ? (0, r.jsx)(zCancelar, {
-                    idp: f.id,
-                    aviso: "O profissional recebe um aviso e o hor\xE1rio fica livre para outra fam\xEDlia.",
-                    confirmar: () => (setAb(null), cancelar(f)),
-                    voltar: () => setAb(null),
-                  })
-                : zh(
-                    "span",
-                    { className: "agenda-acoes" },
-                    zOnline(f) && (0, r.jsx)(ia, { peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
-                    (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => remarcar(f), children: "Remarcar" }),
-                    zh("button", { type: "button", className: "link link--perigo", onClick: () => setAb(f.id) }, "Cancelar"),
-                  ),
             ),
           ),
         ),
       ),
+      cancelando &&
+        (0, r.jsx)(zCancelar, {
+          key: "c",
+          idp: cancelando.id,
+          titulo: cancelando.prof.area + " com " + cancelando.prof.nome + ", " + cancelando.dia.toLowerCase() + ", \xE0s " + cancelando.hora + ".",
+          aviso: "O profissional recebe um aviso e o hor\xE1rio fica livre para outra fam\xEDlia.",
+          confirmar: () => (setAb(null), cancelar(cancelando)),
+          voltar: () => setAb(null),
+        }),
     );
   }
 
@@ -4437,6 +4072,7 @@
       [ok, setOk] = (0, L.useState)(""),
       [rasc, setRasc] = (0, L.useState)(disp),
       [falta, setFalta] = (0, L.useState)(""),
+      [ocupado, agir] = zUseAcao(),
       alternar = (campo, v) =>
         setRasc({ ...rasc, [campo]: rasc[campo].includes(v) ? rasc[campo].filter((x) => x !== v) : [...rasc[campo], v] }),
       grupo = (titulo, campo, itens) =>
@@ -4457,9 +4093,9 @@
       { className: "entra" },
       zh(
         "header",
-        { className: "cabeca", style: { marginBottom: 24 } },
+        { className: "cabeca" },
         zh("h1", { tabIndex: -1 }, "Minha agenda"),
-        zh("p", { className: "lead", style: { fontSize: 18 } }, "Seus atendimentos com as fam\xEDlias e os hor\xE1rios em que voc\xEA atende."),
+        zh("p", { className: "lead" }, "Seus atendimentos e os hor\xE1rios em que voc\xEA atende."),
       ),
       ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
       (0, r.jsx)(zAbas, {
@@ -4476,26 +4112,35 @@
           ? a.length
             ? zh(
                 "ul",
-                { className: "lista", style: { marginTop: 32 } },
-                zSort(a).map((f) =>
+                { className: "lista-linhas" },
+                zSort(a).map((f, k0) =>
                   zh(
                     "li",
-                    { key: f.id },
+                    { key: f.id, className: "agenda-item" },
                     zh(
                       "div",
-                      { className: "linha linha--agenda" },
-                      (0, r.jsx)(qr, { p: { iniciais: zIniciais(f.familia.replace(/^Fam\xEDlia de /, "")) } }),
-                      zh(
-                        "span",
-                        { className: "linha-texto" },
-                        zh("span", { className: "linha-titulo" }, f.familia),
-                        zh("span", { className: "linha-meta linha-quando" }, f.dia, ", \xE0s ", f.hora),
-                        zh("span", { className: "apoio linha-meta" }, zOndeTexto(f)),
-                        f.assunto && zh("span", { className: "apoio linha-meta" }, "Assunto: ", f.assunto),
-                        f.remarcado && zh("span", { className: "linha-etiquetas" }, (0, r.jsx)(Bo, { children: "Remarcado" })),
+                      { className: "agenda-quando" },
+                      zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
+                      zh("span", { className: "agenda-hora" }, f.hora),
+                    ),
+                    zh(
+                      "div",
+                      { className: "linha-texto" },
+                        zh("p", { className: "linha-titulo" }, f.familia),
+                        zh("p", { className: "apoio linha-meta" }, f.dia, ", \xE0s ", f.hora, " \xB7 ", zOndeTexto(f)),
+                        f.assunto && zh("p", { className: "apoio linha-meta" }, "Assunto: ", f.assunto),
+                        zh("p", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: "confirmado", extra: f.remarcado ? "remarcado" : null })),
+                        zh(
+                                "div",
+                                { className: "agenda-acoes" },
+                                zOnline(f) && (0, r.jsx)(ia, { sec: f.id !== (zSort(a).find(zOnline) || {}).id, peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
+                                (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
+                                (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })), children: "Cancelar" }),
+                              ),
                         ab && ab.id === f.id && ab.modo === "cancelar"
                           ? (0, r.jsx)(zCancelar, {
                               idp: f.id,
+                              titulo: f.familia + ", " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ".",
                               motivos: ["Imprevisto pessoal", "Problema de sa\xFAde", "N\xE3o vou conseguir no hor\xE1rio", "Outro motivo"],
                               aviso: "A fam\xEDlia recebe um aviso no app e por e-mail, com o motivo.",
                               confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. A fam\xEDlia foi avisada.")),
@@ -4509,27 +4154,20 @@
                                 confirmar: (s) => (setAb(null), remarcar(f, s), setOk("Atendimento remarcado. A fam\xEDlia recebe um aviso no app e por e-mail.")),
                                 voltar: () => setAb(null),
                               })
-                            : zh(
-                                "span",
-                                { className: "agenda-acoes" },
-                                zOnline(f) && (0, r.jsx)(ia, { peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
-                                (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
-                                zh("button", { type: "button", className: "link link--perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })) }, "Cancelar"),
-                              ),
+                            : null,
                       ),
                     ),
                   ),
-                ),
               )
             : zh(
                 "div",
-                { className: "vazio", style: { marginTop: 32 } },
+                { className: "vazio" },
                 zh("h3", null, "Nenhum atendimento marcado"),
                 zh("p", null, "Quando uma fam\xEDlia marcar um hor\xE1rio com voc\xEA, ele aparece aqui."),
               )
           : zh(
               "div",
-              { style: { marginTop: 24 } },
+              null,
               zh("p", { className: "apoio medida" }, "As fam\xEDlias s\xF3 conseguem marcar nos dias e hor\xE1rios escolhidos aqui. Atendimentos j\xE1 marcados n\xE3o mudam: para trocar um deles, use Remarcar."),
               grupo("Dias em que voc\xEA atende", "dias", zSemana),
               grupo("Hor\xE1rios", "horas", zHorasOp),
@@ -4538,11 +4176,12 @@
                 "div",
                 { className: "acoes", style: { marginTop: 32 } },
                 (0, r.jsx)(ia, {
-                  icone: "confirmar",
+                  ocupado,
+                  textoOcupado: "Salvando\u2026",
                   onClick: () => {
                     let f = !rasc.dias.length ? "Escolha pelo menos um dia." : !rasc.horas.length ? "Escolha pelo menos um hor\xE1rio." : !rasc.modos.length ? "Escolha se atende online, presencial ou os dois." : "";
                     setFalta(f);
-                    f || (setDisp(rasc), setOk("Hor\xE1rios salvos. As fam\xEDlias j\xE1 veem os novos hor\xE1rios."));
+                    f || agir(() => (setDisp(rasc), setOk("Hor\xE1rios salvos. As fam\xEDlias j\xE1 veem os novos hor\xE1rios.")));
                   },
                   children: "Salvar hor\xE1rios",
                 }),
@@ -4582,10 +4221,9 @@
       { className: "entra" },
       zh(
         "header",
-        { className: "cabeca", style: { marginBottom: 24 } },
-        zh("p", { className: "sobretitulo" }, "S\xF3 para a equipe zElo"),
+        { className: "cabeca" },
         zh("h1", { tabIndex: -1 }, "Painel da equipe"),
-        zh("p", { className: "lead", style: { fontSize: 18 } }, "Atendimentos de todas as fam\xEDlias e a verifica\xE7\xE3o dos volunt\xE1rios. Cada a\xE7\xE3o fica registrada."),
+        zh("p", { className: "lead" }, "Atendimentos de todas as fam\xEDlias e verifica\xE7\xE3o dos volunt\xE1rios. Cada a\xE7\xE3o fica registrada."),
       ),
       ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
       (0, r.jsx)(zAbas, {
@@ -4603,18 +4241,39 @@
             r.Fragment,
             null,
             zh(
-              "dl",
-              { className: "painel-numeros" },
-              zh("div", null, zh("dt", null, "Marcados"), zh("dd", null, ativos.length)),
-              zh("div", null, zh("dt", null, "Online"), zh("dd", null, ativos.filter(zOnline).length)),
-              zh("div", null, zh("dt", null, "Cancelados"), zh("dd", null, ag.length - ativos.length)),
+              "div",
+              { className: "secao-topo" },
+              (0, r.jsx)(zNumeros, {
+                rotulo: "Resumo dos atendimentos",
+                itens: [
+                  { rotulo: "Marcados", n: ativos.length, ir: () => setFiltro("ativos") },
+                  { rotulo: "Online", n: ativos.filter(zOnline).length, ir: () => setFiltro("ativos") },
+                  { rotulo: "Cancelados", n: ag.length - ativos.length, ir: () => setFiltro("cancelados") },
+                ],
+              }),
             ),
-            novo
-              ? zh(
-                  "div",
-                  { className: "painel-acao", role: "group", "aria-label": "Agendar para uma fam\xEDlia" },
-                  zh("h2", { className: "h-pequeno" }, "Agendar para uma fam\xEDlia"),
-                  zh("p", { className: "apoio" }, "Use quando a fam\xEDlia pedir ajuda para marcar, por exemplo pelo telefone. Pe\xE7a s\xF3 o nome."),
+            zh("div", { className: "acoes" }, (0, r.jsx)(ia, { icone: "adicionar", onClick: () => (setOk(""), setNovo({ familia: "", profId: "", dia: null, hora: null, modo: null })), children: "Agendar para uma fam\xEDlia" })),
+            novo &&
+              (0, r.jsx)(zJanela, {
+                  titulo: "Agendar para uma fam\xEDlia",
+                  sub: "Use quando a fam\xEDlia pedir ajuda para marcar, por exemplo pelo telefone. Pe\xE7a s\xF3 o nome.",
+                  fechar: () => setNovo(null),
+                  rodape: zh(
+                    r.Fragment,
+                    null,
+                    (0, r.jsx)(ia, { sec: !0, onClick: () => setNovo(null), children: "Voltar" }),
+                    !novoPronto && zh("span", { className: "rotulo-bloqueado", role: "status" }, !novo.familia.trim() ? "Escreva o nome da fam\xEDlia." : !novoProf ? "Escolha o profissional." : novoProf.modos && !novo.modo ? "Escolha online ou presencial." : "Escolha o dia e o hor\xE1rio."),
+                    (0, r.jsx)(ia, {
+                      icone: "confirmar",
+                      disabled: !novoPronto,
+                      "aria-disabled": !novoPronto,
+                      onClick: () => novoPronto && (agendar({ profId: novoProf.id, diaId: novo.dia, hora: novo.hora, onde: novoProf.modos ? novo.modo : novoProf.onde, familia: novo.familia.trim() }), setNovo(null), setOk("Atendimento marcado. A fam\xEDlia e o profissional recebem um aviso.")),
+                      children: "Confirmar agendamento",
+                    }),
+                  ),
+                  children: zh(
+                  r.Fragment,
+                  null,
                   (0, r.jsx)(Za, { id: "novo-fam", rotulo: "Nome da fam\xEDlia ou da pessoa", value: novo.familia, onChange: (e) => setNovo({ ...novo, familia: e.target.value }), autoComplete: "off" }),
                   (0, r.jsx)(Za, {
                     id: "novo-prof",
@@ -4629,64 +4288,53 @@
                     zh(
                       "div",
                       { className: "horarios", role: "group", "aria-label": "Como vai ser" },
-                      novoProf.modos.map((md) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": novo.modo === md, icone: novo.modo === md ? "confirmar" : void 0, onClick: () => setNovo({ ...novo, modo: md }), children: md }, md)),
+                      novoProf.modos.map((md) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": novo.modo === md, onClick: () => setNovo({ ...novo, modo: md }), children: md }, md)),
                     ),
                   novoProf && (0, r.jsx)(zEscolherHorario, { prof: novoProf, ocupados: oc, sel: novo, setSel: setNovo }),
-                  zh(
-                    "div",
-                    { className: "acoes--linha" },
-                    (0, r.jsx)(ia, {
-                      peq: !0,
-                      icone: "confirmar",
-                      disabled: !novoPronto,
-                      "aria-disabled": !novoPronto,
-                      onClick: () => novoPronto && (agendar({ profId: novoProf.id, diaId: novo.dia, hora: novo.hora, onde: novoProf.modos ? novo.modo : novoProf.onde, familia: novo.familia.trim() }), setNovo(null), setOk("Atendimento marcado. A fam\xEDlia e o profissional recebem um aviso.")),
-                      children: "Confirmar agendamento",
-                    }),
-                    (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: () => setNovo(null), children: "Voltar" }),
-                  ),
-                )
-              : zh("div", { className: "acoes", style: { marginTop: 0 } }, (0, r.jsx)(ia, { sec: !0, icone: "adicionar", onClick: () => (setOk(""), setNovo({ familia: "", profId: "", dia: null, hora: null, modo: null })), children: "Agendar para uma fam\xEDlia" })),
+                ),
+              }),
             zh(
               "div",
               { className: "busca", style: { marginTop: 24 } },
               (0, r.jsx)(Za, { id: "busca-painel", rotulo: "Buscar por fam\xEDlia ou profissional", value: busca, onChange: (e) => setBusca(e.target.value), autoComplete: "off" }),
             ),
-            zh(
-              "div",
-              { className: "filtros", role: "group", "aria-label": "Mostrar" },
-              [["ativos", "Marcados"], ["cancelados", "Cancelados"], ["todos", "Todos"]].map(([k, t]) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": filtro === k, icone: filtro === k ? "confirmar" : void 0, onClick: () => setFiltro(k), children: t }, k)),
-            ),
+            (0, r.jsx)(zFiltros, { rotulo: "Mostrar", valor: filtro, mudar: setFiltro, itens: [["ativos", "Marcados"], ["cancelados", "Cancelados"], ["todos", "Todos"]] }),
             lista.length
               ? zh(
                   "ul",
-                  { className: "lista", style: { marginTop: 16 } },
+                  { className: "lista-linhas" },
                   lista.map((f) => {
                     let p = profDe(f),
                       cancelado = f.status === "cancelado";
                     return zh(
                       "li",
-                      { key: f.id },
+                      { key: f.id, className: "agenda-item" },
                       zh(
                         "div",
-                        { className: "linha linha--agenda" + (cancelado ? " linha--apagada" : "") },
+                        { className: "agenda-quando" },
+                        zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
+                        zh("span", { className: "agenda-hora" }, f.hora),
+                      ),
+                      zh(
+                        "div",
+                        null,
                         zh(
-                          "span",
+                          "div",
                           { className: "linha-texto" },
-                          zh("span", { className: "linha-titulo" }, f.dia, ", \xE0s ", f.hora),
-                          zh("span", { className: "linha-meta" }, p.nome, " \xB7 ", p.area),
-                          zh("span", { className: "apoio linha-meta" }, nomeFam(f), " \xB7 ", zOnline(f) ? "Online" : f.onde),
+                          zh("p", { className: "linha-titulo" }, nomeFam(f)),
+                          zh("p", { className: "apoio linha-meta" }, p.nome, " \xB7 ", p.area, " \xB7 ", zOnline(f) ? "Online" : f.onde),
                           zh(
-                            "span",
+                            "p",
                             { className: "linha-etiquetas" },
                             cancelado
-                              ? (0, r.jsx)(Bo, { children: "Cancelado" + (f.motivo ? ": " + f.motivo.toLowerCase() : "") })
-                              : (0, r.jsx)(Bo, { forte: !0, icone: "confirmar", children: f.remarcado ? "Remarcado" : "Marcado" }),
+                              ? (0, r.jsx)(zStatus, { s: "cancelado", extra: f.motivo ? f.motivo.toLowerCase() : null })
+                              : (0, r.jsx)(zStatus, { s: "confirmado", extra: f.remarcado ? "remarcado" : null }),
                           ),
                           !cancelado &&
                             (ab && ab.id === f.id && ab.modo === "cancelar"
                               ? (0, r.jsx)(zCancelar, {
                                   idp: f.id,
+                                  titulo: nomeFam(f) + " com " + p.nome + ", " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ".",
                                   motivos: ["A pedido da fam\xEDlia", "A pedido do profissional", "Problema na plataforma", "Outro motivo"],
                                   aviso: "A fam\xEDlia e o profissional recebem um aviso no app e por e-mail.",
                                   confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. Os dois lados foram avisados.")),
@@ -4701,17 +4349,17 @@
                                     voltar: () => setAb(null),
                                   })
                                 : zh(
-                                    "span",
+                                    "div",
                                     { className: "agenda-acoes" },
                                     (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
-                                    zh("button", { type: "button", className: "link link--perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })) }, "Cancelar"),
+                                    (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })), children: "Cancelar" }),
                                   )),
                         ),
                       ),
                     );
                   }),
                 )
-              : zh("div", { className: "vazio", style: { marginTop: 16 } }, zh("h3", null, "Nenhum atendimento encontrado"), zh("p", null, "Tente outro nome ou mude o filtro.")),
+              : zh("div", { className: "vazio" }, zh("h3", null, "Nenhum atendimento encontrado"), zh("p", null, "Tente outro nome ou escolha Todos no filtro.")),
           ),
         aba === "verif" &&
           zh(
@@ -4728,7 +4376,7 @@
             pendentes.length
               ? zh(
                   "ul",
-                  { className: "lista", style: { marginTop: 24 } },
+                  { className: "lista-linhas" },
                   pendentes.map((v) =>
                     zh(
                       "li",
@@ -4784,7 +4432,7 @@
                             "div",
                             { className: "acoes--linha" },
                             !vistos.includes(v.id) && zh("p", { className: "apoio", style: { flexBasis: "100%" } }, "Abra o documento antes de aprovar."),
-                            (0, r.jsx)(ia, { peq: !0, icone: "confirmar", disabled: !vistos.includes(v.id), "aria-disabled": !vistos.includes(v.id), onClick: () => vistos.includes(v.id) && (decidir(v, "aprovado"), setDoc(null), setOk("Cadastro de " + v.nome.split(" ")[0] + " aprovado. O arquivo foi apagado.")), children: "Aprovar" }),
+                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "confirmar", disabled: !vistos.includes(v.id), "aria-disabled": !vistos.includes(v.id), onClick: () => vistos.includes(v.id) && (decidir(v, "aprovado"), setDoc(null), setOk("Cadastro de " + v.nome.split(" ")[0] + " aprovado. O arquivo foi apagado.")), children: "Aprovar" }),
                             (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa({ id: v.id, motivo: "O documento n\xE3o d\xE1 para ler" }), children: "N\xE3o aprovar" }),
                           ),
                     ),
@@ -4798,7 +4446,7 @@
                 zh("h2", { className: "h-pequeno secao-titulo-peq" }, "J\xE1 analisados"),
                 zh(
                   "ul",
-                  { className: "lista", style: { marginTop: 12 } },
+                  { className: "lista-linhas" },
                   feitos.map((v) =>
                     zh(
                       "li",
@@ -4810,7 +4458,8 @@
                           "span",
                           { className: "linha-texto" },
                           zh("span", { className: "linha-titulo" }, v.nome),
-                          zh("span", { className: "apoio linha-meta" }, v.registro, " \xB7 ", { aprovado: "Aprovado", recusado: "Recusado", "novo-doc": "Pediu outro documento" }[v.status], v.motivo ? ": " + v.motivo.toLowerCase() : ""),
+                          zh("span", { className: "apoio linha-meta" }, v.registro),
+                          zh("span", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: { aprovado: "confirmado", recusado: "cancelado", "novo-doc": "aguardando" }[v.status], extra: v.status === "novo-doc" ? "novo documento" : v.motivo ? v.motivo.toLowerCase() : null })),
                           zh("span", { className: "apoio linha-meta" }, "Documento apagado \xE0s ", v.apagadoEm, "."),
                         ),
                       ),
@@ -4874,7 +4523,7 @@
     let euVideo = teste === "ok" && cam,
       minhaImagem = zh("video", { ref: vid, autoPlay: !0, muted: !0, playsInline: !0, "aria-label": "Sua c\xE2mera", hidden: !euVideo }),
       botao = (on, txtOn, txtOff, ic, set) =>
-        (0, r.jsx)(ia, { sec: !on, peq: !0, icone: ic, "aria-pressed": on, onClick: () => set(!on), children: on ? txtOn : txtOff }),
+        (0, r.jsx)(ia, { sec: !0, peq: !0, icone: ic, "aria-pressed": on, onClick: () => set(!on), children: on ? txtOn : txtOff }),
       ajuda = sup &&
         zh(
           "div",
@@ -4895,9 +4544,8 @@
       return zh(
         "section",
         { className: "entra" },
-        zh("header", { className: "cabeca", style: { marginBottom: 24 } }, zh("h1", { tabIndex: -1 }, "Atendimento encerrado")),
-        zh("p", { className: "lead medida" }, "Obrigado por usar o zElo. A chamada n\xE3o foi gravada."),
-        zh("div", { className: "acoes", style: { marginTop: 32 } }, (0, r.jsx)(ia, { fim: "avancar", onClick: voltar, children: "Voltar aos atendimentos" })),
+        zh("header", { className: "cabeca" }, zh("h1", { tabIndex: -1 }, "Atendimento encerrado"), zh("p", { className: "lead" }, "A chamada n\xE3o foi gravada.")),
+        zh("div", { className: "acoes" }, (0, r.jsx)(ia, { fim: "avancar", onClick: voltar, children: "Voltar aos atendimentos" })),
       );
     if (fase === "chamada")
       return zh(
@@ -4918,7 +4566,7 @@
           botao(mic, "Microfone ligado", "Microfone desligado", "microfone", setMic),
           botao(cam, "C\xE2mera ligada", "C\xE2mera desligada", "video", setCam),
           botao(leg, "Legendas ligadas", "Legendas desligadas", "legenda", setLeg),
-          (0, r.jsx)(ia, { sec: !sup, peq: !0, icone: "ajuda", "aria-expanded": sup, onClick: () => setSup(!sup), children: "Ajuda" }),
+          (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "informacao", "aria-pressed": sup, onClick: () => setSup(!sup), children: "Ajuda" }),
           (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", icone: "fechar", onClick: sairDaSala, children: "Sair da chamada" }),
         ),
         ajuda,
@@ -4926,17 +4574,16 @@
     return zh(
       "section",
       { className: "entra" },
-      (0, r.jsx)(Ye, { onClick: () => (parar(), voltar()) }),
       zh(
         "header",
-        { className: "cabeca", style: { marginBottom: 24 } },
+        { className: "cabeca" },
         zh("h1", { tabIndex: -1 }, "Sala de v\xEDdeo"),
-        zh("p", { className: "lead", style: { fontSize: 18 } }, "Com ", outro.nome, ". ", f.dia, ", \xE0s ", f.hora, "."),
+        zh("p", { className: "lead" }, "Com ", outro.nome, ". ", f.dia, ", \xE0s ", f.hora, "."),
       ),
-      (0, r.jsx)(Do, { tipo: "info", children: "A chamada acontece aqui no zElo, sem instalar nada. Ela n\xE3o \xE9 gravada, e s\xF3 voc\xEAs dois entram na sala." }),
+      (0, r.jsx)(Do, { tipo: "info", children: "A chamada acontece aqui, sem instalar nada. N\xE3o \xE9 gravada, e s\xF3 voc\xEAs dois entram." }),
       zh(
         "div",
-        { className: "sala-video sala-previa", style: { marginTop: 24 } },
+        { className: "sala-video sala-previa" },
         minhaImagem,
         !euVideo && zh("span", { className: "sala-previa-texto" }, cam ? "Sua c\xE2mera aparece aqui depois do teste" : "C\xE2mera desligada"),
       ),
@@ -4947,8 +4594,8 @@
       ),
       teste === "ok" && zh("p", { className: "apoio", role: "status" }, "C\xE2mera e microfone funcionando."),
       teste === "erro" &&
-        zh("div", { style: { marginTop: 12 }, role: "status" }, (0, r.jsx)(Do, { tipo: "aviso", children: "N\xE3o conseguimos usar a c\xE2mera. Confira se o navegador tem permiss\xE3o. Voc\xEA ainda pode entrar s\xF3 com o \xE1udio." })),
-      zh("h2", { className: "h-pequeno", style: { marginTop: 32 } }, "Como voc\xEA quer entrar"),
+        zh("div", { className: "alerta-bloco", role: "status" }, (0, r.jsx)(Do, { tipo: "aviso", children: "N\xE3o conseguimos usar a c\xE2mera. Confira a permiss\xE3o do navegador. D\xE1 para entrar s\xF3 com o \xE1udio." })),
+      zh("h2", { className: "h-pequeno secao-titulo-peq" }, "Como voc\xEA quer entrar"),
       zh(
         "div",
         { className: "sala-controles" },
@@ -4956,77 +4603,103 @@
         botao(mic, "Microfone ligado", "Microfone desligado", "microfone", setMic),
         botao(leg, "Legendas ligadas", "Legendas desligadas", "legenda", setLeg),
       ),
-      zh("p", { className: "apoio medida", style: { marginTop: 8 } }, "As legendas escrevem na tela o que o profissional fala."),
+      zh("p", { className: "apoio medida" }, "As legendas escrevem na tela o que o profissional fala."),
       zh(
         "div",
-        { className: "acoes", style: { marginTop: 32 } },
+        { className: "acoes" },
         (0, r.jsx)(ia, { icone: "video", onClick: () => setFase("chamada"), children: "Entrar na sala" }),
-        zh("button", { type: "button", className: "link", "aria-expanded": sup, onClick: () => setSup(!sup) }, "Preciso de ajuda com a chamada"),
+        zh("button", { type: "button", className: "link", "aria-expanded": sup, onClick: () => setSup(!sup) }, "Ajuda com a chamada"),
       ),
       ajuda,
     );
   }
 
   // ---------- 4. Notificações ----------
+  // Agrupadas por quando chegaram. As novas levam o status "Novo"; o resto fica neutro.
+  function zGrupoQuando(q) {
+    let t = Ll(q || "");
+    return /^(agora|hoje|ha \d+ (min|minutos?|horas?))/.test(t) ? "Hoje" : /^ontem/.test(t) ? "Ontem" : "Antes";
+  }
   function zNotificacoes({ lista, papel, abrir, marcarTodas }) {
     let [f, setF] = (0, L.useState)("todas"),
       tipos = [["todas", "Todas"], ["forum", "F\xF3rum"], ["atend", "Atendimentos"], ...(papel === "voluntario" ? [["cadastro", "Cadastro"]] : [])],
-      ic = { forum: "forum", atend: "calendario", cadastro: "elo" },
+      ic = { forum: "forum", atend: "calendario", cadastro: "verificado" },
       itens = lista.filter((n) => f === "todas" || n.tipo === f),
-      novas = lista.filter((n) => !n.lida).length;
+      novas = lista.filter((n) => !n.lida).length,
+      grupos = ["Hoje", "Ontem", "Antes"].map((g) => [g, itens.filter((n) => zGrupoQuando(n.quando) === g)]).filter(([, l]) => l.length);
     return zh(
       "section",
       { className: "entra" },
       zh(
         "header",
-        { className: "cabeca cabeca-linha", style: { marginBottom: 24 } },
+        { className: "cabeca" },
+        zh("h1", { tabIndex: -1 }, "Notifica\xE7\xF5es"),
         zh(
-          "div",
-          null,
-          zh("h1", { tabIndex: -1 }, "Notifica\xE7\xF5es"),
-          zh(
-            "p",
-            { className: "lead", style: { fontSize: 18 } },
-            papel === "voluntario"
-              ? "Respostas do f\xF3rum, avisos da sua agenda e do seu cadastro ficam guardados aqui."
-              : "Respostas do f\xF3rum e avisos dos seus atendimentos ficam guardados aqui.",
-          ),
+          "p",
+          { className: "lead" },
+          papel === "voluntario" ? "Respostas do f\xF3rum e avisos da agenda e do cadastro." : "Respostas do f\xF3rum e avisos dos seus atendimentos.",
+          " Os avisos de atendimento tamb\xE9m chegam por e-mail.",
         ),
       ),
       zh(
         "div",
-        { className: "filtros", role: "group", "aria-label": "Mostrar" },
-        tipos.map(([k, t]) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": f === k, icone: f === k ? "confirmar" : void 0, onClick: () => setF(k), children: t }, k)),
+        { className: "secao-topo" },
+        (0, r.jsx)(zFiltros, { rotulo: "Mostrar", valor: f, mudar: setF, itens: tipos }),
+        novas > 0
+          ? (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "confirmar", onClick: marcarTodas, children: "Marcar todas como lidas" })
+          : (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "confirmar", disabled: !0, "aria-disabled": !0, title: "Nenhuma notifica\xE7\xE3o nova", children: "Tudo lido" }),
       ),
-      novas > 0 && zh("p", { style: { marginTop: 16 } }, zh("button", { type: "button", className: "link", onClick: marcarTodas }, "Marcar todas como lidas")),
-      itens.length
-        ? zh(
-            "ul",
-            { className: "lista", style: { marginTop: 16 } },
-            itens.map((n) =>
+      grupos.length
+        ? grupos.map(([g, l]) =>
+            zh(
+              "div",
+              { key: g, className: "bloco-lista" },
+              zh("h2", { className: "lista-legenda" }, g),
               zh(
-                "li",
-                { key: n.id },
-                zh(
-                  "button",
-                  { type: "button", className: "linha notif" + (n.lida ? "" : " notif--nova"), onClick: () => abrir(n) },
-                  zh("span", { className: "notif-icone", "aria-hidden": "true" }, (0, r.jsx)(la, { n: ic[n.tipo], size: 22 })),
+                "ul",
+                { className: "lista-linhas" },
+                l.map((n) =>
                   zh(
-                    "span",
-                    { className: "linha-texto" },
-                    zh("span", { className: "linha-titulo" }, n.titulo, !n.lida && zh("span", { className: "so-leitor" }, ", nova")),
-                    zh("span", { className: "linha-meta" }, n.texto),
-                    zh("span", { className: "apoio linha-meta" }, n.quando),
+                    "li",
+                    { key: n.id },
+                    zh(
+                      "button",
+                      { type: "button", className: "item-linha notif" + (n.lida ? "" : " notif--nova"), onClick: () => abrir(n) },
+                      zh("span", { className: "item-icone", "aria-hidden": "true" }, (0, r.jsx)(la, { n: ic[n.tipo], size: 20 })),
+                      zh(
+                        "span",
+                        { className: "linha-texto" },
+                        zh("span", { className: "linha-titulo" }, n.titulo),
+                        zh("span", { className: "linha-meta" }, n.texto),
+                        zh("span", { className: "apoio linha-meta" }, n.quando),
+                      ),
+                      !n.lida && (0, r.jsx)(zStatus, { s: "novo" }),
+                    ),
                   ),
-                  !n.lida && zh("span", { className: "etiquetas" }, (0, r.jsx)(Bo, { forte: !0, children: "Nova" })),
                 ),
               ),
             ),
           )
-        : zh("div", { className: "vazio", style: { marginTop: 24 } }, zh("h3", null, "Nada por aqui"), zh("p", null, "Quando algu\xE9m responder no f\xF3rum ou um atendimento mudar, voc\xEA v\xEA aqui.")),
-      zh("p", { className: "apoio medida", style: { marginTop: 24 } }, "Os avisos de atendimento tamb\xE9m chegam no seu e-mail."),
+        : zh(
+            "div",
+            { className: "vazio" },
+            zh("h3", null, f === "todas" ? "Nenhuma notifica\xE7\xE3o" : "Nenhuma notifica\xE7\xE3o deste tipo"),
+            zh("p", null, f === "todas" ? "Quando algu\xE9m responder no f\xF3rum ou um atendimento mudar, o aviso aparece aqui." : "Escolha Todas para ver as outras."),
+          ),
     );
   }
+  // Formato do esqueleto mostrado ao abrir cada tela
+  var zTipoEsqueleto = {
+    inicio: "inicio",
+    atendimentos: "grade",
+    dicas: "grade",
+    forum: "lista",
+    notificacoes: "lista",
+    "forum-topico": "texto",
+    dica: "texto",
+    perfil: "texto",
+    chat: "lista",
+  };
   function Dm() {
     let [a, o] = (0, L.useState)("objetivo"),
       [e, t] = (0, L.useState)(
@@ -5057,6 +4730,10 @@
       [G2, Bm] = (0, L.useState)({ dia: null, hora: null }),
       [V2, Nl] = (0, L.useState)(!1),
       [cv, setCv] = (0, L.useState)(0),
+      [letra, setLetra] = (0, L.useState)(zLetraInicial),
+      [origem, setOrigem] = (0, L.useState)("inicio"),
+      [esq, setEsq] = (0, L.useState)(!1),
+      telaAntes = (0, L.useRef)(a),
       Hm = (0, L.useRef)(!1);
     xr = zAtalhos(c);
     // Novidades: agenda de todos, notificações, registro da equipe
@@ -5091,6 +4768,24 @@
       } catch (x) {}
     }, [v]),
       (0, L.useEffect)(() => {
+        document.documentElement.dataset.letra = letra;
+        try {
+          localStorage.setItem("zelo-letra", letra);
+        } catch (x) {}
+      }, [letra]),
+      // Guarda de onde a pessoa veio, para o "‹ Tela de origem" das telas fora do menu.
+      // Na troca de tela mostra um esqueleto no formato do conteúdo por um instante.
+      (0, L.useEffect)(() => {
+        let antes = telaAntes.current;
+        telaAntes.current = a;
+        if (antes === a) return;
+        zForaDoMenu.includes(a) && !zForaDoMenu.includes(antes) && setOrigem(antes);
+        if (!zTipoEsqueleto[a] || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        setEsq(!0);
+        let tm = setTimeout(() => setEsq(!1), 350);
+        return () => clearTimeout(tm);
+      }, [a]),
+      (0, L.useEffect)(() => {
         if (!Hm.current) {
           Hm.current = !0;
           return;
@@ -5099,7 +4794,7 @@
           requestAnimationFrame(() =>
             document.querySelector("main h1")?.focus({ preventScroll: !0 }),
           ));
-      }, [a, I, z, p, S]));
+      }, [a, I, z, p, S, esq]));
     let P2 =
         a !== "objetivo" &&
         a !== "login" &&
@@ -5188,7 +4883,21 @@
             ? 0
             : O.msgs.slice(cv).filter((mm) => mm.de === "ana").length,
         notif: nt.filter((x) => x.para === para && !x.lida).length,
+        atend: n === "voluntario" ? ativos.filter((x) => x.profId === "pv").length : E.length,
+        dicas: zr.filter((d) => c.direcionamento.includes(d.dir)).length,
       },
+      numeros =
+        n === "voluntario"
+          ? [
+              { rotulo: "Atendimentos marcados", n: ativos.filter((x) => x.profId === "pv").length, ir: () => bt("atendimentos") },
+              { rotulo: "Perguntas sem resposta no f\xF3rum", n: y.filter((tp) => !tp.respostas.some((x) => x.profissional)).length, ir: () => bt("forum") },
+              { rotulo: "Notifica\xE7\xF5es novas", n: nt.filter((x) => x.para === para && !x.lida).length, ir: () => bt("notificacoes") },
+            ]
+          : [
+              { rotulo: "Atendimentos marcados", n: E.length, ir: () => bt("atendimentos-meus") },
+              { rotulo: "T\xF3picos novos no f\xF3rum", n: y.filter((tp) => tp.etiquetas.includes("Novo") && tp.autor !== s.nome).length, ir: () => bt("forum") },
+              { rotulo: "Mensagens da Ana", n: a === "chat" ? 0 : O.msgs.slice(cv).filter((mm) => mm.de === "ana").length, ir: () => bt("chat") },
+            ],
       K2 = a === "ajuda" ? "ajuda" : US[a],
       J2 = y.find((H) => H.id === p),
       W2 = zr.find((H) => H.id === S),
@@ -5211,7 +4920,7 @@
           voltar: () => o(n === "voluntario" ? "cadastro" : "objetivo"),
           criarVoluntario: () => o("cadastro"),
           entrar: (H, nm) => {
-            (i({ nome: nm, email: H }),
+            (i({ nome: nm || j2(H), email: H }),
               n === "voluntario"
                 ? o("inicio")
                 : (f(1), g("inicio"), o("diagnostico")));
@@ -5224,6 +4933,7 @@
           setPasso: f,
           diag: c,
           setDiag: m,
+          papel: n,
           concluir: () => o(u === "perfil" ? "perfil" : "inicio"),
           sair: () => o(u === "perfil" ? "perfil" : "login"),
         });
@@ -5274,6 +4984,7 @@
           abrirTopico: kr,
           abrirDica: Rm,
           abrirProf: Om,
+          numeros,
         });
         break;
       case "perfil":
@@ -5281,12 +4992,12 @@
           usuario: s,
           setUsuario: i,
           diag: c,
+          setDiag: m,
           papel: n,
           tema: v,
           setTema: A,
-          refazer: () => {
-            (f(1), g("perfil"), o("diagnostico"));
-          },
+          letra,
+          setLetra,
           sair: Y2,
         });
         break;
@@ -5297,21 +5008,6 @@
         xa = (0, r.jsx)(KS, {
           topicos: y,
           abrir: kr,
-          novo: () => o("forum-novo"),
-        });
-        break;
-      case "forum-topico":
-        xa = (0, r.jsx)(JS, {
-          t: J2,
-          voltar: () => bt("forum"),
-          atualizar: X2,
-          usuario: s,
-          papel: n,
-        });
-        break;
-      case "forum-novo":
-        xa = (0, r.jsx)(WS, {
-          voltar: () => bt("forum"),
           publicar: (H) => {
             let ae = `t${Date.now()}`;
             (h([
@@ -5334,11 +5030,19 @@
           },
         });
         break;
+      case "forum-topico":
+        xa = (0, r.jsx)(JS, {
+          t: J2,
+          atualizar: X2,
+          usuario: s,
+          papel: n,
+        });
+        break;
       case "dicas":
         xa = (0, r.jsx)($S, { abrir: Rm, irPara: bt });
         break;
       case "dica":
-        xa = (0, r.jsx)(a4, { d: W2, voltar: () => bt("dicas") });
+        xa = (0, r.jsx)(a4, { d: W2 });
         break;
       case "atendimentos":
         xa =
@@ -5353,8 +5057,9 @@
                 cancelar: (f, m) => mudarAt(f, { status: "cancelado", motivo: "A pedido do profissional (" + m.toLowerCase() + ")" }),
                 remarcar: (f, s0) => mudarAt(f, novoHorario(s0)),
               })
-            : z === 0
-            ? (0, r.jsx)(o4, {
+            : n === "voluntario"
+            ? null
+            : (0, r.jsx)(o4, {
                 agenda: E,
                 tab: Fr,
                 setTab: wl,
@@ -5367,8 +5072,12 @@
                     Nl("cancelado"),
                     avisar("familia", "atend", "Atendimento cancelado", "Voc\xEA cancelou " + H.dia.toLowerCase() + ", \xE0s " + H.hora + ", com " + H.prof.nome + ". O hor\xE1rio ficou livre.", { tela: "atendimentos-meus", lida: !0 }));
                 },
-              })
-            : (0, r.jsx)(e4, {
+              });
+        z > 0 &&
+          (xa = (0, r.jsxs)(r.Fragment, {
+            children: [
+              xa,
+              (0, r.jsx)(e4, {
                 prof: At.find((H) => H.id === k2),
                 agenda: E,
                 passo: z,
@@ -5390,7 +5099,9 @@
                     wl("meus"),
                     ja(0));
                 },
-              });
+              }, "agendar"),
+            ],
+          }));
         break;
       case "ajuda":
         xa = (0, r.jsx)(t4, { irPara: bt, pedir });
@@ -5468,8 +5179,10 @@
           irPara: bt,
           contadores: Q2,
           usuario: s,
-          frase: zFrases[a],
-          children: xa,
+          setTema: A,
+          titulo: zNomeTela[a] || "",
+          voltar: zForaDoMenu.includes(a) ? { rotulo: zNomeTela[origem] || "In\xEDcio", ir: () => bt(origem) } : null,
+          children: esq ? (0, r.jsx)(zEsqueleto, { tipo: zTipoEsqueleto[a] }) : xa,
         }),
       ],
     });
