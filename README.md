@@ -2,7 +2,7 @@
 
 zElo dá direção, ajuda e apoio para quem cuida de pessoas com deficiência e para quem quer ajudar.
 
-Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade e o refinamento da interface de novembro de 2026.
+Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade, o refinamento da interface de novembro de 2026 e a segunda rodada de sugestões da monitora Milena.
 
 Protótipo publicado: https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu
 
@@ -29,6 +29,8 @@ Antes de o app ir ao ar:
 - Um profissional de saúde precisa revisar os passos de primeiros socorros (`zSituacoes` e as respostas de emergência em `codigo/ana-base.js`). Depois, preencha `revisadoPor` e `data` em `zSaudeRevisao`. Enquanto estiverem vazios, o app mostra "Aguardando revisão de profissional de saúde".
 - Defina o horário real da equipe de acolhimento em `zAcolhimento`, em `codigo/app-fonte.js`.
 - Troque `zLigarDeVerdade` para `!0` em `codigo/app-fonte.js`, para os botões de ligar abrirem a ligação.
+- Revise o texto da tela "Seus dados no zElo" (`zPrivacidade`). Ele é provisório e foi escrito sem inventar política. A política de privacidade e os termos de uso ainda precisam ser escritos.
+- Decida até quando a agenda fica aberta para marcar (`zMesesAbertos`, hoje 3 meses).
 
 Depois de mudar qualquer arquivo em `codigo/`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
 
@@ -40,10 +42,10 @@ O refinamento de novembro de 2026 seguiu estas regras. Vale manter nas telas nov
 - **Um botão cheio por tela.** É a ação principal. Os outros botões são de contorno (`sec` no componente `ia`).
 - **Ações rápidas em janela.** Novo tópico, escolha de horário, remarcar, cancelar e refazer as perguntas abrem em janela por cima da tela (`zJanela`). Esc ou o X fecham, e o foco fica dentro dela.
 - **O componente certo para cada informação.** Profissionais em grade de cartões, a semana numa faixa de dias, o fórum como lista, as orientações como cartões com a área e os números numa faixa com número grande.
-- **Cor com parcimônia.** Fundos neutros. O amarelo da marca aparece só no próximo atendimento e nas respostas de profissionais no fórum. O vermelho é só para emergência.
+- **Cor com equilíbrio.** Fundos neutros. O amarelo da marca aparece na abertura, na coluna da entrada, no menu (fundo claro e item atual), na saudação do Início, no próximo atendimento e nas respostas de profissionais no fórum. Ícones ficam em círculos de cor suave. O vermelho é só para emergência.
 - **Status iguais em todo o app.** Etiqueta neutra com ponto colorido, ícone e a mesma palavra (`zStatus`): Confirmado, Aguardando, Cancelado, Novo, Atende hoje, Resolvido, Encerrado. Tudo que está selecionado usa um estilo só.
 - **Sem enfeite.** Sem faixas decorativas, frases motivacionais, emoji ou degradê.
-- **Menu.** Início, Chat, Atendimentos, Fórum e Orientações, cada um com contador. O topo mostra o nome da tela, o atalho de tema, o sino com contador e o Perfil. Telas fora do menu mostram "‹ Tela de origem" no topo.
+- **Menu.** Início, Chat, Atendimentos, Fórum e Orientações, cada um com contador. Embaixo ficam "Sair do zElo" (pede confirmação) e "Preciso de ajuda". O topo mostra o nome da tela, o atalho de tema, o sino com contador e o Perfil. Telas fora do menu mostram "‹ Tela de origem" no topo.
 - **Quem cuida e quem é cuidado.** O responsável informa o nome da pessoa que cuida, e os textos usam esse nome.
 - **Fórum.** Respostas de profissionais vêm primeiro, em destaque, com "Verificado por [nome]".
 - **Texto.** Curto e em português do Brasil. Lista vazia diz o que fazer. Botão travado diz por quê.
@@ -62,6 +64,7 @@ Os componentes nunca usam uma cor direta. Usam papéis (fundo, superfície, text
 | Ação (`--acao-bg`) | #0F5F70 | #7CC4D2 | #000000 |
 | Selecionado (`--sel-bg`) | #E3EFF1 | #17343B | #FFF3B0 |
 | Destaque da marca (`--destaque-bg`) | #FBF3D6 | #2B2818 | #FFF3B0 |
+| Menu atual e abertura (`--nav-ativo-bg`, `--splash-bg`) | #F5E1A0 | #F5E1A0 | #FFF3B0 |
 | Emergência (`--emergencia`) | #B3261E | #FF8A7D | #A30000 |
 
 ### Acessibilidade
@@ -82,7 +85,7 @@ node codigo/gerar-icones.js
 
 ## Atendimentos, sala de vídeo, verificação e notificações
 
-Sugestões da monitora Millena (novembro de 2026), com as escolhas do grupo:
+Sugestões da monitora Milena (novembro de 2026), com as escolhas do grupo:
 
 - **Atendimentos.** A família remarca e cancela em Meus agendamentos. O voluntário tem a Minha agenda, com os próximos atendimentos (entrar na sala, remarcar, cancelar com motivo) e os dias e horários em que atende. A equipe do zElo entra pelo link "Entrar no painel da equipe", na primeira tela, e vê todos os atendimentos: agenda para uma família, remarca e cancela.
 - **Chamada online.** Acontece numa sala de vídeo dentro do zElo, sem instalar nada: teste de câmera e microfone, legendas, ajuda durante a chamada e nada é gravado. No app real, a ideia é usar o Jitsi Meet (código aberto e gratuito). Neste protótipo a chamada é simulada.
@@ -90,6 +93,18 @@ Sugestões da monitora Millena (novembro de 2026), com as escolhas do grupo:
 - **Notificações.** Sino no topo, com contador. Mostra respostas do fórum, lembretes e mudanças de atendimento, agrupados em Hoje, Ontem e Antes. Para o voluntário, mostra também o status do cadastro.
 
 O código dessas telas fica em `codigo/app-fonte.js` (`zMeusAgend`, `zMinhaAgenda`, `zPainel`, `zSala`, `zNotificacoes`).
+
+## Segunda rodada da Milena (novembro de 2026)
+
+O que mudou e o que foi adaptado:
+
+- **Amarelo de volta, com equilíbrio.** Abertura amarela com a logo, coluna amarela na entrada, menu com fundo creme e item atual amarelo. O texto sobre o amarelo é escuro, para manter o contraste. No alto contraste o amarelo vira #FFF3B0 com texto preto.
+- **Margens.** A coluna central passou de 760px para 880px (telas com grade, de 960px para 1120px), e as margens laterais ficaram menores.
+- **Entrada.** Primeiro a pessoa escolhe o perfil, depois entra na conta e passa pela tela "Seus dados no zElo". Uma faixa de etapas mostra onde ela está. Na tela de privacidade, o aceite necessário fica separado dos opcionais, nada vem marcado e os opcionais não travam nada. Os opcionais mudam o app de verdade (cidade no fórum, guardar perguntas da Ana) e podem ser trocados em Perfil > Privacidade.
+- **Atendimentos.** "Buscar especialistas" e "Meus agendamentos" viraram subpáginas com navegação no topo. Meus agendamentos mostra três colunas: Próximos, Realizados e Cancelados. Um atendimento vai para Realizados quando a chamada termina na sala de vídeo.
+- **Agendar.** A janela mostra os dados do profissional (área, registro, onde atende, dias de atendimento) e um calendário do mês com setas para os outros meses. Os dias livres vêm só dos dias e horas que o profissional informou. Não há horário inventado.
+- **Preciso de ajuda.** "O que está acontecendo?" virou cartões com ícone, com a opção "Outra situação", que abre um campo para escrever e enviar ao acolhimento. As perguntas iniciais usam a mesma ideia de cartões com ícone.
+- **Não aplicado:** nada foi copiado do Flo. Usamos só a ideia de ter mais cor e ícones, com as cores e a logo do zElo.
 
 ## Como voltar a uma versão anterior
 

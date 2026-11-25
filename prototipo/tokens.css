@@ -67,8 +67,8 @@
 
   /* Layout */
   --coluna: 256px;
-  --miolo: 760px;
-  --miolo-largo: 960px;
+  --miolo: 880px;
+  --miolo-largo: 1120px;
   --alvo: 44px;
   --barra: 68px;
   --topo: 64px;
@@ -122,6 +122,24 @@ html[data-letra="maior"] { font-size: 125%; }
   --destaque-bg: #FBF3D6;
   --destaque-borda: #E9D48E;
   --logo: #0F5F70;
+  /* Navegação: o amarelo acolhedor da marca marca onde a pessoa está */
+  --nav-bg: #FDF8E8;
+  --nav-borda: #EFE3B8;
+  --nav-ativo-bg: #F5E1A0;
+  --nav-ativo-fg: #17262A;
+  --acolhe-bg: #FBF3D6;
+  --acolhe-borda: #EFDDA0;
+  --splash-bg: #F5E1A0;
+  --splash-logo: #0F5F70;
+  /* Ícones em círculo: tons suaves por tipo */
+  --ic-azul-bg: #E3EFF1;
+  --ic-azul-fg: #0B4A58;
+  --ic-amarelo-bg: #FBF0CC;
+  --ic-amarelo-fg: #6B4E00;
+  --ic-verde-bg: #E4F2E9;
+  --ic-verde-fg: #1F5C39;
+  --ic-vermelho-bg: #FBE7E5;
+  --ic-vermelho-fg: #8C1D17;
   /* Campos */
   --campo-bg: #FFFFFF;
   --campo-borda: #B9C4C6;
@@ -189,6 +207,22 @@ html[data-letra="maior"] { font-size: 125%; }
   --destaque-bg: #2B2818;
   --destaque-borda: #8F7E45;
   --logo: #F5E1A0;
+  --nav-bg: #161B1D;
+  --nav-borda: #2F393D;
+  --nav-ativo-bg: #F5E1A0;
+  --nav-ativo-fg: #17262A;
+  --acolhe-bg: #2B2818;
+  --acolhe-borda: #5E5332;
+  --splash-bg: #F5E1A0;
+  --splash-logo: #0F5F70;
+  --ic-azul-bg: #17343B;
+  --ic-azul-fg: #A9DDE7;
+  --ic-amarelo-bg: #3A3420;
+  --ic-amarelo-fg: #F5E1A0;
+  --ic-verde-bg: #183326;
+  --ic-verde-fg: #9AD7B2;
+  --ic-vermelho-bg: #3A1F1C;
+  --ic-vermelho-fg: #FFB4AA;
   --campo-bg: #151B1E;
   --campo-borda: #4A575C;
   --campo-bloq-bg: #222A2E;
@@ -254,6 +288,22 @@ html[data-letra="maior"] { font-size: 125%; }
   --destaque-bg: #FFF3B0;
   --destaque-borda: #000000;
   --logo: #000000;
+  --nav-bg: #FFFFFF;
+  --nav-borda: #000000;
+  --nav-ativo-bg: #FFF3B0;
+  --nav-ativo-fg: #000000;
+  --acolhe-bg: #FFF3B0;
+  --acolhe-borda: #000000;
+  --splash-bg: #FFF3B0;
+  --splash-logo: #000000;
+  --ic-azul-bg: #FFFFFF;
+  --ic-azul-fg: #000000;
+  --ic-amarelo-bg: #FFF3B0;
+  --ic-amarelo-fg: #000000;
+  --ic-verde-bg: #FFFFFF;
+  --ic-verde-fg: #00602A;
+  --ic-vermelho-bg: #FFFFFF;
+  --ic-vermelho-fg: #A30000;
   --campo-bg: #FFFFFF;
   --campo-borda: #000000;
   --campo-bloq-bg: #E6E6E6;
