@@ -8,7 +8,13 @@ Protótipo publicado: https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu
 
 ## Como abrir
 
-Abra `prototipo/index.html` no navegador. Também dá para publicar a pasta `prototipo/` no GitHub Pages.
+Abra `prototipo/index.html` no navegador.
+
+Para apresentar, use o QR code em `apresentacao/qr-prototipo.png` (ou `.svg`, para imprimir grande). Ele abre o protótipo publicado.
+
+### Publicar no GitHub Pages
+
+O arquivo `.github/workflows/publicar.yml` publica a pasta `prototipo/` sempre que algo entra na `main`. Na primeira vez, alguém com acesso de dono precisa ir em **Settings > Pages** e escolher **Source: GitHub Actions**. O endereço fica parecido com `https://biaholandac.github.io/zElo/`.
 
 ## Onde mexer
 
@@ -31,6 +37,7 @@ Antes de o app ir ao ar:
 - Troque `zLigarDeVerdade` para `!0` em `codigo/app-fonte.js`, para os botões de ligar abrirem a ligação.
 - Revise o texto da tela "Seus dados no zElo" (`zPrivacidade`). Ele é provisório e foi escrito sem inventar política. A política de privacidade e os termos de uso ainda precisam ser escritos.
 - Decida até quando a agenda fica aberta para marcar (`zMesesAbertos`, hoje 3 meses).
+- Revise o texto "Quem somos" da primeira tela (`FS`, em `codigo/app-fonte.js`). Ele é provisório.
 
 Depois de mudar qualquer arquivo em `codigo/`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
 
@@ -87,12 +94,12 @@ node codigo/gerar-icones.js
 
 Sugestões da monitora Milena (novembro de 2026), com as escolhas do grupo:
 
-- **Atendimentos.** A família remarca e cancela em Meus agendamentos. O voluntário tem a Minha agenda, com os próximos atendimentos (entrar na sala, remarcar, cancelar com motivo) e os dias e horários em que atende. A equipe do zElo entra pelo link "Entrar no painel da equipe", na primeira tela, e vê todos os atendimentos: agenda para uma família, remarca e cancela.
+- **Atendimentos.** A família remarca e cancela em Meus agendamentos. O voluntário tem a Minha agenda, com os próximos atendimentos (entrar na sala, remarcar, cancelar com motivo) e os dias e horários em que atende. O painel da equipe saiu do protótipo em novembro de 2026, a pedido do professor.
 - **Chamada online.** Acontece numa sala de vídeo dentro do zElo, sem instalar nada: teste de câmera e microfone, legendas, ajuda durante a chamada e nada é gravado. No app real, a ideia é usar o Jitsi Meet (código aberto e gratuito). Neste protótipo a chamada é simulada.
-- **Verificação dos voluntários.** O sistema consulta o número no conselho profissional e uma pessoa da equipe confere o documento no painel antes de aprovar. Depois da decisão, o arquivo é apagado (LGPD). Guardamos só nome, número do registro e data. Abrir um documento e cada decisão ficam no Registro de ações.
+- **Verificação dos voluntários.** O sistema consulta o número no conselho profissional e uma pessoa da equipe confere o documento antes de aprovar. Depois da decisão, o arquivo é apagado (LGPD). Guardamos só nome, número do registro e data. (Essa conferência acontece fora do app e não aparece no protótipo.)
 - **Notificações.** Sino no topo, com contador. Mostra respostas do fórum, lembretes e mudanças de atendimento, agrupados em Hoje, Ontem e Antes. Para o voluntário, mostra também o status do cadastro.
 
-O código dessas telas fica em `codigo/app-fonte.js` (`zMeusAgend`, `zMinhaAgenda`, `zPainel`, `zSala`, `zNotificacoes`).
+O código dessas telas fica em `codigo/app-fonte.js` (`zMeusAgend`, `zMinhaAgenda`, `zSala`, `zNotificacoes`).
 
 ## Segunda rodada da Milena (novembro de 2026)
 
@@ -105,6 +112,15 @@ O que mudou e o que foi adaptado:
 - **Agendar.** A janela mostra os dados do profissional (área, registro, onde atende, dias de atendimento) e um calendário do mês com setas para os outros meses. Os dias livres vêm só dos dias e horas que o profissional informou. Não há horário inventado.
 - **Preciso de ajuda.** "O que está acontecendo?" virou cartões com ícone, com a opção "Outra situação", que abre um campo para escrever e enviar ao acolhimento. As perguntas iniciais usam a mesma ideia de cartões com ícone.
 - **Não aplicado:** nada foi copiado do Flo. Usamos só a ideia de ter mais cor e ícones, com as cores e a logo do zElo.
+
+## Ajustes do professor Gusto (novembro de 2026)
+
+- A primeira tela explica o que é o zElo, quem somos e por que usar, antes da escolha de perfil.
+- O painel da equipe saiu.
+- No cadastro do responsável, a pergunta da deficiência vem logo abaixo do nome da pessoa cuidada.
+- No Início, "Ver todas as orientações" fica ao lado de "Para você", e "Ver todos" dos profissionais abre direto Buscar especialistas.
+- QR code para a apresentação em `apresentacao/`.
+- Publicação automática no GitHub Pages (veja "Publicar no GitHub Pages").
 
 ## Como voltar a uma versão anterior
 

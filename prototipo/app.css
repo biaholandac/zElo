@@ -988,3 +988,18 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
 .kanban-cartao .agenda-acoes { gap: 8px; }
 .kanban-cartao .agenda-acoes .btn { min-height: 40px; padding: 0 12px; font-size: var(--fs-pequeno); gap: 6px; }
 .kanban-cartao > p, .kanban-cartao .linha-texto p { margin: 0; }
+
+/* Primeira tela: o que é o zElo */
+.sobre-quem { margin-top: var(--space-3); max-width: 62ch; }
+.sobre-titulo { margin-top: var(--space-5); }
+.sobre-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-3); }
+@media (min-width: 700px) { .sobre-lista { grid-template-columns: 1fr 1fr; } }
+.sobre-item { display: flex; gap: 12px; align-items: flex-start; padding: var(--space-3) var(--space-4); background: var(--superficie); border: var(--borda-largura) solid var(--borda); border-radius: var(--raio-cartao); }
+.sobre-item strong { display: block; font-size: var(--fs-apoio); margin-bottom: 2px; }
+.sobre-item .apoio { display: block; font-size: var(--fs-pequeno); }
+.sobre-icone { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--ic-amarelo-bg); color: var(--ic-amarelo-fg); }
+.sobre-escolha { font-size: var(--fs-secao); margin: var(--space-6) 0 var(--space-2); }
+.sobre-escolha + .apoio { margin-bottom: var(--space-4); }
+/* Pergunta da deficiência logo abaixo do nome */
+.pergunta-abaixo { margin-top: var(--space-5); margin-bottom: var(--space-3); }
+.h-pergunta { font-size: var(--fs-secao); margin-bottom: 4px; }

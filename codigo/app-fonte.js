@@ -1102,7 +1102,6 @@
       notificacoes: "Notifica\xE7\xF5es",
       ajuda: "Preciso de ajuda",
       sala: "Sala de v\xEDdeo",
-      painel: "Painel da equipe",
     },
     // Telas fora do menu: mostram "‹ Tela de origem" na barra do topo
     zForaDoMenu = ["forum-topico", "dica", "notificacoes", "ajuda", "sala"],
@@ -1113,7 +1112,6 @@
       "cadastro",
       "privacidade",
       "status-voluntario",
-      "painel",
     ];
   function zIniciais(nome) {
     let p = (nome || "").trim().split(/\s+/).filter(Boolean);
@@ -1520,8 +1518,37 @@
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsx)("h1", { tabIndex: -1, children: "Como voc\xEA quer usar o zElo?" }),
-        (0, r.jsx)("p", { className: "lead", children: "Escolha o seu perfil. Em seguida voc\xEA entra na conta e v\xEA como cuidamos dos seus dados." }),
+        (0, r.jsx)("h1", { tabIndex: -1, children: "Boas-vindas ao zElo" }),
+        (0, r.jsx)("p", {
+          className: "lead",
+          children: "O zElo d\xE1 dire\xE7\xE3o, ajuda e apoio para quem cuida de pessoas com defici\xEAncia, para a pr\xF3pria pessoa com defici\xEAncia e para profissionais de sa\xFAde que querem ajudar.",
+        }),
+        // Quem somos: texto provisório, para o grupo revisar
+        (0, r.jsx)("p", {
+          className: "apoio sobre-quem",
+          children: "Quem somos: um grupo de estudantes que criou o zElo para aproximar fam\xEDlias e profissionais volunt\xE1rios num s\xF3 lugar.",
+        }),
+        (0, r.jsx)("h2", { className: "h-pequeno sobre-titulo", id: "sobre-h", children: "Por que usar o zElo" }),
+        (0, r.jsx)("ul", {
+          className: "sobre-lista",
+          "aria-labelledby": "sobre-h",
+          children: [
+            ["verificado", "Consultas sem custo", "Com profissionais de sa\xFAde volunt\xE1rios, com o registro conferido. Online ou presencial."],
+            ["chat", "D\xFAvidas respondidas", "A Ana responde perguntas do dia a dia e indica a quem recorrer."],
+            ["forum", "Quem vive o mesmo", "No f\xF3rum voc\xEA troca experi\xEAncias com outras fam\xEDlias, e as respostas de profissionais aparecem primeiro."],
+            ["orientacoes", "Orienta\xE7\xF5es pr\xE1ticas", "Textos curtos para o cuidado em casa, escritos por profissionais."],
+          ].map(([ic, t0, d0]) =>
+            (0, r.jsxs)("li", {
+              className: "sobre-item",
+              children: [
+                (0, r.jsx)("span", { className: "sobre-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic, size: 22 }) }),
+                (0, r.jsxs)("span", { children: [(0, r.jsx)("strong", { children: t0 }), (0, r.jsx)("span", { className: "apoio", children: d0 })] }),
+              ],
+            }, ic),
+          ),
+        }),
+        (0, r.jsx)("h2", { className: "h-secao sobre-escolha", children: "Como voc\xEA quer usar o zElo?" }),
+        (0, r.jsx)("p", { className: "apoio", children: "Escolha o seu perfil. Em seguida voc\xEA entra na conta e v\xEA como cuidamos dos seus dados." }),
         (0, r.jsxs)("div", {
           className: "objetivo-opcoes opcoes",
           children: [
@@ -1533,18 +1560,6 @@
         (0, r.jsx)("p", {
           className: "apoio nota-cras",
           children: "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
-        }),
-        (0, r.jsxs)("p", {
-          className: "apoio equipe-link",
-          children: [
-            "Faz parte da equipe zElo? ",
-            (0, r.jsx)("button", {
-              type: "button",
-              className: "link",
-              onClick: () => a("equipe"),
-              children: "Entrar no painel da equipe",
-            }),
-          ],
         }),
       ],
     });
@@ -1772,6 +1787,8 @@
             ? resp ? "Quais destas situa\xE7\xF5es fazem parte do dia a dia " + de + "?" : "Quais destas situa\xE7\xF5es fazem parte do seu dia a dia?"
             : s.titulo,
       faltaNome = s.campo === "tipo" && resp && !(e.pessoa || "").trim(),
+      // Para o responsável, o nome vem primeiro e a pergunta da deficiência logo abaixo dele
+      nomePrimeiro = s.campo === "tipo" && resp,
       c = (s.multi ? i.length > 0 : !!i) && !faltaNome && !(s.campo === "tipo" && i.includes("outra") && !(e.tipoOutra || "").trim()),
       [ocupado, agir] = zUseAcao(500),
       m = (I) => {
@@ -1820,8 +1837,8 @@
                 className: "passo",
                 children: ["Passo ", a, " de ", _S.length, a === 1 ? " \xB7 leva menos de 2 minutos" : ""],
               }),
-              (0, r.jsx)(nj ? "h3" : "h1", { tabIndex: -1, children: titulo }),
-              s.ajuda && (0, r.jsx)("p", { className: "lead", children: s.ajuda }),
+              (0, r.jsx)(nj ? "h3" : "h1", { tabIndex: -1, children: nomePrimeiro ? "Sobre a pessoa que voc\xEA cuida" : titulo }),
+              s.ajuda && !nomePrimeiro && (0, r.jsx)("p", { className: "lead", children: s.ajuda }),
             ],
           }),
           s.campo === "tipo" &&
@@ -1834,6 +1851,14 @@
               maxLength: 40,
               autoComplete: "off",
               onChange: (I) => t({ ...e, pessoa: I.target.value }),
+            }),
+          nomePrimeiro &&
+            (0, r.jsxs)("div", {
+              className: "pergunta-abaixo",
+              children: [
+                (0, r.jsx)(nj ? "h4" : "h2", { className: "h-pergunta", children: titulo }),
+                s.ajuda && (0, r.jsx)("p", { className: "apoio", children: s.ajuda }),
+              ],
             }),
           (0, r.jsx)(Tm, {
             itens: s.itens,
@@ -2386,7 +2411,7 @@
             }),
             o === "voluntario"
               ? (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Ver minha agenda" })
-              : (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Agendar consulta" }),
+              : (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos-buscar"), children: "Agendar consulta" }),
           ],
         }),
         nums && (0, r.jsx)(zNumeros, { itens: nums, rotulo: "Resumo" }),
@@ -2395,7 +2420,7 @@
             className: "secao",
             children: [
               (0, r.jsx)(zSecaoTopo, { id: "semana-h", titulo: "Esta semana", atalho: ["Ver agendamentos", () => n("atendimentos-meus")] }),
-              (0, r.jsx)(zSemanaFaixa, { agenda: t, proximo: m, ver: () => n("atendimentos-meus"), agendar: () => n("atendimentos") }),
+              (0, r.jsx)(zSemanaFaixa, { agenda: t, proximo: m, ver: () => n("atendimentos-meus"), agendar: () => n("atendimentos-buscar") }),
             ],
           }),
         o !== "voluntario" &&
@@ -2406,7 +2431,7 @@
                 id: "disp-h",
                 titulo: pessoa ? "Profissionais para " + pessoa : "Profissionais para voc\xEA",
                 sub: "Escolhidos pelas suas respostas.",
-                atalho: ["Ver todos", () => n("atendimentos")],
+                atalho: ["Ver todos", () => n("atendimentos-buscar")],
               }),
               (0, r.jsx)("div", {
                 className: "grade-prof",
@@ -2423,6 +2448,7 @@
               id: "feed-h",
               titulo: o === "voluntario" ? "Para voc\xEA responder" : "Para voc\xEA",
               sub: o === "voluntario" ? "Os temas em que a sua \xE1rea mais ajuda." : null,
+              atalho: o === "voluntario" ? ["Ver o f\xF3rum", () => n("forum")] : ["Ver todas as orienta\xE7\xF5es", () => n("dicas")],
             }),
             (0, r.jsx)("ul", {
               className: "lista-linhas",
@@ -4074,7 +4100,7 @@
   // ===================================================================
   // Novidades (sugestões da monitora Millena, novembro de 2026)
   // 1. Atendimentos: a família remarca e cancela, o voluntário tem a
-  //    Minha agenda e a equipe do zElo tem um painel.
+  //    Minha agenda.
   // 2. Sala de vídeo dentro do zElo (no app real: Jitsi Meet).
   // 3. Verificação de voluntários: o sistema confere o registro no
   //    conselho e uma pessoa da equipe aprova. O arquivo é apagado depois.
@@ -4527,301 +4553,6 @@
     );
   }
 
-  // ---------- 1c + 3. Painel da equipe zElo ----------
-  function zPainel({ ag, profDe, ocupados: oc, cancelar, remarcar, agendar, pend, decidir, verDoc, log, sair }) {
-    let [aba, setAba] = (0, L.useState)("atend"),
-      [filtro, setFiltro] = (0, L.useState)("ativos"),
-      [busca, setBusca] = (0, L.useState)(""),
-      [ab, setAb] = (0, L.useState)(null),
-      [ok, setOk] = (0, L.useState)(""),
-      [novo, setNovo] = (0, L.useState)(null),
-      [doc, setDoc] = (0, L.useState)(null),
-      [recusa, setRecusa] = (0, L.useState)(null),
-      [vistos, setVistos] = (0, L.useState)([]),
-      ativos = ag.filter((x) => x.status !== "cancelado"),
-      pendentes = pend.filter((x) => x.status === "pendente"),
-      feitos = pend.filter((x) => x.status !== "pendente"),
-      nomeFam = (f) => (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia),
-      lista = zSort(
-        ag.filter(
-          (f) =>
-            (filtro === "todos" || (filtro === "ativos" ? f.status !== "cancelado" : f.status === "cancelado")) &&
-            (!busca.trim() || Ll(nomeFam(f) + " " + profDe(f).nome + " " + profDe(f).area).includes(Ll(busca.trim()))),
-        ),
-      ),
-      novoProf = novo && novo.profId ? At.find((p) => p.id === novo.profId) : null,
-      novoPronto = novo && novo.familia.trim() && novoProf && novo.dia && novo.hora && (!novoProf.modos || novo.modo);
-    return zh(
-      "section",
-      { className: "entra" },
-      zh(
-        "header",
-        { className: "cabeca" },
-        zh("h1", { tabIndex: -1 }, "Painel da equipe"),
-        zh("p", { className: "lead" }, "Atendimentos de todas as fam\xEDlias e verifica\xE7\xE3o dos volunt\xE1rios. Cada a\xE7\xE3o fica registrada."),
-      ),
-      ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
-      (0, r.jsx)(zAbas, {
-        id: "painel",
-        rotulo: "Painel da equipe",
-        atual: aba,
-        setAtual: (k) => (setAba(k), setOk(""), setAb(null)),
-        abas: [["atend", "Atendimentos"], ["verif", "Verifica\xE7\xE3o", pendentes.length], ["log", "Registro"]],
-      }),
-      zh(
-        "div",
-        { id: "painel-painel", role: "tabpanel", "aria-labelledby": "painel-aba-" + aba },
-        aba === "atend" &&
-          zh(
-            r.Fragment,
-            null,
-            zh(
-              "div",
-              { className: "secao-topo" },
-              (0, r.jsx)(zNumeros, {
-                rotulo: "Resumo dos atendimentos",
-                itens: [
-                  { ic: "calendario", rotulo: "Marcados", n: ativos.length, ir: () => setFiltro("ativos") },
-                  { ic: "video", rotulo: "Online", n: ativos.filter(zOnline).length, ir: () => setFiltro("ativos") },
-                  { ic: "cancelado", rotulo: "Cancelados", n: ag.length - ativos.length, ir: () => setFiltro("cancelados") },
-                ],
-              }),
-            ),
-            zh("div", { className: "acoes" }, (0, r.jsx)(ia, { icone: "adicionar", onClick: () => (setOk(""), setNovo({ familia: "", profId: "", dia: null, hora: null, modo: null })), children: "Agendar para uma fam\xEDlia" })),
-            novo &&
-              (0, r.jsx)(zJanela, {
-                  titulo: "Agendar para uma fam\xEDlia",
-                  larga: !0,
-                  sub: "Use quando a fam\xEDlia pedir ajuda para marcar, por exemplo pelo telefone. Pe\xE7a s\xF3 o nome.",
-                  fechar: () => setNovo(null),
-                  rodape: zh(
-                    r.Fragment,
-                    null,
-                    (0, r.jsx)(ia, { sec: !0, onClick: () => setNovo(null), children: "Voltar" }),
-                    !novoPronto && zh("span", { className: "rotulo-bloqueado", role: "status" }, !novo.familia.trim() ? "Escreva o nome da fam\xEDlia." : !novoProf ? "Escolha o profissional." : novoProf.modos && !novo.modo ? "Escolha online ou presencial." : "Escolha o dia e o hor\xE1rio."),
-                    (0, r.jsx)(ia, {
-                      icone: "confirmar",
-                      disabled: !novoPronto,
-                      "aria-disabled": !novoPronto,
-                      onClick: () => novoPronto && (agendar({ profId: novoProf.id, diaId: novo.dia, hora: novo.hora, onde: novoProf.modos ? novo.modo : novoProf.onde, familia: novo.familia.trim() }), setNovo(null), setOk("Atendimento marcado. A fam\xEDlia e o profissional recebem um aviso.")),
-                      children: "Confirmar agendamento",
-                    }),
-                  ),
-                  children: zh(
-                  r.Fragment,
-                  null,
-                  (0, r.jsx)(Za, { id: "novo-fam", rotulo: "Nome da fam\xEDlia ou da pessoa", value: novo.familia, onChange: (e) => setNovo({ ...novo, familia: e.target.value }), autoComplete: "off" }),
-                  (0, r.jsx)(Za, {
-                    id: "novo-prof",
-                    como: "select",
-                    rotulo: "Profissional",
-                    value: novo.profId,
-                    onChange: (e) => setNovo({ ...novo, profId: e.target.value, dia: null, hora: null, modo: null }),
-                    children: [(0, r.jsx)("option", { value: "", children: "Escolha um profissional" }, ""), ...At.map((p) => (0, r.jsx)("option", { value: p.id, children: p.nome + " \xB7 " + p.area }, p.id))],
-                  }),
-                  novoProf &&
-                    novoProf.modos &&
-                    zh(
-                      "div",
-                      { className: "horarios", role: "group", "aria-label": "Como vai ser" },
-                      novoProf.modos.map((md) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": novo.modo === md, onClick: () => setNovo({ ...novo, modo: md }), children: md }, md)),
-                    ),
-                  novoProf && (0, r.jsx)(zEscolherHorario, { prof: novoProf, ocupados: oc, sel: novo, setSel: setNovo }),
-                ),
-              }),
-            zh(
-              "div",
-              { className: "busca", style: { marginTop: 24 } },
-              (0, r.jsx)(Za, { id: "busca-painel", rotulo: "Buscar por fam\xEDlia ou profissional", value: busca, onChange: (e) => setBusca(e.target.value), autoComplete: "off" }),
-            ),
-            (0, r.jsx)(zFiltros, { rotulo: "Mostrar", valor: filtro, mudar: setFiltro, itens: [["ativos", "Marcados"], ["cancelados", "Cancelados"], ["todos", "Todos"]] }),
-            lista.length
-              ? zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  lista.map((f) => {
-                    let p = profDe(f),
-                      cancelado = f.status === "cancelado";
-                    return zh(
-                      "li",
-                      { key: f.id, className: "agenda-item" },
-                      zh(
-                        "div",
-                        { className: "agenda-quando" },
-                        zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
-                        zh("span", { className: "agenda-hora" }, f.hora),
-                      ),
-                      zh(
-                        "div",
-                        null,
-                        zh(
-                          "div",
-                          { className: "linha-texto" },
-                          zh("p", { className: "linha-titulo" }, nomeFam(f)),
-                          zh("p", { className: "apoio linha-meta" }, p.nome, " \xB7 ", p.area, " \xB7 ", zOnline(f) ? "Online" : f.onde),
-                          zh(
-                            "p",
-                            { className: "linha-etiquetas" },
-                            cancelado
-                              ? (0, r.jsx)(zStatus, { s: "cancelado", extra: f.motivo ? f.motivo.toLowerCase() : null })
-                              : (0, r.jsx)(zStatus, { s: f.status === "realizado" ? "realizado" : "confirmado", extra: f.remarcado ? "remarcado" : null }),
-                          ),
-                          !cancelado &&
-                            (ab && ab.id === f.id && ab.modo === "cancelar"
-                              ? (0, r.jsx)(zCancelar, {
-                                  idp: f.id,
-                                  titulo: nomeFam(f) + " com " + p.nome + ", " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ".",
-                                  motivos: ["A pedido da fam\xEDlia", "A pedido do profissional", "Problema na plataforma", "Outro motivo"],
-                                  aviso: "A fam\xEDlia e o profissional recebem um aviso no app e por e-mail.",
-                                  confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. Os dois lados foram avisados.")),
-                                  voltar: () => setAb(null),
-                                })
-                              : ab && ab.id === f.id && ab.modo === "remarcar"
-                                ? (0, r.jsx)(zRemarcarBloco, {
-                                    prof: p,
-                                    ocupados: oc,
-                                    aviso: "A fam\xEDlia e o profissional recebem um aviso com o novo hor\xE1rio.",
-                                    confirmar: (s) => (setAb(null), remarcar(f, s), setOk("Atendimento remarcado. Os dois lados foram avisados.")),
-                                    voltar: () => setAb(null),
-                                  })
-                                : zh(
-                                    "div",
-                                    { className: "agenda-acoes" },
-                                    (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
-                                    (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })), children: "Cancelar" }),
-                                  )),
-                        ),
-                      ),
-                    );
-                  }),
-                )
-              : zh("div", { className: "vazio" }, zh("h3", null, "Nenhum atendimento encontrado"), zh("p", null, "Tente outro nome ou escolha Todos no filtro.")),
-          ),
-        aba === "verif" &&
-          zh(
-            r.Fragment,
-            null,
-            zh(
-              "div",
-              { style: { marginTop: 24 } },
-              (0, r.jsx)(Do, {
-                tipo: "info",
-                children: "O sistema j\xE1 consultou o n\xFAmero no conselho profissional. Voc\xEA confere o documento e decide. Depois da decis\xE3o, o arquivo \xE9 apagado, como pede a LGPD. Guardamos s\xF3 o nome, o n\xFAmero do registro e a data.",
-              }),
-            ),
-            pendentes.length
-              ? zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  pendentes.map((v) =>
-                    zh(
-                      "li",
-                      { key: v.id, className: "cartao-vol" },
-                      zh(
-                        "div",
-                        null,
-                        zh("h3", { className: "linha-titulo" }, v.nome),
-                        zh("p", { className: "apoio" }, v.area, " \xB7 ", v.registro, " \xB7 ", v.cidade),
-                        zh("p", { className: "apoio" }, "Enviado ", v.enviado),
-                      ),
-                      zh(
-                        "p",
-                        { className: "checagem " + (v.checagem.ok ? "checagem--ok" : "checagem--aviso") },
-                        (0, r.jsx)(la, { n: v.checagem.ok ? "confirmar" : "atencao", size: 22 }),
-                        zh("span", null, zh("b", null, "Confer\xEAncia autom\xE1tica: "), v.checagem.texto),
-                      ),
-                      doc === v.id
-                        ? zh(
-                            "div",
-                            { className: "doc-previa" },
-                            zh("p", { className: "linha-titulo" }, (0, r.jsx)(la, { n: "documento", size: 22 }), " ", v.arquivo || "documento"),
-                            zh("p", { className: "apoio" }, "Pr\xE9via fict\xEDcia. No app real o arquivo abre aqui, sem download, e s\xF3 para quem faz a verifica\xE7\xE3o."),
-                            zh("p", { className: "apoio" }, "Este acesso ficou registrado."),
-                            zh("button", { type: "button", className: "link", onClick: () => setDoc(null) }, "Fechar documento"),
-                          )
-                        : zh(
-                            "div",
-                            null,
-                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "documento", onClick: () => (setDoc(v.id), setVistos((l0) => [...l0, v.id]), verDoc(v)), children: "Ver documento" }),
-                          ),
-                      recusa && recusa.id === v.id
-                        ? zh(
-                            "div",
-                            { className: "painel-acao" },
-                            (0, r.jsx)(Za, {
-                              id: "recusa-" + v.id,
-                              como: "select",
-                              rotulo: "Por que n\xE3o aprovar?",
-                              value: recusa.motivo,
-                              onChange: (e) => setRecusa({ ...recusa, motivo: e.target.value }),
-                              children: ["O documento n\xE3o d\xE1 para ler", "O nome n\xE3o confere com o registro", "O registro n\xE3o est\xE1 ativo", "A \xE1rea n\xE3o \xE9 atendida pelo zElo"].map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
-                            }),
-                            zh(
-                              "div",
-                              { className: "acoes--linha" },
-                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => (decidir(v, "novo-doc", recusa.motivo), setRecusa(null), setOk("Pedimos outro documento a " + v.nome.split(" ")[0] + ". O arquivo antigo foi apagado.")), children: "Pedir outro documento" }),
-                              (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", onClick: () => (decidir(v, "recusado", recusa.motivo), setRecusa(null), setOk("Cadastro recusado. A pessoa recebe o motivo por e-mail e o arquivo foi apagado.")), children: "Recusar cadastro" }),
-                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa(null), children: "Voltar" }),
-                            ),
-                          )
-                        : zh(
-                            "div",
-                            { className: "acoes--linha" },
-                            !vistos.includes(v.id) && zh("p", { className: "apoio", style: { flexBasis: "100%" } }, "Abra o documento antes de aprovar."),
-                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "confirmar", disabled: !vistos.includes(v.id), "aria-disabled": !vistos.includes(v.id), onClick: () => vistos.includes(v.id) && (decidir(v, "aprovado"), setDoc(null), setOk("Cadastro de " + v.nome.split(" ")[0] + " aprovado. O arquivo foi apagado.")), children: "Aprovar" }),
-                            (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa({ id: v.id, motivo: "O documento n\xE3o d\xE1 para ler" }), children: "N\xE3o aprovar" }),
-                          ),
-                    ),
-                  ),
-                )
-              : zh("div", { className: "vazio", style: { marginTop: 24 } }, zh("h3", null, "Nenhum cadastro esperando"), zh("p", null, "Quando um volunt\xE1rio enviar o cadastro, ele aparece aqui.")),
-            feitos.length > 0 &&
-              zh(
-                r.Fragment,
-                null,
-                zh("h2", { className: "h-pequeno secao-titulo-peq" }, "J\xE1 analisados"),
-                zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  feitos.map((v) =>
-                    zh(
-                      "li",
-                      { key: v.id },
-                      zh(
-                        "div",
-                        { className: "linha" },
-                        zh(
-                          "span",
-                          { className: "linha-texto" },
-                          zh("span", { className: "linha-titulo" }, v.nome),
-                          zh("span", { className: "apoio linha-meta" }, v.registro),
-                          zh("span", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: { aprovado: "confirmado", recusado: "cancelado", "novo-doc": "aguardando" }[v.status], extra: v.status === "novo-doc" ? "novo documento" : v.motivo ? v.motivo.toLowerCase() : null })),
-                          zh("span", { className: "apoio linha-meta" }, "Documento apagado \xE0s ", v.apagadoEm, "."),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ),
-        aba === "log" &&
-          zh(
-            "div",
-            { style: { marginTop: 24 } },
-            zh("p", { className: "apoio medida" }, "Tudo o que a equipe faz aqui fica guardado: o que foi feito e quando. Isso protege as fam\xEDlias e os volunt\xE1rios."),
-            log.length
-              ? zh("ul", { className: "lista registro", style: { marginTop: 16 } }, log.map((x, i) => zh("li", { key: i, className: "registro-item" }, zh("b", null, x.hora), " ", x.texto)))
-              : zh("div", { className: "vazio", style: { marginTop: 16 } }, zh("h3", null, "Nenhuma a\xE7\xE3o ainda"), zh("p", null, "Agendar, remarcar, cancelar, abrir um documento e aprovar aparecem aqui.")),
-          ),
-      ),
-      zh(
-        "div",
-        { className: "acoes", style: { marginTop: 48 } },
-        (0, r.jsx)(ia, { sec: !0, icone: "sair", onClick: sair, children: "Sair do painel" }),
-      ),
-    );
-  }
-
   // ---------- 2. Sala de vídeo ----------
   // No app real, a sala usa o Jitsi Meet (código aberto, sem conta e sem instalar nada).
   function zSala({ at: f, outro, voltar, encerrar }) {
@@ -5142,11 +4873,12 @@
         a !== "cadastro" &&
         a !== "privacidade" &&
         a !== "status-voluntario" &&
-        a !== "painel" &&
         !(a === "diagnostico" && u === "inicio"),
       bt = (H) => {
         if (H === "atendimentos-meus")
           return (wl("meus"), ja(0), Nl(!1), o("atendimentos"));
+        if (H === "atendimentos-buscar")
+          return (wl("buscar"), ja(0), Nl(!1), o("atendimentos"));
         (H === "atendimentos" && (ja(0), Nl(!1)),
           H === "forum" && d(null),
           H === "dicas" && b(null),
@@ -5160,7 +4892,7 @@
           Nl(!1),
           o("atendimentos"));
       },
-      Z2 = () => o(n === "equipe" && a === "painel" ? "painel" : P2 ? "inicio" : "objetivo"),
+      Z2 = () => o(P2 ? "inicio" : "objetivo"),
       j2 = (H) => {
         let ae = H.split("@")[0].split(/[._-]/)[0] || "voc\xEA";
         return ae.charAt(0).toUpperCase() + ae.slice(1);
@@ -5253,7 +4985,7 @@
           setTema: A,
           escolher: (H) => {
             (l(H),
-              H === "voluntario" ? irPriv("cadastro") : o(H === "equipe" ? "painel" : "login"));
+              H === "voluntario" ? irPriv("cadastro") : o("login"));
           },
         });
         break;
@@ -5479,44 +5211,6 @@
           abrir: (x) => {
             (setNt((l0) => l0.map((y) => (y.id === x.id ? { ...y, lida: !0 } : y))),
               x.topico ? kr(x.topico) : bt(x.tela || "inicio"));
-          },
-        });
-        break;
-      case "painel":
-        xa = (0, r.jsx)(zPainel, {
-          ag,
-          profDe,
-          ocupados: ativos,
-          pend,
-          log: lg,
-          sair: Y2,
-          cancelar: (f, m) => {
-            (mudarAt(f, { status: "cancelado", motivo: m }),
-              registrar("Cancelou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " (" + f.dia.toLowerCase() + ", " + f.hora + "). Motivo: " + m.toLowerCase() + "."),
-              f.familia === "voce" &&
-                avisar("familia", "atend", "A equipe zElo cancelou um atendimento", "O de " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ", com " + profDe(f).nome + ". Motivo: " + m.toLowerCase() + ".", { tela: "atendimentos-meus" }));
-          },
-          remarcar: (f, s0) => {
-            let nh = novoHorario(s0);
-            (mudarAt(f, nh),
-              registrar("Remarcou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " para " + nh.dia.toLowerCase() + ", " + nh.hora + "."),
-              f.familia === "voce" &&
-                avisar("familia", "atend", "A equipe zElo remarcou seu atendimento", "Agora \xE9 " + nh.dia.toLowerCase() + ", \xE0s " + nh.hora + ", com " + profDe(f).nome + ".", { tela: "atendimentos-meus" }));
-          },
-          agendar: (d) => {
-            let novo = zNovoAt({ ...d, id: "a" + Date.now() });
-            (setAg((l0) => [...l0, novo]),
-              registrar("Agendou para " + d.familia + " com " + novo.prof.nome + " (" + novo.dia.toLowerCase() + ", " + d.hora + ")."));
-          },
-          verDoc: (v) => registrar("Abriu o documento de " + v.nome + "."),
-          decidir: (v, dec, m) => {
-            (setPend((l0) => l0.map((x) => (x.id === v.id ? { ...x, status: dec, motivo: m, apagadoEm: zAgora() } : x))),
-              registrar(
-                { aprovado: "Aprovou o cadastro de ", recusado: "Recusou o cadastro de ", "novo-doc": "Pediu outro documento a " }[dec] + v.nome + (m ? ". Motivo: " + m.toLowerCase() : "") + ". Documento apagado.",
-              ),
-              v.id === "eu" &&
-                dec === "aprovado" &&
-                avisar("voluntario", "cadastro", "Cadastro aprovado", "Uma pessoa da equipe conferiu o seu registro. O documento que voc\xEA enviou foi apagado.", { tela: "inicio" }));
           },
         });
         break;
