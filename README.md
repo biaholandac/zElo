@@ -129,10 +129,10 @@ Como ligar:
 
 1. Crie um projeto em supabase.com.
 2. Em **SQL Editor**, cole `banco/esquema.sql` e clique em **Run**. Isso cria as tabelas e as regras de acesso.
-3. Em **Project Settings > API**, copie a **Project URL** e a chave **anon public** para `prototipo/config.js`. Nunca use a chave `service_role`.
+3. Em **Project Settings > API**, copie a **Project URL** e a chave **publishable** (nos projetos antigos, **anon public**) para `prototipo/config.js`. Nunca use a chave secreta (`secret` ou `service_role`).
 4. Para a apresentação, dá para desligar a confirmação por e-mail em **Authentication > Sign In / Providers > Email > Confirm email**. Assim a conta funciona na hora, sem esperar o e-mail.
 
-`prototipo/supabase.js` é a biblioteca do Supabase (`@supabase/supabase-js` 2.45.4) já empacotada e não precisa ser editada. O código que conversa com o banco fica em `codigo/banco.js`.
+`prototipo/supabase.js` é a biblioteca do Supabase (`@supabase/supabase-js` 2.119.0) já empacotada e não precisa ser editada. O código que conversa com o banco fica em `codigo/banco.js`.
 
 ## Ajustes do professor Gusto (novembro de 2026)
 
