@@ -4,7 +4,7 @@
 # Use ./montar.sh --legivel para gerar sem minificar, útil para procurar erros.
 set -e
 cd "$(dirname "$0")"
-cat codigo/react-inicio.js codigo/icones-solar.js codigo/ana-motor.js codigo/ana-base.js codigo/app-fonte.js codigo/react-fim.js > prototipo/app.js
+cat codigo/react-inicio.js codigo/icones-solar.js codigo/ana-motor.js codigo/ana-base.js codigo/banco.js codigo/app-fonte.js codigo/react-fim.js > prototipo/app.js
 node --check prototipo/app.js
 if [ "$1" != "--legivel" ]; then
   if npx --yes esbuild@0.24.0 prototipo/app.js --minify --target=es2019 --legal-comments=eof \

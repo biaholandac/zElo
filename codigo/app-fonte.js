@@ -109,6 +109,7 @@
     hoje: ["Atende hoje", "azul", "calendario"],
     resolvido: ["Resolvido", "verde", "confirmar"],
     encerrado: ["Encerrado", "cinza", "historico"],
+    realizado: ["Realizado", "azul", "historico"],
   };
   function zStatus({ s: k, extra: x }) {
     let [txt, cor, ic] = zStatusTipos[k];
@@ -274,9 +275,10 @@
   });
   // Lista de opções. "depois" põe um campo logo abaixo da opção que o abre (ex.: Outra).
   function Tm({ itens: a, valor: o, onChange: e, multi: t, rotulo: n, depois: dp }) {
+    let comIcone = a.some((x) => x.ic);
     let l = (s) => (t ? o.includes(s) : o === s);
     return (0, P.jsx)("div", {
-      className: "opcoes",
+      className: comIcone ? "opcoes opcoes--cartoes" : "opcoes",
       role: t ? "group" : "radiogroup",
       "aria-label": n,
       children: a.map((s) => {
@@ -290,8 +292,11 @@
             ...(t
               ? { "aria-pressed": i }
               : { role: "radio", "aria-checked": i }),
+            ...(s.ic ? { className: "opcao opcao--cartao" } : {}),
             children: [
+              s.ic && (0, P.jsx)("span", { className: "opcao-icone", "aria-hidden": "true", children: (0, P.jsx)(la, { n: s.ic, size: 24 }) }),
               (0, P.jsxs)("span", {
+                className: "opcao-texto-livre",
                 children: [
                   s.rotulo,
                   s.sub &&
@@ -343,31 +348,37 @@
     El = [
       {
         id: "terapias",
+        ic: "saude",
         rotulo: "Terapias e reabilita\xE7\xE3o",
         sub: "Terapia ocupacional, fisioterapia, fonoaudiologia",
       },
       {
         id: "emocional",
+        ic: "apoio",
         rotulo: "Sa\xFAde emocional",
         sub: "Ansiedade, crises e mudan\xE7as de comportamento",
       },
       {
         id: "rotina",
+        ic: "sono",
         rotulo: "Sono, alimenta\xE7\xE3o e rotina",
         sub: "Noites, refei\xE7\xF5es e manh\xE3s",
       },
       {
         id: "comunicacao",
+        ic: "dialogo",
         rotulo: "Comunica\xE7\xE3o e fala",
         sub: "Entender e ser entendido",
       },
       {
         id: "mobilidade",
+        ic: "movimento",
         rotulo: "Movimento e dor",
         sub: "Postura, mobilidade e desconforto",
       },
       {
         id: "cuidador",
+        ic: "cuidado",
         rotulo: "Sa\xFAde de quem cuida",
         sub: "Cansa\xE7o, pausas e apoio",
       },
@@ -970,38 +981,51 @@
         horas: ["10:30", "14:00"],
       },
     ],
-    RS = [
-      { id: "d2", rotulo: "Hoje, segunda, 2 de novembro", sem: "Hoje" },
-      { id: "d3", rotulo: "Ter\xE7a, 3 de novembro", sem: "Ter\xE7a" },
-      { id: "d4", rotulo: "Quarta, 4 de novembro", sem: "Quarta" },
-      { id: "d5", rotulo: "Quinta, 5 de novembro", sem: "Quinta" },
-      { id: "d6", rotulo: "Sexta, 6 de novembro", sem: "Sexta" },
-      { id: "d7", rotulo: "S\xE1bado, 7 de novembro", sem: "S\xE1bado" },
-      { id: "d9", rotulo: "Segunda, 9 de novembro", sem: "Segunda" },
-      { id: "d10", rotulo: "Ter\xE7a, 10 de novembro", sem: "Ter\xE7a" },
-    ];
-  function Ur(a, o = []) {
-    let e = At.findIndex((n) => n.id === a.id),
-      t = [];
-    return (
-      RS.forEach((n, l) => {
-        if (n.sem === "Hoje" ? !a.agora : !a.dias.includes(n.sem)) return;
-        let s = (n.sem === "Hoje" ? ["16:00", "16:30"] : a.horas)
-          .filter((i, c) => n.sem === "Hoje" || (e + l + c) % 4 !== 0)
-          .filter(
-            (i) =>
-              !o.some(
-                (c) =>
-                  c.diaId === n.id &&
-                  c.hora === i &&
-                  (!c.profId || c.profId === a.id) &&
-                  c.status !== "cancelado",
-              ),
-          );
-        s.length && t.push({ ...n, horas: s });
-      }),
-      t
-    );
+    // Datas. O protótipo finge que hoje é segunda, 2 de novembro de 2026.
+    zHoje = new Date(2026, 10, 2),
+    // Até onde a agenda fica aberta para marcar: este mês e os próximos (ponto para o grupo revisar)
+    zMesesAbertos = 3,
+    zFimAgenda = new Date(zHoje.getFullYear(), zHoje.getMonth() + zMesesAbertos, 0),
+    zSemNomes = ["Domingo", "Segunda", "Ter\xE7a", "Quarta", "Quinta", "Sexta", "S\xE1bado"],
+    zMesNomes = ["janeiro", "fevereiro", "mar\xE7o", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  var zDois = (n) => String(n).padStart(2, "0"),
+    zIso = (d) => d.getFullYear() + "-" + zDois(d.getMonth() + 1) + "-" + zDois(d.getDate()),
+    zData = (id) => {
+      let [y, m, d] = String(id).split("-").map(Number);
+      return new Date(y, m - 1, d);
+    },
+    zMesmoDia = (x, y) => zIso(x) === zIso(y),
+    zDiasEntre = (x, y) => Math.round((zData(zIso(y)) - zData(zIso(x))) / 864e5);
+  function zDiaRotulo(id) {
+    if (!id) return "";
+    let d = zData(id),
+      t = d.getDate() + " de " + zMesNomes[d.getMonth()] + (d.getFullYear() !== zHoje.getFullYear() ? " de " + d.getFullYear() : "");
+    return zMesmoDia(d, zHoje) ? "Hoje, " + zSemNomes[d.getDay()].toLowerCase() + ", " + t : zSemNomes[d.getDay()] + ", " + t;
+  }
+  // Horários livres de um profissional num dia. Vêm só do que o profissional informou
+  // (dias da semana e horários em que atende), tirando os horários já marcados.
+  // Para hoje valem só os horários de "Atende hoje". Alguns horários aparecem como já
+  // ocupados por outras famílias, de forma fixa, para o protótipo parecer real.
+  function zHorasDoDia(a, d, o = []) {
+    if (d < zData(zIso(zHoje)) || d > zFimAgenda) return [];
+    let hoje = zMesmoDia(d, zHoje),
+      base = hoje ? (a.agora ? ["16:00", "16:30"] : []) : a.dias.includes(zSemNomes[d.getDay()]) ? a.horas : [],
+      e = At.findIndex((n) => n.id === a.id),
+      l = zDiasEntre(zHoje, d),
+      id = zIso(d);
+    return base
+      .filter((i, c) => hoje || (e + l + c) % 4 !== 0)
+      .filter((i) => !o.some((c) => c.diaId === id && c.hora === i && (!c.profId || c.profId === a.id) && c.status !== "cancelado"));
+  }
+  // Dias com horário livre num intervalo (padrão: os próximos 9 dias)
+  function Ur(a, o = [], ini = zHoje, qtd = 9) {
+    let t = [];
+    for (let k = 0; k < qtd; k++) {
+      let d = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate() + k),
+        h = zHorasDoDia(a, d, o);
+      h.length && t.push({ id: zIso(d), rotulo: zDiaRotulo(zIso(d)), horas: h });
+    }
+    return t;
   }
   function zNovos(id, n) {
     return id === "chat"
@@ -1012,9 +1036,7 @@
   }
   var zSort = (lista) =>
     [...lista].sort(
-      (x, y) =>
-        RS.findIndex((d) => d.id === x.diaId) -
-          RS.findIndex((d) => d.id === y.diaId) || x.hora.localeCompare(y.hora),
+      (x, y) => zData(x.diaId) - zData(y.diaId) || x.hora.localeCompare(y.hora),
     );
   function zEmail(v) {
     let t = v.trim();
@@ -1080,7 +1102,6 @@
       notificacoes: "Notifica\xE7\xF5es",
       ajuda: "Preciso de ajuda",
       sala: "Sala de v\xEDdeo",
-      painel: "Painel da equipe",
     },
     // Telas fora do menu: mostram "‹ Tela de origem" na barra do topo
     zForaDoMenu = ["forum-topico", "dica", "notificacoes", "ajuda", "sala"],
@@ -1089,8 +1110,8 @@
       "login",
       "diagnostico-entrada",
       "cadastro",
+      "privacidade",
       "status-voluntario",
-      "painel",
     ];
   function zIniciais(nome) {
     let p = (nome || "").trim().split(/\s+/).filter(Boolean);
@@ -1163,9 +1184,11 @@
     usuario: u,
     titulo: tt,
     voltar: vt,
+    sair: sr,
     children: s,
   }) {
-    let ini = zIniciais(u && u.nome),
+    let [saindo, setSaindo] = (0, L.useState)(!1),
+      ini = zIniciais(u && u.nome),
       novos = { chat: 1, forum: 1 },
       itemMenu = (c, baixo) => {
         let at = o === c.id,
@@ -1248,7 +1271,17 @@
               (0, r.jsxs)("div", {
                 className: "coluna-fim",
                 children: [
-                  (0, r.jsx)("ul", { className: "menu", children: itemMenu(zItemPerfil, !1) }),
+                  (0, r.jsx)("ul", {
+                    className: "menu",
+                    children: (0, r.jsx)("li", {
+                      children: (0, r.jsxs)("button", {
+                        type: "button",
+                        className: "menu-item menu-item--sair",
+                        onClick: () => setSaindo(!0),
+                        children: [(0, r.jsx)("span", { className: "menu-icone", children: (0, r.jsx)(la, { n: "sair", size: 20 }) }), (0, r.jsx)("span", { className: "menu-rotulo", children: "Sair do zElo" })],
+                      }),
+                    }),
+                  }),
                   (0, r.jsxs)("button", {
                     type: "button",
                     className: "btn-emergencia",
@@ -1320,6 +1353,20 @@
             onClick: () => n("ajuda"),
             children: [(0, r.jsx)(la, { n: "ajuda", size: 20 }), "Preciso de ajuda"],
           }),
+        saindo &&
+          (0, r.jsx)(zJanela, {
+            titulo: "Sair do zElo?",
+            sub: "Você volta para a primeira tela. Neste protótipo, o que você fez nesta visita é apagado.",
+            fechar: () => setSaindo(!1),
+            rodape: (0, r.jsxs)("div", {
+              className: "acoes",
+              children: [
+                (0, r.jsx)(ia, { icone: "sair", onClick: () => (setSaindo(!1), sr && sr()), children: "Sair" }),
+                (0, r.jsx)(ia, { sec: !0, onClick: () => setSaindo(!1), children: "Continuar no zElo" }),
+              ],
+            }),
+            children: (0, r.jsx)("p", { className: "apoio", children: "Para entrar de novo, use o seu e-mail e a sua senha." }),
+          }),
         e &&
           (0, r.jsx)("nav", {
             className: "barra-baixo",
@@ -1347,6 +1394,108 @@
     } catch (x) {}
     return "padrao";
   }
+  // Etapas da entrada, para a pessoa saber o que vem depois
+  function zEtapasEntrada({ papel: pp, atual: at }) {
+    let et = pp === "voluntario" ? ["Perfil", "Privacidade", "Cadastro", "Verifica\xE7\xE3o"] : ["Perfil", "Conta", "Privacidade", "Perguntas"],
+      i = et.indexOf(at);
+    return (0, r.jsx)("ol", {
+      className: "etapas-entrada",
+      "aria-label": "Etapa " + (i + 1) + " de " + et.length + ": " + at,
+      children: et.map((x, k) =>
+        (0, r.jsxs)(
+          "li",
+          {
+            className: k < i ? "feita" : k === i ? "atual" : "",
+            "aria-hidden": "true",
+            children: [(0, r.jsx)("span", { className: "etapa-n", children: k < i ? (0, r.jsx)(la, { n: "confirmar", size: 16, cheio: !0 }) : k + 1 }), (0, r.jsx)("span", { className: "etapa-nome", children: x })],
+          },
+          x,
+        ),
+      ),
+    });
+  }
+  // Privacidade antes de usar o app. O aceite necessário é um só; os opcionais começam
+  // desmarcados e podem ser mudados depois no Perfil.
+  // PONTO PARA REVISÃO: o texto é provisório. A política de privacidade e os termos ainda
+  // precisam ser escritos e revisados pelo grupo antes de o app ir ao ar.
+  function zPrivacidade({ papel: pp, priv: pv, setPriv: sp, continuar: ct, voltar: vt }) {
+    let [rasc, setRasc] = (0, L.useState)({ ok: !1, cidade: !1, ana: !1, ...pv }),
+      [tentou, setTentou] = (0, L.useState)(!1),
+      [ocupado, agir] = zUseAcao(),
+      vol = pp === "voluntario",
+      itens = [
+        ["perfil", "Conta", "Nome e e-mail, para voc\xEA entrar e receber os avisos dos atendimentos."],
+        vol
+          ? ["verificado", "Registro profissional", "N\xFAmero do conselho e o documento enviado. O documento \xE9 apagado depois da verifica\xE7\xE3o; fica s\xF3 o nome, o n\xFAmero e a data."]
+          : ["saude", "Respostas sobre sa\xFAde", "Defici\xEAncia, \xE1reas de sa\xFAde e dia a dia, para mostrar profissionais e orienta\xE7\xF5es que combinam."],
+        ["calendario", "Atendimentos", "Dia, hora e profissional, para a consulta acontecer. As chamadas de v\xEDdeo n\xE3o s\xE3o gravadas."],
+        ["forum", "F\xF3rum", "O que voc\xEA publica no f\xF3rum fica vis\xEDvel para as outras pessoas do zElo."],
+      ],
+      caixa = (k, titulo, sub) =>
+        (0, r.jsxs)("label", {
+          className: "consentimento" + (rasc[k] ? " consentimento--on" : ""),
+          children: [
+            (0, r.jsx)("input", { type: "checkbox", checked: !!rasc[k], onChange: (ev) => setRasc({ ...rasc, [k]: ev.target.checked }), "aria-describedby": "cons-" + k }),
+            (0, r.jsxs)("span", {
+              children: [(0, r.jsx)("span", { className: "consentimento-titulo", children: titulo }), (0, r.jsx)("span", { id: "cons-" + k, className: "apoio", children: sub })],
+            }),
+          ],
+        });
+    return (0, r.jsxs)("section", {
+      className: "entra privacidade",
+      children: [
+        (0, r.jsxs)("header", {
+          className: "cabeca",
+          children: [
+            (0, r.jsx)("span", { className: "privacidade-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: "privacidade", size: 32 }) }),
+            (0, r.jsx)("h1", { tabIndex: -1, children: "Seus dados no zElo" }),
+            (0, r.jsx)("p", { className: "lead", children: "Antes de come\xE7ar, veja o que o zElo guarda e para qu\xEA. As escolhas opcionais podem ser mudadas depois, no Perfil." }),
+          ],
+        }),
+        (0, r.jsx)("h2", { className: "h-pequeno", children: "O que guardamos" }),
+        (0, r.jsx)("ul", {
+          className: "dados-lista",
+          children: itens.map(([ic, t, d]) =>
+            (0, r.jsxs)(
+              "li",
+              {
+                children: [
+                  (0, r.jsx)("span", { className: "item-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic, size: 20 }) }),
+                  (0, r.jsxs)("span", { children: [(0, r.jsx)("b", { children: t }), (0, r.jsx)("span", { className: "apoio", children: d })] }),
+                ],
+              },
+              t,
+            ),
+          ),
+        }),
+        (0, r.jsx)("h2", { className: "h-pequeno secao-titulo-peq", children: "Necess\xE1rio para usar o zElo" }),
+        caixa("ok", "Concordo com o uso dos meus dados como explicado acima", "Sem este aceite n\xE3o d\xE1 para usar o zElo."),
+        tentou && !rasc.ok && (0, r.jsxs)("p", { className: "erro-msg", role: "alert", children: [(0, r.jsx)(la, { n: "atencao", size: 18 }), "Marque o aceite necess\xE1rio para continuar."] }),
+        (0, r.jsx)("h2", { className: "h-pequeno secao-titulo-peq", children: "Opcional" }),
+        (0, r.jsx)("p", { className: "apoio", style: { marginBottom: 12 }, children: "Voc\xEA usa o zElo do mesmo jeito marcando ou n\xE3o." }),
+        caixa("cidade", "Mostrar minha cidade nas publica\xE7\xF5es do f\xF3rum", "Sem isso, aparece s\xF3 o seu nome."),
+        caixa("ana", "Guardar as perguntas que a Ana n\xE3o souber responder", "A equipe usa a lista para ensinar respostas novas \xE0 Ana. Neste prot\xF3tipo ela fica s\xF3 neste aparelho."),
+        (0, r.jsx)("div", {
+          className: "alerta-bloco",
+          style: { marginTop: 24 },
+          children: (0, r.jsx)(Do, { tipo: "aviso", children: "Texto provis\xF3rio, para o grupo revisar. A pol\xEDtica de privacidade e os termos de uso ainda ser\xE3o escritos." }),
+        }),
+        (0, r.jsxs)("div", {
+          className: "acoes",
+          children: [
+            (0, r.jsx)(ia, {
+              fim: "avancar",
+              ocupado,
+              textoOcupado: "Salvando…",
+              onClick: () => (setTentou(!0), rasc.ok && agir(() => (sp(rasc), ct()))),
+              children: "Continuar",
+            }),
+            (0, r.jsx)(ia, { sec: !0, onClick: vt, children: "Voltar" }),
+          ],
+        }),
+      ],
+    });
+  }
   function FS({ escolher: a }) {
     let op = (id, ic, tit, sub) =>
       (0, r.jsxs)(
@@ -1369,7 +1518,37 @@
     return (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsx)("h1", { tabIndex: -1, children: "Como voc\xEA quer usar o zElo?" }),
+        (0, r.jsx)("h1", { tabIndex: -1, children: "Boas-vindas ao zElo" }),
+        (0, r.jsx)("p", {
+          className: "lead",
+          children: "O zElo d\xE1 dire\xE7\xE3o, ajuda e apoio para quem cuida de pessoas com defici\xEAncia, para a pr\xF3pria pessoa com defici\xEAncia e para profissionais de sa\xFAde que querem ajudar.",
+        }),
+        // Quem somos: texto provisório, para o grupo revisar
+        (0, r.jsx)("p", {
+          className: "apoio sobre-quem",
+          children: "Quem somos: um grupo de estudantes que criou o zElo para aproximar fam\xEDlias e profissionais volunt\xE1rios num s\xF3 lugar.",
+        }),
+        (0, r.jsx)("h2", { className: "h-pequeno sobre-titulo", id: "sobre-h", children: "Por que usar o zElo" }),
+        (0, r.jsx)("ul", {
+          className: "sobre-lista",
+          "aria-labelledby": "sobre-h",
+          children: [
+            ["verificado", "Consultas sem custo", "Com profissionais de sa\xFAde volunt\xE1rios, com o registro conferido. Online ou presencial."],
+            ["chat", "D\xFAvidas respondidas", "A Ana responde perguntas do dia a dia e indica a quem recorrer."],
+            ["forum", "Quem vive o mesmo", "No f\xF3rum voc\xEA troca experi\xEAncias com outras fam\xEDlias, e as respostas de profissionais aparecem primeiro."],
+            ["orientacoes", "Orienta\xE7\xF5es pr\xE1ticas", "Textos curtos para o cuidado em casa, escritos por profissionais."],
+          ].map(([ic, t0, d0]) =>
+            (0, r.jsxs)("li", {
+              className: "sobre-item",
+              children: [
+                (0, r.jsx)("span", { className: "sobre-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic, size: 22 }) }),
+                (0, r.jsxs)("span", { children: [(0, r.jsx)("strong", { children: t0 }), (0, r.jsx)("span", { className: "apoio", children: d0 })] }),
+              ],
+            }, ic),
+          ),
+        }),
+        (0, r.jsx)("h2", { className: "h-secao sobre-escolha", children: "Como voc\xEA quer usar o zElo?" }),
+        (0, r.jsx)("p", { className: "apoio", children: "Escolha o seu perfil. Em seguida voc\xEA entra na conta e v\xEA como cuidamos dos seus dados." }),
         (0, r.jsxs)("div", {
           className: "objetivo-opcoes opcoes",
           children: [
@@ -1382,18 +1561,6 @@
           className: "apoio nota-cras",
           children: "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
         }),
-        (0, r.jsxs)("p", {
-          className: "apoio equipe-link",
-          children: [
-            "Faz parte da equipe zElo? ",
-            (0, r.jsx)("button", {
-              type: "button",
-              className: "link",
-              onClick: () => a("equipe"),
-              children: "Entrar no painel da equipe",
-            }),
-          ],
-        }),
       ],
     });
   }
@@ -1404,7 +1571,10 @@
       [n, l] = (0, L.useState)(""),
       [s, i] = (0, L.useState)({}),
       [enviado, setEnviado] = (0, L.useState)(""),
-      [ocupado, agir] = zUseAcao(),
+      [erroB, setErroB] = (0, L.useState)(""),
+      [esperaB, setEsperaB] = (0, L.useState)(!1),
+      [ocupado0, agir] = zUseAcao(),
+      ocupado = ocupado0 || esperaB,
       limpa = (k) => s[k] && i({ ...s, [k]: void 0 }),
       trocar = (m) => {
         (setModo(m), i({}), setEnviado(""));
@@ -1454,10 +1624,28 @@
               if (modo === "entrar" && !n)
                 I.senha = "Falta a senha. Escreva a senha da sua conta.";
               if ((i(I), Object.keys(I).length)) return Or();
+              if (zBanco.ativo) {
+                if (esperaB) return;
+                setErroB("");
+                setEsperaB(!0);
+                let em2 = e.trim(),
+                  p0 = modo === "esqueci" ? zBanco.esqueci(em2) : modo === "criar" ? zBanco.criarConta(em2, n, nome.trim()) : zBanco.entrar(em2, n);
+                p0.then(
+                  (u0) => (setEsperaB(!1), modo === "esqueci" ? setEnviado(em2) : o(em2, modo === "criar" ? nome.trim() : (u0 && u0.user_metadata && u0.user_metadata.nome) || "")),
+                  (x) => (setEsperaB(!1), setErroB(x.message)),
+                );
+                return;
+              }
               agir(() => (modo === "esqueci" ? setEnviado(e.trim()) : o(e.trim(), modo === "criar" ? nome.trim() : "")));
             },
             noValidate: !0,
             children: [
+              erroB &&
+                (0, r.jsx)("div", {
+                  className: "alerta-bloco",
+                  role: "alert",
+                  children: (0, r.jsx)(Do, { tipo: "aviso", palavra: " ", children: erroB }),
+                }),
               enviado &&
                 (0, r.jsx)("div", {
                   className: "alerta-bloco",
@@ -1466,7 +1654,7 @@
                     children: [
                       "Enviamos o link para ",
                       enviado,
-                      ". Neste prot\xF3tipo nenhum e-mail \xE9 enviado.",
+                      zBanco.ativo ? ". Confira a caixa de entrada e o spam." : ". Neste prot\xF3tipo nenhum e-mail \xE9 enviado.",
                     ],
                   }),
                 }),
@@ -1620,6 +1808,8 @@
             ? resp ? "Quais destas situa\xE7\xF5es fazem parte do dia a dia " + de + "?" : "Quais destas situa\xE7\xF5es fazem parte do seu dia a dia?"
             : s.titulo,
       faltaNome = s.campo === "tipo" && resp && !(e.pessoa || "").trim(),
+      // Para o responsável, o nome vem primeiro e a pergunta da deficiência logo abaixo dele
+      nomePrimeiro = s.campo === "tipo" && resp,
       c = (s.multi ? i.length > 0 : !!i) && !faltaNome && !(s.campo === "tipo" && i.includes("outra") && !(e.tipoOutra || "").trim()),
       [ocupado, agir] = zUseAcao(500),
       m = (I) => {
@@ -1668,8 +1858,8 @@
                 className: "passo",
                 children: ["Passo ", a, " de ", _S.length, a === 1 ? " \xB7 leva menos de 2 minutos" : ""],
               }),
-              (0, r.jsx)(nj ? "h3" : "h1", { tabIndex: -1, children: titulo }),
-              s.ajuda && (0, r.jsx)("p", { className: "lead", children: s.ajuda }),
+              (0, r.jsx)(nj ? "h3" : "h1", { tabIndex: -1, children: nomePrimeiro ? "Sobre a pessoa que voc\xEA cuida" : titulo }),
+              s.ajuda && !nomePrimeiro && (0, r.jsx)("p", { className: "lead", children: s.ajuda }),
             ],
           }),
           s.campo === "tipo" &&
@@ -1682,6 +1872,14 @@
               maxLength: 40,
               autoComplete: "off",
               onChange: (I) => t({ ...e, pessoa: I.target.value }),
+            }),
+          nomePrimeiro &&
+            (0, r.jsxs)("div", {
+              className: "pergunta-abaixo",
+              children: [
+                (0, r.jsx)(nj ? "h4" : "h2", { className: "h-pergunta", children: titulo }),
+                s.ajuda && (0, r.jsx)("p", { className: "apoio", children: s.ajuda }),
+              ],
             }),
           (0, r.jsx)(Tm, {
             itens: s.itens,
@@ -1991,6 +2189,7 @@
               className: "numero",
               onClick: x.ir,
               children: [
+                x.ic && (0, r.jsx)("span", { className: "numero-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: x.ic, size: 20 }) }),
                 (0, r.jsx)("span", { className: "numero-rotulo", children: x.rotulo }),
                 (0, r.jsx)("span", { className: "numero-valor", children: x.n }),
               ],
@@ -2003,13 +2202,13 @@
   }
   // Faixa da semana com os dias que têm atendimento. O próximo fica em destaque.
   var zDiasSemana = [
-    { id: "d2", sem: "Seg", n: 2 },
-    { id: "d3", sem: "Ter", n: 3 },
-    { id: "d4", sem: "Qua", n: 4 },
-    { id: "d5", sem: "Qui", n: 5 },
-    { id: "d6", sem: "Sex", n: 6 },
-    { id: "d7", sem: "S\xE1b", n: 7 },
-    { id: "d8", sem: "Dom", n: 8 },
+    { id: "2026-11-02", sem: "Seg", n: 2 },
+    { id: "2026-11-03", sem: "Ter", n: 3 },
+    { id: "2026-11-04", sem: "Qua", n: 4 },
+    { id: "2026-11-05", sem: "Qui", n: 5 },
+    { id: "2026-11-06", sem: "Sex", n: 6 },
+    { id: "2026-11-07", sem: "S\xE1b", n: 7 },
+    { id: "2026-11-08", sem: "Dom", n: 8 },
   ];
   function zSemanaFaixa({ agenda: ag, proximo: m, ver: vr, agendar: agd }) {
     return (0, r.jsxs)("div", {
@@ -2024,10 +2223,10 @@
             return (0, r.jsxs)(
               "li",
               {
-                className: "semana-dia" + (prox ? " semana-dia--prox" : "") + (d.id === "d2" ? " semana-dia--hoje" : ""),
-                "aria-label": (d.id === "d2" ? "Hoje, " : "") + d.sem + " " + d.n + (tem.length ? ", " + tem.length + (tem.length === 1 ? " atendimento" : " atendimentos") : ""),
+                className: "semana-dia" + (prox ? " semana-dia--prox" : "") + (d.id === zIso(zHoje) ? " semana-dia--hoje" : ""),
+                "aria-label": (d.id === zIso(zHoje) ? "Hoje, " : "") + d.sem + " " + d.n + (tem.length ? ", " + tem.length + (tem.length === 1 ? " atendimento" : " atendimentos") : ""),
                 children: [
-                  (0, r.jsx)("span", { className: "semana-sem", "aria-hidden": "true", children: d.id === "d2" ? "Hoje" : d.sem }),
+                  (0, r.jsx)("span", { className: "semana-sem", "aria-hidden": "true", children: d.id === zIso(zHoje) ? "Hoje" : d.sem }),
                   (0, r.jsx)("span", { className: "semana-n", "aria-hidden": "true", children: d.n }),
                   (0, r.jsx)("span", { className: "semana-ponto" + (tem.length ? " semana-ponto--on" : ""), "aria-hidden": "true" }),
                 ],
@@ -2084,7 +2283,7 @@
         }),
         (0, r.jsxs)("p", {
           className: "cartao-prof-info",
-          children: [(0, r.jsx)(la, { n: "relogio", size: 16 }), livres ? D2(f, ag).replace("Hoje, segunda, 2 de novembro", "Hoje") : "Sem hor\xE1rios livres nesta semana"],
+          children: [(0, r.jsx)(la, { n: "relogio", size: 16 }), livres ? D2(f, ag).replace(/^Hoje, [^,]+, [^,]+/, "Hoje") : "Sem hor\xE1rios livres nesta semana"],
         }),
         ja && (0, r.jsx)("p", { className: "cartao-prof-ja", children: "Voc\xEA j\xE1 tem hor\xE1rio marcado." }),
         (0, r.jsx)("div", {
@@ -2149,7 +2348,7 @@
             k: d,
             tipo: "F\xF3rum",
             titulo: u[d].titulo,
-            meta: `${u[d].autor}, ${u[d].cidade} \xB7 ${v(u[d])}`,
+            meta: `${u[d].autor}${u[d].cidade ? ", " + u[d].cidade : ""} \xB7 ${v(u[d])}`,
             dir: u[d].dir,
             go: () => l(d),
           }),
@@ -2210,7 +2409,7 @@
       className: "entra inicio",
       children: [
         (0, r.jsxs)("header", {
-          className: "cabeca cabeca-linha",
+          className: "cabeca cabeca-linha cabeca--acolhe",
           children: [
             (0, r.jsxs)("div", {
               children: [
@@ -2233,7 +2432,7 @@
             }),
             o === "voluntario"
               ? (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Ver minha agenda" })
-              : (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos"), children: "Agendar consulta" }),
+              : (0, r.jsx)(ia, { icone: "calendario", onClick: () => n("atendimentos-buscar"), children: "Agendar consulta" }),
           ],
         }),
         nums && (0, r.jsx)(zNumeros, { itens: nums, rotulo: "Resumo" }),
@@ -2242,7 +2441,7 @@
             className: "secao",
             children: [
               (0, r.jsx)(zSecaoTopo, { id: "semana-h", titulo: "Esta semana", atalho: ["Ver agendamentos", () => n("atendimentos-meus")] }),
-              (0, r.jsx)(zSemanaFaixa, { agenda: t, proximo: m, ver: () => n("atendimentos-meus"), agendar: () => n("atendimentos") }),
+              (0, r.jsx)(zSemanaFaixa, { agenda: t, proximo: m, ver: () => n("atendimentos-meus"), agendar: () => n("atendimentos-buscar") }),
             ],
           }),
         o !== "voluntario" &&
@@ -2253,7 +2452,7 @@
                 id: "disp-h",
                 titulo: pessoa ? "Profissionais para " + pessoa : "Profissionais para voc\xEA",
                 sub: "Escolhidos pelas suas respostas.",
-                atalho: ["Ver todos", () => n("atendimentos")],
+                atalho: ["Ver todos", () => n("atendimentos-buscar")],
               }),
               (0, r.jsx)("div", {
                 className: "grade-prof",
@@ -2270,6 +2469,7 @@
               id: "feed-h",
               titulo: o === "voluntario" ? "Para voc\xEA responder" : "Para voc\xEA",
               sub: o === "voluntario" ? "Os temas em que a sua \xE1rea mais ajuda." : null,
+              atalho: o === "voluntario" ? ["Ver o f\xF3rum", () => n("forum")] : ["Ver todas as orienta\xE7\xF5es", () => n("dicas")],
             }),
             (0, r.jsx)("ul", {
               className: "lista-linhas",
@@ -2362,6 +2562,8 @@
     setTema: l,
     letra: lt,
     setLetra: slt,
+    priv: pv,
+    setPriv: spv,
     sair: i,
   }) {
     let [c, m] = (0, L.useState)(a.nome),
@@ -2491,6 +2693,30 @@
             (0, r.jsx)(zSegmento, { itens: zLetras, valor: lt, mudar: slt, rotulo: "Tamanho da letra" }),
           ],
         }),
+        pv &&
+          (0, r.jsxs)("div", {
+            className: "bloco",
+            children: [
+              (0, r.jsxs)("div", {
+                className: "bloco-topo",
+                children: [(0, r.jsx)("span", { className: "item-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: "privacidade", size: 20 }) }), (0, r.jsx)("h2", { children: "Privacidade" })],
+              }),
+              (0, r.jsx)("p", { className: "apoio", style: { marginBottom: 12 }, children: "Você aceitou o uso dos dados necessário para o zElo funcionar. As escolhas abaixo são opcionais." }),
+              [
+                ["cidade", "Mostrar minha cidade nas publicações do fórum"],
+                ["ana", "Guardar as perguntas que a Ana não souber responder"],
+              ].map(([k, t]) =>
+                (0, r.jsxs)(
+                  "label",
+                  {
+                    className: "consentimento" + (pv[k] ? " consentimento--on" : ""),
+                    children: [(0, r.jsx)("input", { type: "checkbox", checked: !!pv[k], onChange: (ev) => spv({ ...pv, [k]: ev.target.checked }) }), (0, r.jsx)("span", { className: "consentimento-titulo", children: t })],
+                  },
+                  k,
+                ),
+              ),
+            ],
+          }),
         (0, r.jsx)(zSemRespostaBloco, {}),
         (0, r.jsx)("div", {
           className: "bloco bloco--fim",
@@ -2682,7 +2908,11 @@
       return [];
     }
   }
+  // Escolhas da tela de privacidade que mudam o que o app guarda ou mostra
+  var zPriv = { cidade: !1, ana: !1 };
   function zSemRespostaGuardar(texto, perto) {
+    if (!zPriv.ana) return;
+    zBanco.guardarPerguntaAna(texto);
     try {
       let l = zSemRespostaLer();
       l.unshift({ texto: texto.slice(0, 300), quando: new Date().toISOString(), perto: perto || null });
@@ -2991,8 +3221,7 @@
     return (0, r.jsxs)(r.Fragment, {
       children: [
         a.autor,
-        " \xB7 ",
-        a.cidade,
+        a.cidade ? " \xB7 " + a.cidade : "",
         " \xB7 ",
         a.quando,
         " \xB7 ",
@@ -3104,7 +3333,7 @@
                 {
                   id: `r${Date.now()}`,
                   autor: t.nome || "Voc\xEA",
-                  cidade: "Recife",
+                  cidade: zPriv.cidade ? "Recife" : "",
                   quando: "agora",
                   apoio: 0,
                   texto: l.trim(),
@@ -3171,7 +3400,7 @@
                   y.profissional && (0, r.jsx)(zSelo, { nome: y.autor }),
                   (0, r.jsxs)("span", {
                     className: "apoio resposta-meta",
-                    children: [(0, r.jsx)("b", { children: y.autor }), " \xB7 ", y.cidade, " \xB7 ", y.quando],
+                    children: [(0, r.jsx)("b", { children: y.autor }), y.cidade ? " \xB7 " + y.cidade : "", " \xB7 ", y.quando],
                   }),
                   y.em && (0, r.jsxs)("span", { className: "apoio resposta-em", children: ["Em resposta a ", y.em] }),
                   (0, r.jsx)("p", { children: y.texto }),
@@ -3300,7 +3529,7 @@
                 className: "previa-cartao",
                 children: [
                   (0, r.jsx)("p", { className: "linha-titulo", children: e.titulo.trim() || "O t\xEDtulo aparece aqui" }),
-                  (0, r.jsx)("p", { className: "apoio", children: "Voc\xEA \xB7 Recife \xB7 agora" }),
+                  (0, r.jsx)("p", { className: "apoio", children: zPriv.cidade ? "Voc\xEA \xB7 Recife \xB7 agora" : "Voc\xEA \xB7 agora" }),
                   (0, r.jsxs)("span", {
                     className: "etiquetas",
                     children: [(0, r.jsx)(zStatus, { s: "novo" }), e.dir && (0, r.jsx)(Bo, { children: N2[e.dir] })],
@@ -3432,6 +3661,7 @@
   }
   function o4({
     agenda: a,
+    todos: td,
     tab: o,
     setTab: e,
     abrirProf: t,
@@ -3451,11 +3681,35 @@
     return (0, r.jsxs)("section", {
       className: "entra entra--larga",
       children: [
+        // Duas subpáginas: buscar e meus agendamentos, cada uma com o seu título
+        (0, r.jsx)("nav", {
+          className: "subnav",
+          "aria-label": "Atendimentos",
+          children: [
+            ["buscar", "Buscar especialistas", "busca", 0],
+            ["meus", "Meus agendamentos", "calendario", a.length],
+          ].map(([k, txt, ic, q]) =>
+            (0, r.jsxs)(
+              "button",
+              {
+                type: "button",
+                className: "subnav-item",
+                "aria-current": o === k ? "page" : void 0,
+                onClick: () => e(k),
+                children: [(0, r.jsx)(la, { n: ic, size: 20, cheio: o === k }), (0, r.jsx)("span", { children: txt }), q > 0 && (0, r.jsx)("span", { className: "contador", children: q })],
+              },
+              k,
+            ),
+          ),
+        }),
         (0, r.jsxs)("header", {
           className: "cabeca",
           children: [
-            (0, r.jsx)("h1", { tabIndex: -1, children: "Atendimentos" }),
-            (0, r.jsx)("p", { className: "lead", children: "Consultas sem custo com profissionais volunt\xE1rios verificados." }),
+            (0, r.jsx)("h1", { tabIndex: -1, children: o === "meus" ? "Meus agendamentos" : "Buscar especialistas" }),
+            (0, r.jsx)("p", {
+              className: "lead",
+              children: o === "meus" ? "Seus atendimentos separados em pr\xF3ximos, realizados e cancelados." : "Consultas sem custo com profissionais volunt\xE1rios verificados.",
+            }),
           ],
         }),
         l &&
@@ -3470,17 +3724,7 @@
               }[l],
             }),
           }),
-        (0, r.jsx)(zAbas, {
-          id: "atend",
-          rotulo: "Atendimentos",
-          atual: o,
-          setAtual: e,
-          abas: [["buscar", "Buscar especialistas"], ["meus", "Meus agendamentos", a.length]],
-        }),
         (0, r.jsx)("div", {
-          id: "atend-painel",
-          role: "tabpanel",
-          "aria-labelledby": "atend-aba-" + o,
           children:
             o === "buscar"
               ? (0, r.jsxs)(r.Fragment, {
@@ -3515,7 +3759,7 @@
                         }),
                   ],
                 })
-              : (0, r.jsx)(zMeusAgend, { agenda: a, cancelar: n, remarcar: rm, sala: sl, buscar: () => e("buscar") }),
+              : (0, r.jsx)(zMeusAgend, { agenda: td || a, cancelar: n, remarcar: rm, sala: sl, buscar: () => e("buscar"), abrirProf: t }),
         }),
       ],
     });
@@ -3533,8 +3777,7 @@
     ocupados: oc,
     remarcando: rmc,
   }) {
-    let c = Ur(a, oc || o),
-      m = c.find((f) => f.id === n.dia),
+    let m = n.dia ? { id: n.dia, rotulo: zDiaRotulo(n.dia) } : null,
       modos = a.modos || null,
       ja = rmc ? [] : zSort(o.filter((x) => x.profId === a.id)),
       I = e === 1 ? !!(n.dia && n.hora && (!modos || n.modo)) : !0,
@@ -3543,6 +3786,7 @@
       falta = modos && !n.modo ? "Escolha se vai ser presencial ou online e um hor\xE1rio." : "Escolha um hor\xE1rio para continuar.";
     return (0, r.jsx)(zJanela, {
       titulo: rmc ? "Remarcar com " + a.nome : "Agendar com " + a.nome,
+      larga: !0,
       sub: "Passo " + e + " de 2: " + (e === 1 ? "escolha o dia e o hor\xE1rio" : "confira e confirme"),
       fechar: s,
       rodape: (0, r.jsxs)("div", {
@@ -3581,9 +3825,18 @@
           children: [
             (0, r.jsx)(qr, { p: a }),
             (0, r.jsxs)("div", {
+              className: "prof-resumo-texto",
               children: [
-                (0, r.jsx)(zSelo, {}),
-                (0, r.jsxs)("p", { className: "apoio", children: [a.area, " \xB7 ", a.registro] }),
+                (0, r.jsx)("p", { className: "linha-titulo", children: a.nome }),
+                (0, r.jsxs)("p", { className: "prof-area", children: [a.area, a.foco && (0, r.jsxs)("span", { className: "apoio", children: [" \xB7 ", a.foco] })] }),
+                (0, r.jsxs)("ul", {
+                  className: "prof-dados",
+                  children: [
+                    (0, r.jsxs)("li", { children: [(0, r.jsx)(zSelo, {}), (0, r.jsx)("span", { className: "apoio", children: a.registro })] }),
+                    (0, r.jsxs)("li", { children: [(0, r.jsx)(la, { n: a.modos ? "local" : zOnline(a) ? "video" : "local", size: 16 }), (0, r.jsx)("span", { children: a.modos ? a.modos.join(" ou ") : a.onde })] }),
+                    a.dias && (0, r.jsxs)("li", { children: [(0, r.jsx)(la, { n: "calendario", size: 16 }), (0, r.jsx)("span", { children: "Atende " + a.dias.map((x) => x.toLowerCase()).join(", ").replace(/, ([^,]+)$/, " e $1") })] }),
+                  ],
+                }),
                 e === 1 && a.bio && (0, r.jsx)("p", { className: "prof-bio", children: a.bio }),
               ],
             }),
@@ -3642,8 +3895,10 @@
       ],
     });
   }
+  var zIconeSituacao = { convulsao: "pulso", engasgo: "refeicao", crise: "crise", queda: "movimento", outra: "escrever" };
   function t4({ irPara: a, pedir: pd }) {
     let [sit, setSit] = (0, L.useState)(null),
+      [outra, setOutra] = (0, L.useState)(""),
       atual = zSituacoes.find((x) => x.id === sit),
       [lig, setLig] = (0, L.useState)(null),
       ligar = (num) => setLig(num),
@@ -3713,21 +3968,49 @@
               className: "situacoes",
               role: "group",
               "aria-labelledby": "sit-h",
-              children: zSituacoes.map((x) =>
-                (0, r.jsx)(
+              children: [...zSituacoes, { id: "outra", titulo: "Outra situa\xE7\xE3o" }].map((x) =>
+                (0, r.jsxs)(
                   "button",
                   {
                     type: "button",
-                    className: "situacao",
+                    className: "situacao" + (x.id === "outra" ? " situacao--outra" : ""),
                     "aria-expanded": sit === x.id,
                     "aria-controls": "sit-passos",
                     onClick: () => setSit(sit === x.id ? null : x.id),
-                    children: x.titulo,
+                    children: [
+                      (0, r.jsx)("span", { className: "situacao-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: zIconeSituacao[x.id] || "ajuda", size: 28 }) }),
+                      x.titulo,
+                    ],
                   },
                   x.id,
                 ),
               ),
             }),
+            sit === "outra" &&
+              (0, r.jsxs)("div", {
+                id: "sit-passos",
+                className: "situacao-passos situacao-outra",
+                children: [
+                  (0, r.jsx)(Za, {
+                    id: "sit-outra",
+                    como: "textarea",
+                    rotulo: "Conte o que est\xE1 acontecendo",
+                    ajuda: "Escreva do seu jeito. A equipe de acolhimento responde pelo chat. Se for uma emerg\xEAncia, ligue 192.",
+                    value: outra,
+                    onChange: (ev) => setOutra(ev.target.value),
+                  }),
+                  (0, r.jsx)(ia, {
+                    sec: !0,
+                    icone: "enviar",
+                    disabled: !outra.trim(),
+                    "aria-disabled": !outra.trim(),
+                    title: outra.trim() ? void 0 : "Escreva o que est\xE1 acontecendo para enviar",
+                    onClick: () => outra.trim() && pd(outra.trim()),
+                    children: "Enviar para o acolhimento",
+                  }),
+                  !outra.trim() && (0, r.jsx)("p", { className: "aviso", children: "Escreva algumas palavras para poder enviar." }),
+                ],
+              }),
             atual &&
               (0, r.jsxs)("div", {
                 id: "sit-passos",
@@ -3839,7 +4122,7 @@
   // ===================================================================
   // Novidades (sugestões da monitora Millena, novembro de 2026)
   // 1. Atendimentos: a família remarca e cancela, o voluntário tem a
-  //    Minha agenda e a equipe do zElo tem um painel.
+  //    Minha agenda.
   // 2. Sala de vídeo dentro do zElo (no app real: Jitsi Meet).
   // 3. Verificação de voluntários: o sistema confere o registro no
   //    conselho e uma pessoa da equipe aprova. O arquivo é apagado depois.
@@ -3855,8 +4138,7 @@
     else if (c.length > 1) q.children = c;
     return (c.length > 1 ? r.jsxs : r.jsx)(t, q, k);
   }
-  var zDiaRotulo = (id) => (RS.find((d) => d.id === id) || {}).rotulo || "",
-    zOnline = (f) => /Online/.test(f.onde || ""),
+  var zOnline = (f) => /Online/.test(f.onde || ""),
     zOndeTexto = (f) => (zOnline(f) ? "Online, na sala de v\xEDdeo do zElo" : f.onde),
     zPara = (papel) => (papel === "voluntario" ? "voluntario" : "familia"),
     zSemana = ["Segunda", "Ter\xE7a", "Quarta", "Quinta", "Sexta", "S\xE1bado"],
@@ -3878,15 +4160,15 @@
   // Agenda de todo mundo. familia "voce" é a pessoa usando o protótipo.
   // profId "pv" é o voluntário usando o protótipo.
   var zAgInicial = [
-      zNovoAt({ id: "a1", profId: "p1", diaId: "d5", hora: "10:30", onde: "Presencial na Boa Vista, Recife", familia: "voce" }),
-      zNovoAt({ id: "a6", profId: "p5", diaId: "d6", hora: "14:00", onde: "Online por v\xEDdeo", familia: "voce" }),
-      zNovoAt({ id: "a2", profId: "p2", diaId: "d4", hora: "10:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Joana P." }),
-      zNovoAt({ id: "a3", profId: "p3", diaId: "d3", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Marcos L." }),
-      zNovoAt({ id: "a4", profId: "p4", diaId: "d6", hora: "09:00", onde: "Presencial em Olinda", familia: "Fam\xEDlia de Rita S.", status: "cancelado", motivo: "A pedido da fam\xEDlia" }),
-      zNovoAt({ id: "a5", profId: "p8", diaId: "d5", hora: "15:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Paulo M." }),
-      zNovoAt({ id: "v1", profId: "pv", diaId: "d3", hora: "09:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Ana C.", assunto: "Rotina de sono, crian\xE7a de 6 anos com TEA" }),
-      zNovoAt({ id: "v2", profId: "pv", diaId: "d5", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Lu\xEDs F.", assunto: "Crises de choro no fim da tarde" }),
-      zNovoAt({ id: "v3", profId: "pv", diaId: "d9", hora: "10:30", onde: "Online por v\xEDdeo", familia: "L\xFAcia R., pessoa com defici\xEAncia", assunto: "Ansiedade antes de consultas" }),
+      zNovoAt({ id: "a1", profId: "p1", diaId: "2026-11-05", hora: "10:30", onde: "Presencial na Boa Vista, Recife", familia: "voce" }),
+      zNovoAt({ id: "a6", profId: "p5", diaId: "2026-11-06", hora: "14:00", onde: "Online por v\xEDdeo", familia: "voce" }),
+      zNovoAt({ id: "a2", profId: "p2", diaId: "2026-11-04", hora: "10:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Joana P." }),
+      zNovoAt({ id: "a3", profId: "p3", diaId: "2026-11-03", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Marcos L." }),
+      zNovoAt({ id: "a4", profId: "p4", diaId: "2026-11-06", hora: "09:00", onde: "Presencial em Olinda", familia: "Fam\xEDlia de Rita S.", status: "cancelado", motivo: "A pedido da fam\xEDlia" }),
+      zNovoAt({ id: "a5", profId: "p8", diaId: "2026-11-05", hora: "15:30", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Paulo M." }),
+      zNovoAt({ id: "v1", profId: "pv", diaId: "2026-11-03", hora: "09:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Ana C.", assunto: "Rotina de sono, crian\xE7a de 6 anos com TEA" }),
+      zNovoAt({ id: "v2", profId: "pv", diaId: "2026-11-05", hora: "14:00", onde: "Online por v\xEDdeo", familia: "Fam\xEDlia de Lu\xEDs F.", assunto: "Crises de choro no fim da tarde" }),
+      zNovoAt({ id: "v3", profId: "pv", diaId: "2026-11-09", hora: "10:30", onde: "Online por v\xEDdeo", familia: "L\xFAcia R., pessoa com defici\xEAncia", assunto: "Ansiedade antes de consultas" }),
     ],
     zNotifsIniciais = [
       { id: "n1", para: "familia", tipo: "forum", titulo: "Nova resposta em t\xF3pico que voc\xEA segue", texto: "Dra. Beatriz Nogueira respondeu em “Meu filho dorme pouco: o que funcionou a\xED?”", quando: "h\xE1 20 min", lida: !1, topico: "t1" },
@@ -3914,31 +4196,97 @@
   }
 
   // ---------- Pedaços reaproveitados ----------
+  // Calendário do mês com setas para mudar de mês. Os dias com horário livre ficam marcados;
+  // ao escolher um dia aparecem os horários dele.
   function zEscolherHorario({ prof: p, ocupados: oc, sel: s, setSel: ss, rotulo: rt }) {
-    let dias = Ur(p, oc);
-    if (!dias.length)
-      return zh("p", { className: "apoio" }, "Sem hor\xE1rios livres nesta semana.");
+    let primeiro = Ur(p, oc, zHoje, zDiasEntre(zHoje, zFimAgenda) + 1)[0],
+      ini = s.dia ? zData(s.dia) : primeiro ? zData(primeiro.id) : zHoje,
+      [mes, setMes] = (0, L.useState)(new Date(ini.getFullYear(), ini.getMonth(), 1)),
+      minMes = new Date(zHoje.getFullYear(), zHoje.getMonth(), 1),
+      maxMes = new Date(zFimAgenda.getFullYear(), zFimAgenda.getMonth(), 1),
+      ano = mes.getFullYear(),
+      m = mes.getMonth(),
+      nDias = new Date(ano, m + 1, 0).getDate(),
+      vazios = (new Date(ano, m, 1).getDay() + 6) % 7,
+      dias = Array.from({ length: nDias }, (_, k) => {
+        let d = new Date(ano, m, k + 1);
+        return { d, id: zIso(d), horas: zHorasDoDia(p, d, oc) };
+      }),
+      livresMes = dias.filter((x) => x.horas.length).length,
+      escolhido = s.dia && dias.find((x) => x.id === s.dia),
+      mudar = (k) => setMes(new Date(ano, m + k, 1)),
+      titulo = zMesNomes[m].charAt(0).toUpperCase() + zMesNomes[m].slice(1) + " de " + ano,
+      podeVoltar = mes > minMes,
+      podeIr = mes < maxMes;
     return zh(
       "div",
-      { role: "group", "aria-label": rt || "Dia e hor\xE1rio" },
-      dias.map((f) =>
+      { className: "agendar-cal", role: "group", "aria-label": rt || "Dia e hor\xE1rio" },
+      zh(
+        "div",
+        { className: "cal" },
         zh(
           "div",
-          { className: "dia", key: f.id },
-          zh("h3", null, f.rotulo),
-          zh(
-            "div",
-            { className: "horarios" },
-            f.horas.map((u) => {
-              let on = s.dia === f.id && s.hora === u;
-              return (0, r.jsx)(
-                ia,
-                { sec: !0, peq: !0, "aria-pressed": on, icone: on ? "confirmar" : void 0, onClick: () => ss({ ...s, dia: f.id, hora: u }), children: u },
-                u,
-              );
-            }),
-          ),
+          { className: "cal-topo" },
+          zh("button", { type: "button", className: "cal-seta", onClick: () => podeVoltar && mudar(-1), disabled: !podeVoltar, "aria-label": "M\xEAs anterior" }, (0, r.jsx)(la, { n: "voltar", size: 20 })),
+          zh("h3", { className: "cal-mes", "aria-live": "polite" }, titulo),
+          zh("button", { type: "button", className: "cal-seta", onClick: () => podeIr && mudar(1), disabled: !podeIr, "aria-label": "Pr\xF3ximo m\xEAs" }, (0, r.jsx)(la, { n: "avancar", size: 20 })),
         ),
+        zh(
+          "div",
+          { className: "cal-grade", role: "grid", "aria-label": titulo },
+          ["Seg", "Ter", "Qua", "Qui", "Sex", "S\xE1b", "Dom"].map((x) => zh("span", { key: x, className: "cal-sem", "aria-hidden": "true" }, x)),
+          Array.from({ length: vazios }, (_, k) => zh("span", { key: "v" + k, "aria-hidden": "true" })),
+          dias.map((x) => {
+            let livre = x.horas.length > 0,
+              hoje = zMesmoDia(x.d, zHoje),
+              on = s.dia === x.id;
+            return zh(
+              "button",
+              {
+                key: x.id,
+                type: "button",
+                className: "cal-dia" + (livre ? " cal-dia--livre" : "") + (hoje ? " cal-dia--hoje" : ""),
+                disabled: !livre,
+                "aria-pressed": on,
+                "aria-label": zDiaRotulo(x.id) + (livre ? ", " + x.horas.length + (x.horas.length === 1 ? " hor\xE1rio livre" : " hor\xE1rios livres") : ", sem hor\xE1rio livre"),
+                onClick: () => ss({ ...s, dia: x.id, hora: null }),
+              },
+              x.d.getDate(),
+            );
+          }),
+        ),
+        zh(
+          "p",
+          { className: "cal-legenda" },
+          zh("span", { className: "cal-legenda-livre", "aria-hidden": "true" }),
+          " Dia com hor\xE1rio livre",
+          zh("span", { className: "cal-legenda-sep", "aria-hidden": "true" }, "\xB7"),
+          livresMes ? livresMes + (livresMes === 1 ? " dia livre neste m\xEAs" : " dias livres neste m\xEAs") : "Nenhum dia livre neste m\xEAs",
+        ),
+      ),
+      zh(
+        "div",
+        { className: "cal-horas" },
+        escolhido
+          ? zh(
+              r.Fragment,
+              null,
+              zh("h3", { className: "h-pequeno" }, zDiaRotulo(escolhido.id)),
+              zh(
+                "div",
+                { className: "horarios", role: "group", "aria-label": "Hor\xE1rios de " + zDiaRotulo(escolhido.id) },
+                escolhido.horas.map((u) => {
+                  let on = s.hora === u;
+                  return (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": on, icone: "relogio", onClick: () => ss({ ...s, dia: escolhido.id, hora: u }), children: u }, u);
+                }),
+              ),
+            )
+          : zh(
+              "p",
+              { className: "apoio cal-dica" },
+              livresMes ? "Escolha um dia marcado no calend\xE1rio para ver os hor\xE1rios." : podeIr ? "Sem hor\xE1rios livres neste m\xEAs. Veja o pr\xF3ximo m\xEAs." : "Sem hor\xE1rios livres nos meses abertos para agendamento.",
+            ),
+        zh("p", { className: "apoio cal-nota" }, "Os hor\xE1rios seguem os dias e horas em que ", p.nome || "o profissional", " atende. A agenda fica aberta at\xE9 ", zDiaRotulo(zIso(zFimAgenda)).replace(/^[^,]+, /, ""), "."),
       ),
     );
   }
@@ -3976,6 +4324,7 @@
     return (0, r.jsxs)(zJanela, {
       titulo: "Escolha o novo dia e hor\xE1rio",
       sub: titulo,
+      larga: !0,
       fechar: voltar,
       rodape: zh(
         "div",
@@ -4006,52 +4355,86 @@
   }
 
   // ---------- 1a. Meus agendamentos (família) ----------
-  function zMeusAgend({ agenda: a, cancelar, remarcar, sala, buscar }) {
+  // Três colunas, como um quadro: próximos, realizados e cancelados.
+  // No celular as colunas ficam uma embaixo da outra.
+  var zColunasAgenda = [
+    { id: "confirmado", titulo: "Pr\xF3ximos", ic: "calendario", vazio: "Nenhum atendimento marcado. Escolha um profissional em Buscar especialistas." },
+    { id: "realizado", titulo: "Realizados", ic: "historico", vazio: "Quando voc\xEA terminar um atendimento, ele aparece aqui." },
+    { id: "cancelado", titulo: "Cancelados", ic: "cancelado", vazio: "Nenhum atendimento cancelado." },
+  ];
+  function zMeusAgend({ agenda: a, cancelar, remarcar, sala, buscar, abrirProf }) {
     let [ab, setAb] = (0, L.useState)(null),
       lista = zSort(a),
+      ativos = lista.filter((x) => x.status === "confirmado"),
       // Um só botão cheio: "Entrar na sala" do atendimento online mais próximo
-      primeiroOnline = (lista.find(zOnline) || {}).id,
-      cancelando = ab && lista.find((x) => x.id === ab);
-    if (!a.length)
-      return zh(
-        "div",
-        { className: "vazio" },
-        zh("h3", null, "Nenhum atendimento marcado"),
-        zh("p", null, "Escolha um profissional e um hor\xE1rio em Buscar especialistas."),
-        zh("div", { className: "acoes" }, (0, r.jsx)(ia, { sec: !0, peq: !0, onClick: buscar, children: "Buscar especialistas" })),
-      );
-    return zh(
-      r.Fragment,
-      null,
-      zh(
-        "ul",
-        { className: "lista-linhas", key: "l" },
-        lista.map((f) =>
+      primeiroOnline = (ativos.find(zOnline) || {}).id,
+      cancelando = ab && lista.find((x) => x.id === ab),
+      cartao = (f) =>
+        zh(
+          "li",
+          { key: f.id, className: "kanban-cartao" },
           zh(
-            "li",
-            { key: f.id, className: "agenda-item" },
+            "div",
+            { className: "kanban-cartao-topo" },
             zh(
               "div",
               { className: "agenda-quando" },
-              zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
+              zh("span", { className: "agenda-dia" }, f.dia.replace(/^Hoje, /, "Hoje ").split(",")[0]),
               zh("span", { className: "agenda-hora" }, f.hora),
             ),
             zh(
               "div",
               { className: "linha-texto" },
-              zh("p", { className: "linha-titulo" }, f.prof.area, " com ", f.prof.nome),
-              zh("p", { className: "apoio linha-meta" }, f.dia, ", \xE0s ", f.hora, " \xB7 ", zOndeTexto(f)),
-              zh("p", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: "confirmado", extra: f.remarcado ? "remarcado" : null })),
-              zh(
+              zh("p", { className: "linha-titulo" }, f.prof.nome),
+              zh("p", { className: "apoio linha-meta" }, f.prof.area),
+            ),
+          ),
+          zh("p", { className: "kanban-info" }, (0, r.jsx)(la, { n: "calendario", size: 16 }), f.dia, ", \xE0s ", f.hora),
+          zh("p", { className: "kanban-info" }, (0, r.jsx)(la, { n: zOnline(f) ? "video" : "local", size: 16 }), zOndeTexto(f)),
+          zh(
+            "p",
+            { className: "linha-etiquetas" },
+            (0, r.jsx)(zStatus, { s: f.status, extra: f.status === "cancelado" ? (f.motivo || "").toLowerCase() || null : f.remarcado ? "remarcado" : null }),
+          ),
+          f.status === "confirmado"
+            ? zh(
                 "div",
                 { className: "agenda-acoes" },
                 zOnline(f) && (0, r.jsx)(ia, { sec: f.id !== primeiroOnline, peq: !0, icone: "video", onClick: () => sala(f), children: "Entrar na sala" }),
                 (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => remarcar(f), children: "Remarcar" }),
-                (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => setAb(f.id), children: "Cancelar" }),
-              ),
+                (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "fechar", className: "btn--sec-perigo", onClick: () => setAb(f.id), children: "Cancelar" }),
+              )
+            : abrirProf &&
+                zh("div", { className: "agenda-acoes" }, (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "adicionar", onClick: () => abrirProf(f.profId), children: "Agendar de novo" })),
+        );
+    return zh(
+      r.Fragment,
+      null,
+      zh(
+        "div",
+        { className: "kanban", key: "k" },
+        zColunasAgenda.map((col) => {
+          let itens = lista.filter((x) => x.status === col.id);
+          return zh(
+            "section",
+            { key: col.id, className: "kanban-col kanban-col--" + col.id, "aria-labelledby": "col-" + col.id },
+            zh(
+              "header",
+              { className: "kanban-topo" },
+              zh("span", { className: "kanban-icone", "aria-hidden": "true" }, (0, r.jsx)(la, { n: col.ic, size: 20 })),
+              zh("h2", { id: "col-" + col.id }, col.titulo),
+              zh("span", { className: "contador", "aria-label": itens.length + (itens.length === 1 ? " atendimento" : " atendimentos") }, itens.length),
             ),
-          ),
-        ),
+            itens.length
+              ? zh("ul", { className: "kanban-lista" }, itens.map(cartao))
+              : zh(
+                  "div",
+                  { className: "kanban-vazio" },
+                  zh("p", null, col.vazio),
+                  col.id === "confirmado" && (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "busca", onClick: buscar, children: "Buscar especialistas" }),
+                ),
+          );
+        }),
       ),
       cancelando &&
         (0, r.jsx)(zCancelar, {
@@ -4192,303 +4575,9 @@
     );
   }
 
-  // ---------- 1c + 3. Painel da equipe zElo ----------
-  function zPainel({ ag, profDe, ocupados: oc, cancelar, remarcar, agendar, pend, decidir, verDoc, log, sair }) {
-    let [aba, setAba] = (0, L.useState)("atend"),
-      [filtro, setFiltro] = (0, L.useState)("ativos"),
-      [busca, setBusca] = (0, L.useState)(""),
-      [ab, setAb] = (0, L.useState)(null),
-      [ok, setOk] = (0, L.useState)(""),
-      [novo, setNovo] = (0, L.useState)(null),
-      [doc, setDoc] = (0, L.useState)(null),
-      [recusa, setRecusa] = (0, L.useState)(null),
-      [vistos, setVistos] = (0, L.useState)([]),
-      ativos = ag.filter((x) => x.status !== "cancelado"),
-      pendentes = pend.filter((x) => x.status === "pendente"),
-      feitos = pend.filter((x) => x.status !== "pendente"),
-      nomeFam = (f) => (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia),
-      lista = zSort(
-        ag.filter(
-          (f) =>
-            (filtro === "todos" || (filtro === "ativos" ? f.status !== "cancelado" : f.status === "cancelado")) &&
-            (!busca.trim() || Ll(nomeFam(f) + " " + profDe(f).nome + " " + profDe(f).area).includes(Ll(busca.trim()))),
-        ),
-      ),
-      novoProf = novo && novo.profId ? At.find((p) => p.id === novo.profId) : null,
-      novoPronto = novo && novo.familia.trim() && novoProf && novo.dia && novo.hora && (!novoProf.modos || novo.modo);
-    return zh(
-      "section",
-      { className: "entra" },
-      zh(
-        "header",
-        { className: "cabeca" },
-        zh("h1", { tabIndex: -1 }, "Painel da equipe"),
-        zh("p", { className: "lead" }, "Atendimentos de todas as fam\xEDlias e verifica\xE7\xE3o dos volunt\xE1rios. Cada a\xE7\xE3o fica registrada."),
-      ),
-      ok && zh("div", { className: "alerta-bloco" }, (0, r.jsx)(Do, { tipo: "ok", children: ok })),
-      (0, r.jsx)(zAbas, {
-        id: "painel",
-        rotulo: "Painel da equipe",
-        atual: aba,
-        setAtual: (k) => (setAba(k), setOk(""), setAb(null)),
-        abas: [["atend", "Atendimentos"], ["verif", "Verifica\xE7\xE3o", pendentes.length], ["log", "Registro"]],
-      }),
-      zh(
-        "div",
-        { id: "painel-painel", role: "tabpanel", "aria-labelledby": "painel-aba-" + aba },
-        aba === "atend" &&
-          zh(
-            r.Fragment,
-            null,
-            zh(
-              "div",
-              { className: "secao-topo" },
-              (0, r.jsx)(zNumeros, {
-                rotulo: "Resumo dos atendimentos",
-                itens: [
-                  { rotulo: "Marcados", n: ativos.length, ir: () => setFiltro("ativos") },
-                  { rotulo: "Online", n: ativos.filter(zOnline).length, ir: () => setFiltro("ativos") },
-                  { rotulo: "Cancelados", n: ag.length - ativos.length, ir: () => setFiltro("cancelados") },
-                ],
-              }),
-            ),
-            zh("div", { className: "acoes" }, (0, r.jsx)(ia, { icone: "adicionar", onClick: () => (setOk(""), setNovo({ familia: "", profId: "", dia: null, hora: null, modo: null })), children: "Agendar para uma fam\xEDlia" })),
-            novo &&
-              (0, r.jsx)(zJanela, {
-                  titulo: "Agendar para uma fam\xEDlia",
-                  sub: "Use quando a fam\xEDlia pedir ajuda para marcar, por exemplo pelo telefone. Pe\xE7a s\xF3 o nome.",
-                  fechar: () => setNovo(null),
-                  rodape: zh(
-                    r.Fragment,
-                    null,
-                    (0, r.jsx)(ia, { sec: !0, onClick: () => setNovo(null), children: "Voltar" }),
-                    !novoPronto && zh("span", { className: "rotulo-bloqueado", role: "status" }, !novo.familia.trim() ? "Escreva o nome da fam\xEDlia." : !novoProf ? "Escolha o profissional." : novoProf.modos && !novo.modo ? "Escolha online ou presencial." : "Escolha o dia e o hor\xE1rio."),
-                    (0, r.jsx)(ia, {
-                      icone: "confirmar",
-                      disabled: !novoPronto,
-                      "aria-disabled": !novoPronto,
-                      onClick: () => novoPronto && (agendar({ profId: novoProf.id, diaId: novo.dia, hora: novo.hora, onde: novoProf.modos ? novo.modo : novoProf.onde, familia: novo.familia.trim() }), setNovo(null), setOk("Atendimento marcado. A fam\xEDlia e o profissional recebem um aviso.")),
-                      children: "Confirmar agendamento",
-                    }),
-                  ),
-                  children: zh(
-                  r.Fragment,
-                  null,
-                  (0, r.jsx)(Za, { id: "novo-fam", rotulo: "Nome da fam\xEDlia ou da pessoa", value: novo.familia, onChange: (e) => setNovo({ ...novo, familia: e.target.value }), autoComplete: "off" }),
-                  (0, r.jsx)(Za, {
-                    id: "novo-prof",
-                    como: "select",
-                    rotulo: "Profissional",
-                    value: novo.profId,
-                    onChange: (e) => setNovo({ ...novo, profId: e.target.value, dia: null, hora: null, modo: null }),
-                    children: [(0, r.jsx)("option", { value: "", children: "Escolha um profissional" }, ""), ...At.map((p) => (0, r.jsx)("option", { value: p.id, children: p.nome + " \xB7 " + p.area }, p.id))],
-                  }),
-                  novoProf &&
-                    novoProf.modos &&
-                    zh(
-                      "div",
-                      { className: "horarios", role: "group", "aria-label": "Como vai ser" },
-                      novoProf.modos.map((md) => (0, r.jsx)(ia, { sec: !0, peq: !0, "aria-pressed": novo.modo === md, onClick: () => setNovo({ ...novo, modo: md }), children: md }, md)),
-                    ),
-                  novoProf && (0, r.jsx)(zEscolherHorario, { prof: novoProf, ocupados: oc, sel: novo, setSel: setNovo }),
-                ),
-              }),
-            zh(
-              "div",
-              { className: "busca", style: { marginTop: 24 } },
-              (0, r.jsx)(Za, { id: "busca-painel", rotulo: "Buscar por fam\xEDlia ou profissional", value: busca, onChange: (e) => setBusca(e.target.value), autoComplete: "off" }),
-            ),
-            (0, r.jsx)(zFiltros, { rotulo: "Mostrar", valor: filtro, mudar: setFiltro, itens: [["ativos", "Marcados"], ["cancelados", "Cancelados"], ["todos", "Todos"]] }),
-            lista.length
-              ? zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  lista.map((f) => {
-                    let p = profDe(f),
-                      cancelado = f.status === "cancelado";
-                    return zh(
-                      "li",
-                      { key: f.id, className: "agenda-item" },
-                      zh(
-                        "div",
-                        { className: "agenda-quando" },
-                        zh("span", { className: "agenda-dia" }, f.dia.split(",")[0]),
-                        zh("span", { className: "agenda-hora" }, f.hora),
-                      ),
-                      zh(
-                        "div",
-                        null,
-                        zh(
-                          "div",
-                          { className: "linha-texto" },
-                          zh("p", { className: "linha-titulo" }, nomeFam(f)),
-                          zh("p", { className: "apoio linha-meta" }, p.nome, " \xB7 ", p.area, " \xB7 ", zOnline(f) ? "Online" : f.onde),
-                          zh(
-                            "p",
-                            { className: "linha-etiquetas" },
-                            cancelado
-                              ? (0, r.jsx)(zStatus, { s: "cancelado", extra: f.motivo ? f.motivo.toLowerCase() : null })
-                              : (0, r.jsx)(zStatus, { s: "confirmado", extra: f.remarcado ? "remarcado" : null }),
-                          ),
-                          !cancelado &&
-                            (ab && ab.id === f.id && ab.modo === "cancelar"
-                              ? (0, r.jsx)(zCancelar, {
-                                  idp: f.id,
-                                  titulo: nomeFam(f) + " com " + p.nome + ", " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ".",
-                                  motivos: ["A pedido da fam\xEDlia", "A pedido do profissional", "Problema na plataforma", "Outro motivo"],
-                                  aviso: "A fam\xEDlia e o profissional recebem um aviso no app e por e-mail.",
-                                  confirmar: (m) => (setAb(null), cancelar(f, m), setOk("Atendimento cancelado. Os dois lados foram avisados.")),
-                                  voltar: () => setAb(null),
-                                })
-                              : ab && ab.id === f.id && ab.modo === "remarcar"
-                                ? (0, r.jsx)(zRemarcarBloco, {
-                                    prof: p,
-                                    ocupados: oc,
-                                    aviso: "A fam\xEDlia e o profissional recebem um aviso com o novo hor\xE1rio.",
-                                    confirmar: (s) => (setAb(null), remarcar(f, s), setOk("Atendimento remarcado. Os dois lados foram avisados.")),
-                                    voltar: () => setAb(null),
-                                  })
-                                : zh(
-                                    "div",
-                                    { className: "agenda-acoes" },
-                                    (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "calendario", onClick: () => (setOk(""), setAb({ id: f.id, modo: "remarcar" })), children: "Remarcar" }),
-                                    (0, r.jsx)(ia, { sec: !0, peq: !0, className: "btn--sec-perigo", onClick: () => (setOk(""), setAb({ id: f.id, modo: "cancelar" })), children: "Cancelar" }),
-                                  )),
-                        ),
-                      ),
-                    );
-                  }),
-                )
-              : zh("div", { className: "vazio" }, zh("h3", null, "Nenhum atendimento encontrado"), zh("p", null, "Tente outro nome ou escolha Todos no filtro.")),
-          ),
-        aba === "verif" &&
-          zh(
-            r.Fragment,
-            null,
-            zh(
-              "div",
-              { style: { marginTop: 24 } },
-              (0, r.jsx)(Do, {
-                tipo: "info",
-                children: "O sistema j\xE1 consultou o n\xFAmero no conselho profissional. Voc\xEA confere o documento e decide. Depois da decis\xE3o, o arquivo \xE9 apagado, como pede a LGPD. Guardamos s\xF3 o nome, o n\xFAmero do registro e a data.",
-              }),
-            ),
-            pendentes.length
-              ? zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  pendentes.map((v) =>
-                    zh(
-                      "li",
-                      { key: v.id, className: "cartao-vol" },
-                      zh(
-                        "div",
-                        null,
-                        zh("h3", { className: "linha-titulo" }, v.nome),
-                        zh("p", { className: "apoio" }, v.area, " \xB7 ", v.registro, " \xB7 ", v.cidade),
-                        zh("p", { className: "apoio" }, "Enviado ", v.enviado),
-                      ),
-                      zh(
-                        "p",
-                        { className: "checagem " + (v.checagem.ok ? "checagem--ok" : "checagem--aviso") },
-                        (0, r.jsx)(la, { n: v.checagem.ok ? "confirmar" : "atencao", size: 22 }),
-                        zh("span", null, zh("b", null, "Confer\xEAncia autom\xE1tica: "), v.checagem.texto),
-                      ),
-                      doc === v.id
-                        ? zh(
-                            "div",
-                            { className: "doc-previa" },
-                            zh("p", { className: "linha-titulo" }, (0, r.jsx)(la, { n: "documento", size: 22 }), " ", v.arquivo || "documento"),
-                            zh("p", { className: "apoio" }, "Pr\xE9via fict\xEDcia. No app real o arquivo abre aqui, sem download, e s\xF3 para quem faz a verifica\xE7\xE3o."),
-                            zh("p", { className: "apoio" }, "Este acesso ficou registrado."),
-                            zh("button", { type: "button", className: "link", onClick: () => setDoc(null) }, "Fechar documento"),
-                          )
-                        : zh(
-                            "div",
-                            null,
-                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "documento", onClick: () => (setDoc(v.id), setVistos((l0) => [...l0, v.id]), verDoc(v)), children: "Ver documento" }),
-                          ),
-                      recusa && recusa.id === v.id
-                        ? zh(
-                            "div",
-                            { className: "painel-acao" },
-                            (0, r.jsx)(Za, {
-                              id: "recusa-" + v.id,
-                              como: "select",
-                              rotulo: "Por que n\xE3o aprovar?",
-                              value: recusa.motivo,
-                              onChange: (e) => setRecusa({ ...recusa, motivo: e.target.value }),
-                              children: ["O documento n\xE3o d\xE1 para ler", "O nome n\xE3o confere com o registro", "O registro n\xE3o est\xE1 ativo", "A \xE1rea n\xE3o \xE9 atendida pelo zElo"].map((x) => (0, r.jsx)("option", { value: x, children: x }, x)),
-                            }),
-                            zh(
-                              "div",
-                              { className: "acoes--linha" },
-                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => (decidir(v, "novo-doc", recusa.motivo), setRecusa(null), setOk("Pedimos outro documento a " + v.nome.split(" ")[0] + ". O arquivo antigo foi apagado.")), children: "Pedir outro documento" }),
-                              (0, r.jsx)(ia, { peq: !0, className: "btn--perigo", onClick: () => (decidir(v, "recusado", recusa.motivo), setRecusa(null), setOk("Cadastro recusado. A pessoa recebe o motivo por e-mail e o arquivo foi apagado.")), children: "Recusar cadastro" }),
-                              (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa(null), children: "Voltar" }),
-                            ),
-                          )
-                        : zh(
-                            "div",
-                            { className: "acoes--linha" },
-                            !vistos.includes(v.id) && zh("p", { className: "apoio", style: { flexBasis: "100%" } }, "Abra o documento antes de aprovar."),
-                            (0, r.jsx)(ia, { sec: !0, peq: !0, icone: "confirmar", disabled: !vistos.includes(v.id), "aria-disabled": !vistos.includes(v.id), onClick: () => vistos.includes(v.id) && (decidir(v, "aprovado"), setDoc(null), setOk("Cadastro de " + v.nome.split(" ")[0] + " aprovado. O arquivo foi apagado.")), children: "Aprovar" }),
-                            (0, r.jsx)(ia, { peq: !0, sec: !0, onClick: () => setRecusa({ id: v.id, motivo: "O documento n\xE3o d\xE1 para ler" }), children: "N\xE3o aprovar" }),
-                          ),
-                    ),
-                  ),
-                )
-              : zh("div", { className: "vazio", style: { marginTop: 24 } }, zh("h3", null, "Nenhum cadastro esperando"), zh("p", null, "Quando um volunt\xE1rio enviar o cadastro, ele aparece aqui.")),
-            feitos.length > 0 &&
-              zh(
-                r.Fragment,
-                null,
-                zh("h2", { className: "h-pequeno secao-titulo-peq" }, "J\xE1 analisados"),
-                zh(
-                  "ul",
-                  { className: "lista-linhas" },
-                  feitos.map((v) =>
-                    zh(
-                      "li",
-                      { key: v.id },
-                      zh(
-                        "div",
-                        { className: "linha" },
-                        zh(
-                          "span",
-                          { className: "linha-texto" },
-                          zh("span", { className: "linha-titulo" }, v.nome),
-                          zh("span", { className: "apoio linha-meta" }, v.registro),
-                          zh("span", { className: "linha-etiquetas" }, (0, r.jsx)(zStatus, { s: { aprovado: "confirmado", recusado: "cancelado", "novo-doc": "aguardando" }[v.status], extra: v.status === "novo-doc" ? "novo documento" : v.motivo ? v.motivo.toLowerCase() : null })),
-                          zh("span", { className: "apoio linha-meta" }, "Documento apagado \xE0s ", v.apagadoEm, "."),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ),
-        aba === "log" &&
-          zh(
-            "div",
-            { style: { marginTop: 24 } },
-            zh("p", { className: "apoio medida" }, "Tudo o que a equipe faz aqui fica guardado: o que foi feito e quando. Isso protege as fam\xEDlias e os volunt\xE1rios."),
-            log.length
-              ? zh("ul", { className: "lista registro", style: { marginTop: 16 } }, log.map((x, i) => zh("li", { key: i, className: "registro-item" }, zh("b", null, x.hora), " ", x.texto)))
-              : zh("div", { className: "vazio", style: { marginTop: 16 } }, zh("h3", null, "Nenhuma a\xE7\xE3o ainda"), zh("p", null, "Agendar, remarcar, cancelar, abrir um documento e aprovar aparecem aqui.")),
-          ),
-      ),
-      zh(
-        "div",
-        { className: "acoes", style: { marginTop: 48 } },
-        (0, r.jsx)(ia, { sec: !0, icone: "sair", onClick: sair, children: "Sair do painel" }),
-      ),
-    );
-  }
-
   // ---------- 2. Sala de vídeo ----------
   // No app real, a sala usa o Jitsi Meet (código aberto, sem conta e sem instalar nada).
-  function zSala({ at: f, outro, voltar }) {
+  function zSala({ at: f, outro, voltar, encerrar }) {
     let [fase, setFase] = (0, L.useState)("antes"),
       [cam, setCam] = (0, L.useState)(!0),
       [mic, setMic] = (0, L.useState)(!0),
@@ -4514,7 +4603,7 @@
           })
           .catch(() => setTeste("erro"));
       },
-      sairDaSala = () => (parar(), setFase("fim"));
+      sairDaSala = () => (parar(), setFase("fim"), encerrar && encerrar());
     (0, L.useEffect)(() => parar, []);
     (0, L.useEffect)(() => {
       fluxo.current && (fluxo.current.getVideoTracks().forEach((t) => (t.enabled = cam)), fluxo.current.getAudioTracks().forEach((t) => (t.enabled = mic)));
@@ -4578,7 +4667,7 @@
         "header",
         { className: "cabeca" },
         zh("h1", { tabIndex: -1 }, "Sala de v\xEDdeo"),
-        zh("p", { className: "lead" }, "Com ", outro.nome, ". ", f.dia, ", \xE0s ", f.hora, "."),
+        zh("p", { className: "lead" }, "Com ", outro.nome.replace(/\.$/, ""), ". ", f.dia, ", \xE0s ", f.hora, "."),
       ),
       (0, r.jsx)(Do, { tipo: "info", children: "A chamada acontece aqui, sem instalar nada. N\xE3o \xE9 gravada, e s\xF3 voc\xEAs dois entram." }),
       zh(
@@ -4716,7 +4805,8 @@
       [S, b] = (0, L.useState)(null),
       [O, T] = (0, L.useState)(z2),
       [ag, setAg] = (0, L.useState)(zAgInicial),
-      E = ag.filter((x) => x.familia === "voce" && x.status !== "cancelado"),
+      E = ag.filter((x) => x.familia === "voce" && x.status === "confirmado"),
+      famTodos = ag.filter((x) => x.familia === "voce"),
       [rem, setRem] = (0, L.useState)(null),
       [sala, setSala] = (0, L.useState)(null),
       [salaVolta, setSalaVolta] = (0, L.useState)("atendimentos"),
@@ -4733,9 +4823,16 @@
       [letra, setLetra] = (0, L.useState)(zLetraInicial),
       [origem, setOrigem] = (0, L.useState)("inicio"),
       [esq, setEsq] = (0, L.useState)(!1),
+      [priv, setPriv] = (0, L.useState)(null),
+      [privProx, setPrivProx] = (0, L.useState)("diagnostico"),
       telaAntes = (0, L.useRef)(a),
-      Hm = (0, L.useRef)(!1);
+      Hm = (0, L.useRef)(!1),
+      // Banco: só grava depois de carregar o que a pessoa já tinha, para não apagar nada
+      carregadoB = (0, L.useRef)(!1),
+      diagFeitoB = (0, L.useRef)(!1);
     xr = zAtalhos(c);
+    Object.assign(zPriv, { cidade: !!(priv && priv.cidade), ana: !!(priv && priv.ana) });
+    let irPriv = (prox) => (priv ? o(prox) : (setPrivProx(prox), o("privacidade")));
     // Novidades: agenda de todos, notificações, registro da equipe
     let para = zPara(n),
       ativos = ag.filter((x) => x.status !== "cancelado"),
@@ -4761,6 +4858,15 @@
     (0, L.useEffect)(() => {
       a === "chat" && cv !== O.msgs.length && setCv(O.msgs.length);
     }, [a, O.msgs.length]);
+    (0, L.useEffect)(() => {
+      if (!zBanco.uid || !carregadoB.current) return;
+      if (!xS.includes(a) && a !== "diagnostico") diagFeitoB.current = !0;
+      let t0 = setTimeout(() => zBanco.salvarPerfil(s.nome, n, { diag: c, priv, disp, area: s.area || null, registro: s.registro || null, diagFeito: diagFeitoB.current }), 800);
+      return () => clearTimeout(t0);
+    }, [c, priv, disp, s.nome, n, a]);
+    (0, L.useEffect)(() => {
+      carregadoB.current && zBanco.salvarAgenda(ag.filter((x) => x.familia === "voce"));
+    }, [ag]);
     ((0, L.useEffect)(() => {
       document.documentElement.dataset.theme = v;
       try {
@@ -4794,17 +4900,19 @@
           requestAnimationFrame(() =>
             document.querySelector("main h1")?.focus({ preventScroll: !0 }),
           ));
-      }, [a, I, z, p, S, esq]));
+      }, [a, I, z, p, S, esq, Fr]));
     let P2 =
         a !== "objetivo" &&
         a !== "login" &&
         a !== "cadastro" &&
+        a !== "privacidade" &&
         a !== "status-voluntario" &&
-        a !== "painel" &&
         !(a === "diagnostico" && u === "inicio"),
       bt = (H) => {
         if (H === "atendimentos-meus")
           return (wl("meus"), ja(0), Nl(!1), o("atendimentos"));
+        if (H === "atendimentos-buscar")
+          return (wl("buscar"), ja(0), Nl(!1), o("atendimentos"));
         (H === "atendimentos" && (ja(0), Nl(!1)),
           H === "forum" && d(null),
           H === "dicas" && b(null),
@@ -4818,7 +4926,7 @@
           Nl(!1),
           o("atendimentos"));
       },
-      Z2 = () => o(n === "equipe" && a === "painel" ? "painel" : P2 ? "inicio" : "objetivo"),
+      Z2 = () => o(P2 ? "inicio" : "objetivo"),
       j2 = (H) => {
         let ae = H.split("@")[0].split(/[._-]/)[0] || "voc\xEA";
         return ae.charAt(0).toUpperCase() + ae.slice(1);
@@ -4834,14 +4942,14 @@
           d(H),
           o("forum-topico"));
       },
-      pedir = () => {
+      pedir = (txt) => {
         let u = O.msgs.length;
         (T({
           msgs: [
             ...O.msgs,
             {
               de: "voce",
-              texto: "Pedido de ajuda enviado pela tela Preciso de ajuda.",
+              texto: typeof txt === "string" ? "Pedido de ajuda: " + txt : "Pedido de ajuda enviado pela tela Preciso de ajuda.",
               hora: Mm(u * 2),
               pedido: !0,
             },
@@ -4860,9 +4968,33 @@
       Rm = (H) => {
         (b(H), o("dica"));
       },
-      X2 = (H) => h(y.map((ae) => (ae.id === H.id ? H : ae))),
+      X2 = (H) => {
+        let antes = y.find((ae) => ae.id === H.id);
+        antes && H.respostas.filter((x) => !antes.respostas.some((q) => q.id === x.id)).forEach((x) => zBanco.novaResposta(H.id, x));
+        h(y.map((ae) => (ae.id === H.id ? H : ae)));
+      },
+      // Junta o que veio do banco com os dados de exemplo do protótipo
+      aplicarBanco = (d, email, nm) => {
+        let pf = d.perfil,
+          dd = (pf && pf.dados) || {};
+        (i({ nome: (pf && pf.nome) || nm || j2(email), email, area: dd.area || void 0, registro: dd.registro || void 0 }),
+          pf && pf.papel && l(pf.papel),
+          dd.diag && m(dd.diag),
+          dd.disp && setDisp(dd.disp),
+          dd.priv && setPriv(dd.priv),
+          (diagFeitoB.current = !!dd.diagFeito),
+          setAg([...zAgInicial.filter((x) => x.familia !== "voce"), ...d.agenda.map((x) => zNovoAt(x))]));
+        let novos = d.topicos.map((x) => ({ apoio: 0, ajudou: 0, ...x, respostas: [] })),
+          todos = [...novos, ...Nm].map((tp) => ({ ...tp, respostas: [...tp.respostas, ...d.respostas.filter((x) => x.topicoId === tp.id)] }));
+        (h(todos), (carregadoB.current = !0));
+        return !!(pf && dd.diagFeito && dd.priv);
+      },
       Y2 = () => {
-        (l(null),
+        (zBanco.sair(),
+          (carregadoB.current = !1),
+          (diagFeitoB.current = !1),
+          h(Nm),
+          l(null),
           i({ nome: "", email: "" }),
           m(R2),
           T(z2),
@@ -4870,6 +5002,7 @@
           setNt(zNotifsIniciais),
           setDisp(zDispInicial),
           setRem(null),
+          setPriv(null),
           setCv(0),
           wl("buscar"),
           ja(0),
@@ -4889,14 +5022,14 @@
       numeros =
         n === "voluntario"
           ? [
-              { rotulo: "Atendimentos marcados", n: ativos.filter((x) => x.profId === "pv").length, ir: () => bt("atendimentos") },
-              { rotulo: "Perguntas sem resposta no f\xF3rum", n: y.filter((tp) => !tp.respostas.some((x) => x.profissional)).length, ir: () => bt("forum") },
-              { rotulo: "Notifica\xE7\xF5es novas", n: nt.filter((x) => x.para === para && !x.lida).length, ir: () => bt("notificacoes") },
+              { ic: "calendario", rotulo: "Atendimentos marcados", n: ativos.filter((x) => x.profId === "pv").length, ir: () => bt("atendimentos") },
+              { ic: "forum", rotulo: "Perguntas sem resposta no f\xF3rum", n: y.filter((tp) => !tp.respostas.some((x) => x.profissional)).length, ir: () => bt("forum") },
+              { ic: "sino", rotulo: "Notifica\xE7\xF5es novas", n: nt.filter((x) => x.para === para && !x.lida).length, ir: () => bt("notificacoes") },
             ]
           : [
-              { rotulo: "Atendimentos marcados", n: E.length, ir: () => bt("atendimentos-meus") },
-              { rotulo: "T\xF3picos novos no f\xF3rum", n: y.filter((tp) => tp.etiquetas.includes("Novo") && tp.autor !== s.nome).length, ir: () => bt("forum") },
-              { rotulo: "Mensagens da Ana", n: a === "chat" ? 0 : O.msgs.slice(cv).filter((mm) => mm.de === "ana").length, ir: () => bt("chat") },
+              { ic: "calendario", rotulo: "Atendimentos marcados", n: E.length, ir: () => bt("atendimentos-meus") },
+              { ic: "forum", rotulo: "T\xF3picos novos no f\xF3rum", n: y.filter((tp) => tp.etiquetas.includes("Novo") && tp.autor !== s.nome).length, ir: () => bt("forum") },
+              { ic: "chat", rotulo: "Mensagens da Ana", n: a === "chat" ? 0 : O.msgs.slice(cv).filter((mm) => mm.de === "ana").length, ir: () => bt("chat") },
             ],
       K2 = a === "ajuda" ? "ajuda" : US[a],
       J2 = y.find((H) => H.id === p),
@@ -4910,7 +5043,7 @@
           setTema: A,
           escolher: (H) => {
             (l(H),
-              o(H === "voluntario" ? "cadastro" : H === "equipe" ? "painel" : "login"));
+              H === "voluntario" ? irPriv("cadastro") : o("login"));
           },
         });
         break;
@@ -4920,10 +5053,15 @@
           voltar: () => o(n === "voluntario" ? "cadastro" : "objetivo"),
           criarVoluntario: () => o("cadastro"),
           entrar: (H, nm) => {
-            (i({ nome: nm || j2(H), email: H }),
+            let seguir = () =>
               n === "voluntario"
-                ? o("inicio")
-                : (f(1), g("inicio"), o("diagnostico")));
+                ? irPriv("inicio")
+                : (f(1), g("inicio"), irPriv("diagnostico"));
+            if (!zBanco.ativo) return (i({ nome: nm || j2(H), email: H }), seguir());
+            zBanco.carregar().then(
+              (d) => (d && aplicarBanco(d, H, nm) ? o("inicio") : seguir()),
+              () => (i({ nome: nm || j2(H), email: H }), seguir()),
+            );
           },
         });
         break;
@@ -4938,11 +5076,26 @@
           sair: () => o(u === "perfil" ? "perfil" : "login"),
         });
         break;
+      case "privacidade":
+        xa = (0, r.jsx)(zPrivacidade, {
+          papel: n,
+          priv,
+          setPriv,
+          continuar: () => o(privProx),
+          voltar: () => o(privProx === "cadastro" ? "objetivo" : "login"),
+        });
+        break;
       case "cadastro":
         xa = (0, r.jsx)(VS, {
           voltar: () => o("objetivo"),
           entrar: () => o("login"),
           enviar: (H) => {
+            // Com banco: cria a conta do voluntário. A conferência do registro continua simulada.
+            zBanco.ativo &&
+              zBanco.criarConta(H.email.trim(), H.senha, H.nome.trim()).then(
+                () => (carregadoB.current = !0),
+                (x) => console.warn("zElo banco:", x.message),
+              );
             (i({ nome: H.nome.trim(), email: H.email, area: H.area, registro: H.registro.trim() }),
               setPend((l0) => [
                 {
@@ -4998,6 +5151,8 @@
           setTema: A,
           letra,
           setLetra,
+          priv,
+          setPriv,
           sair: Y2,
         });
         break;
@@ -5009,13 +5164,12 @@
           topicos: y,
           abrir: kr,
           publicar: (H) => {
-            let ae = `t${Date.now()}`;
-            (h([
-              {
+            let ae = `t${Date.now()}`,
+              novoTp = {
                 id: ae,
                 titulo: H.titulo.trim(),
                 autor: s.nome,
-                cidade: "Recife",
+                cidade: zPriv.cidade ? "Recife" : "",
                 quando: "agora",
                 etiquetas: ["Novo", N2[H.dir]],
                 dir: H.dir,
@@ -5023,10 +5177,8 @@
                 ajudou: 0,
                 corpo: H.corpo.trim(),
                 respostas: [],
-              },
-              ...y,
-            ]),
-              kr(ae));
+              };
+            (zBanco.novoTopico(novoTp), h([novoTp, ...y]), kr(ae));
           },
         });
         break;
@@ -5049,7 +5201,7 @@
           z === 0 && n === "voluntario"
             ? (0, r.jsx)(zMinhaAgenda, {
                 prof: volProf,
-                agenda: ativos.filter((x) => x.profId === "pv"),
+                agenda: ativos.filter((x) => x.profId === "pv" && x.status === "confirmado"),
                 ocupados: ativos,
                 disp,
                 setDisp,
@@ -5061,6 +5213,7 @@
             ? null
             : (0, r.jsx)(o4, {
                 agenda: E,
+                todos: famTodos,
                 tab: Fr,
                 setTab: wl,
                 abrirProf: Om,
@@ -5112,7 +5265,7 @@
             ? { nome: sala.familia, iniciais: zIniciais(sala.familia.replace(/^Fam\xEDlia de /, "")) }
             : sala && sala.prof;
         xa = sala
-          ? (0, r.jsx)(zSala, { at: sala, outro: outroLado, voltar: () => bt(salaVolta === "atendimentos" && n !== "voluntario" ? "atendimentos-meus" : salaVolta) }, sala.id)
+          ? (0, r.jsx)(zSala, { at: sala, outro: outroLado, encerrar: () => mudarAt(sala, { status: "realizado" }), voltar: () => bt(salaVolta === "atendimentos" && n !== "voluntario" ? "atendimentos-meus" : salaVolta) }, sala.id)
           : null;
         break;
       }
@@ -5127,47 +5280,17 @@
           },
         });
         break;
-      case "painel":
-        xa = (0, r.jsx)(zPainel, {
-          ag,
-          profDe,
-          ocupados: ativos,
-          pend,
-          log: lg,
-          sair: Y2,
-          cancelar: (f, m) => {
-            (mudarAt(f, { status: "cancelado", motivo: m }),
-              registrar("Cancelou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " (" + f.dia.toLowerCase() + ", " + f.hora + "). Motivo: " + m.toLowerCase() + "."),
-              f.familia === "voce" &&
-                avisar("familia", "atend", "A equipe zElo cancelou um atendimento", "O de " + f.dia.toLowerCase() + ", \xE0s " + f.hora + ", com " + profDe(f).nome + ". Motivo: " + m.toLowerCase() + ".", { tela: "atendimentos-meus" }));
-          },
-          remarcar: (f, s0) => {
-            let nh = novoHorario(s0);
-            (mudarAt(f, nh),
-              registrar("Remarcou o atendimento de " + (f.familia === "voce" ? "Fam\xEDlia da conta de teste" : f.familia) + " com " + profDe(f).nome + " para " + nh.dia.toLowerCase() + ", " + nh.hora + "."),
-              f.familia === "voce" &&
-                avisar("familia", "atend", "A equipe zElo remarcou seu atendimento", "Agora \xE9 " + nh.dia.toLowerCase() + ", \xE0s " + nh.hora + ", com " + profDe(f).nome + ".", { tela: "atendimentos-meus" }));
-          },
-          agendar: (d) => {
-            let novo = zNovoAt({ ...d, id: "a" + Date.now() });
-            (setAg((l0) => [...l0, novo]),
-              registrar("Agendou para " + d.familia + " com " + novo.prof.nome + " (" + novo.dia.toLowerCase() + ", " + d.hora + ")."));
-          },
-          verDoc: (v) => registrar("Abriu o documento de " + v.nome + "."),
-          decidir: (v, dec, m) => {
-            (setPend((l0) => l0.map((x) => (x.id === v.id ? { ...x, status: dec, motivo: m, apagadoEm: zAgora() } : x))),
-              registrar(
-                { aprovado: "Aprovou o cadastro de ", recusado: "Recusou o cadastro de ", "novo-doc": "Pediu outro documento a " }[dec] + v.nome + (m ? ". Motivo: " + m.toLowerCase() : "") + ". Documento apagado.",
-              ),
-              v.id === "eu" &&
-                dec === "aprovado" &&
-                avisar("voluntario", "cadastro", "Cadastro aprovado", "Uma pessoa da equipe conferiu o seu registro. O documento que voc\xEA enviou foi apagado.", { tela: "inicio" }));
-          },
-        });
-        break;
       default:
         xa = null;
     }
+    // Etapas da entrada no topo das telas de entrada
+    let etapa =
+      n === "voluntario"
+        ? { privacidade: "Privacidade", cadastro: "Cadastro", "status-voluntario": "Verifica\xE7\xE3o" }[a]
+        : n === "responsavel" || n === "pcd"
+          ? { login: "Conta", privacidade: "Privacidade", diagnostico: u === "inicio" ? "Perguntas" : null }[a]
+          : null;
+    etapa && xa && (xa = (0, r.jsxs)(r.Fragment, { children: [(0, r.jsx)(zEtapasEntrada, { papel: n, atual: etapa }, "et"), (0, r.jsx)(L.default.Fragment, { children: xa }, "xa")] }));
     return (0, r.jsxs)(r.Fragment, {
       children: [
         e && (0, r.jsx)(n4, { tema: v, fim: () => t(!1) }),
@@ -5180,7 +5303,8 @@
           contadores: Q2,
           usuario: s,
           setTema: A,
-          titulo: zNomeTela[a] || "",
+          sair: Y2,
+          titulo: a === "atendimentos" && n !== "voluntario" ? (Fr === "meus" ? "Meus agendamentos" : "Buscar especialistas") : zNomeTela[a] || "",
           voltar: zForaDoMenu.includes(a) ? { rotulo: zNomeTela[origem] || "In\xEDcio", ir: () => bt(origem) } : null,
           children: esq ? (0, r.jsx)(zEsqueleto, { tipo: zTipoEsqueleto[a] }) : xa,
         }),
