@@ -4,7 +4,10 @@ zElo dá direção, ajuda e apoio para quem cuida de pessoas com deficiência e 
 
 Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade, o refinamento da interface de novembro de 2026 e a segunda rodada de sugestões da monitora Milena.
 
-Protótipo publicado: https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu
+Links:
+
+- **Site com banco de dados (GitHub Pages):** https://biaholandac.github.io/zElo/ (contas, atendimentos e fórum ficam salvos no Supabase)
+- **Protótipo para apresentar, sem banco:** https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu (o QR code em `apresentacao/` abre este link)
 
 ## Como abrir
 
@@ -14,7 +17,7 @@ Para apresentar, use o QR code em `apresentacao/qr-prototipo.png` (ou `.svg`, pa
 
 ### Publicar no GitHub Pages
 
-O arquivo `.github/workflows/publicar.yml` publica a pasta `prototipo/` sempre que algo entra na `main`. Na primeira vez, alguém com acesso de dono precisa ir em **Settings > Pages** e escolher **Source: GitHub Actions**. O endereço fica parecido com `https://biaholandac.github.io/zElo/`.
+O arquivo `.github/workflows/publicar.yml` publica a pasta `prototipo/` sempre que algo entra na `main`. Na primeira vez, alguém com acesso de dono precisa ir em **Settings > Pages** e escolher **Source: GitHub Actions**. O endereço é https://biaholandac.github.io/zElo/.
 
 ## Onde mexer
 
