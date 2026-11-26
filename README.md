@@ -113,6 +113,27 @@ O que mudou e o que foi adaptado:
 - **Preciso de ajuda.** "O que está acontecendo?" virou cartões com ícone, com a opção "Outra situação", que abre um campo para escrever e enviar ao acolhimento. As perguntas iniciais usam a mesma ideia de cartões com ícone.
 - **Não aplicado:** nada foi copiado do Flo. Usamos só a ideia de ter mais cor e ícones, com as cores e a logo do zElo.
 
+## Banco de dados (Supabase)
+
+Sem configuração, o protótipo funciona como sempre, com tudo na memória da página. Com o Supabase ligado, ele guarda de verdade:
+
+- **Contas:** criar conta, entrar e "esqueci minha senha", com e-mail e senha.
+- **Perfil:** nome, papel, respostas das perguntas iniciais, escolhas de privacidade e horários do voluntário. Quem já respondeu entra direto no Início.
+- **Atendimentos:** os que a família marca, remarca ou cancela.
+- **Fórum:** tópicos e respostas novas. Qualquer pessoa com conta pode ler.
+- **Perguntas da Ana:** só se a pessoa marcar o opcional na tela de privacidade.
+
+Os profissionais, as orientações e os tópicos de exemplo continuam sendo dados fictícios do protótipo. A conferência do registro do voluntário continua simulada.
+
+Como ligar:
+
+1. Crie um projeto em supabase.com.
+2. Em **SQL Editor**, cole `banco/esquema.sql` e clique em **Run**. Isso cria as tabelas e as regras de acesso.
+3. Em **Project Settings > API**, copie a **Project URL** e a chave **anon public** para `prototipo/config.js`. Nunca use a chave `service_role`.
+4. Para a apresentação, dá para desligar a confirmação por e-mail em **Authentication > Sign In / Providers > Email > Confirm email**. Assim a conta funciona na hora, sem esperar o e-mail.
+
+`prototipo/supabase.js` é a biblioteca do Supabase (`@supabase/supabase-js` 2.45.4) já empacotada e não precisa ser editada. O código que conversa com o banco fica em `codigo/banco.js`.
+
 ## Ajustes do professor Gusto (novembro de 2026)
 
 - A primeira tela explica o que é o zElo, quem somos e por que usar, antes da escolha de perfil.
@@ -121,6 +142,7 @@ O que mudou e o que foi adaptado:
 - No Início, "Ver todas as orientações" fica ao lado de "Para você", e "Ver todos" dos profissionais abre direto Buscar especialistas.
 - QR code para a apresentação em `apresentacao/`.
 - Publicação automática no GitHub Pages (veja "Publicar no GitHub Pages").
+- Banco de dados com Supabase (veja "Banco de dados").
 
 ## Como voltar a uma versão anterior
 

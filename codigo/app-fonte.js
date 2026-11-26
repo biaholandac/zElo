@@ -1571,7 +1571,10 @@
       [n, l] = (0, L.useState)(""),
       [s, i] = (0, L.useState)({}),
       [enviado, setEnviado] = (0, L.useState)(""),
-      [ocupado, agir] = zUseAcao(),
+      [erroB, setErroB] = (0, L.useState)(""),
+      [esperaB, setEsperaB] = (0, L.useState)(!1),
+      [ocupado0, agir] = zUseAcao(),
+      ocupado = ocupado0 || esperaB,
       limpa = (k) => s[k] && i({ ...s, [k]: void 0 }),
       trocar = (m) => {
         (setModo(m), i({}), setEnviado(""));
@@ -1621,10 +1624,28 @@
               if (modo === "entrar" && !n)
                 I.senha = "Falta a senha. Escreva a senha da sua conta.";
               if ((i(I), Object.keys(I).length)) return Or();
+              if (zBanco.ativo) {
+                if (esperaB) return;
+                setErroB("");
+                setEsperaB(!0);
+                let em2 = e.trim(),
+                  p0 = modo === "esqueci" ? zBanco.esqueci(em2) : modo === "criar" ? zBanco.criarConta(em2, n, nome.trim()) : zBanco.entrar(em2, n);
+                p0.then(
+                  (u0) => (setEsperaB(!1), modo === "esqueci" ? setEnviado(em2) : o(em2, modo === "criar" ? nome.trim() : (u0 && u0.user_metadata && u0.user_metadata.nome) || "")),
+                  (x) => (setEsperaB(!1), setErroB(x.message)),
+                );
+                return;
+              }
               agir(() => (modo === "esqueci" ? setEnviado(e.trim()) : o(e.trim(), modo === "criar" ? nome.trim() : "")));
             },
             noValidate: !0,
             children: [
+              erroB &&
+                (0, r.jsx)("div", {
+                  className: "alerta-bloco",
+                  role: "alert",
+                  children: (0, r.jsx)(Do, { tipo: "aviso", palavra: " ", children: erroB }),
+                }),
               enviado &&
                 (0, r.jsx)("div", {
                   className: "alerta-bloco",
@@ -1633,7 +1654,7 @@
                     children: [
                       "Enviamos o link para ",
                       enviado,
-                      ". Neste prot\xF3tipo nenhum e-mail \xE9 enviado.",
+                      zBanco.ativo ? ". Confira a caixa de entrada e o spam." : ". Neste prot\xF3tipo nenhum e-mail \xE9 enviado.",
                     ],
                   }),
                 }),
@@ -2891,6 +2912,7 @@
   var zPriv = { cidade: !1, ana: !1 };
   function zSemRespostaGuardar(texto, perto) {
     if (!zPriv.ana) return;
+    zBanco.guardarPerguntaAna(texto);
     try {
       let l = zSemRespostaLer();
       l.unshift({ texto: texto.slice(0, 300), quando: new Date().toISOString(), perto: perto || null });
@@ -4804,7 +4826,10 @@
       [priv, setPriv] = (0, L.useState)(null),
       [privProx, setPrivProx] = (0, L.useState)("diagnostico"),
       telaAntes = (0, L.useRef)(a),
-      Hm = (0, L.useRef)(!1);
+      Hm = (0, L.useRef)(!1),
+      // Banco: só grava depois de carregar o que a pessoa já tinha, para não apagar nada
+      carregadoB = (0, L.useRef)(!1),
+      diagFeitoB = (0, L.useRef)(!1);
     xr = zAtalhos(c);
     Object.assign(zPriv, { cidade: !!(priv && priv.cidade), ana: !!(priv && priv.ana) });
     let irPriv = (prox) => (priv ? o(prox) : (setPrivProx(prox), o("privacidade")));
@@ -4833,6 +4858,15 @@
     (0, L.useEffect)(() => {
       a === "chat" && cv !== O.msgs.length && setCv(O.msgs.length);
     }, [a, O.msgs.length]);
+    (0, L.useEffect)(() => {
+      if (!zBanco.uid || !carregadoB.current) return;
+      if (!xS.includes(a) && a !== "diagnostico") diagFeitoB.current = !0;
+      let t0 = setTimeout(() => zBanco.salvarPerfil(s.nome, n, { diag: c, priv, disp, area: s.area || null, registro: s.registro || null, diagFeito: diagFeitoB.current }), 800);
+      return () => clearTimeout(t0);
+    }, [c, priv, disp, s.nome, n, a]);
+    (0, L.useEffect)(() => {
+      carregadoB.current && zBanco.salvarAgenda(ag.filter((x) => x.familia === "voce"));
+    }, [ag]);
     ((0, L.useEffect)(() => {
       document.documentElement.dataset.theme = v;
       try {
@@ -4934,9 +4968,33 @@
       Rm = (H) => {
         (b(H), o("dica"));
       },
-      X2 = (H) => h(y.map((ae) => (ae.id === H.id ? H : ae))),
+      X2 = (H) => {
+        let antes = y.find((ae) => ae.id === H.id);
+        antes && H.respostas.filter((x) => !antes.respostas.some((q) => q.id === x.id)).forEach((x) => zBanco.novaResposta(H.id, x));
+        h(y.map((ae) => (ae.id === H.id ? H : ae)));
+      },
+      // Junta o que veio do banco com os dados de exemplo do protótipo
+      aplicarBanco = (d, email, nm) => {
+        let pf = d.perfil,
+          dd = (pf && pf.dados) || {};
+        (i({ nome: (pf && pf.nome) || nm || j2(email), email, area: dd.area || void 0, registro: dd.registro || void 0 }),
+          pf && pf.papel && l(pf.papel),
+          dd.diag && m(dd.diag),
+          dd.disp && setDisp(dd.disp),
+          dd.priv && setPriv(dd.priv),
+          (diagFeitoB.current = !!dd.diagFeito),
+          setAg([...zAgInicial.filter((x) => x.familia !== "voce"), ...d.agenda.map((x) => zNovoAt(x))]));
+        let novos = d.topicos.map((x) => ({ apoio: 0, ajudou: 0, ...x, respostas: [] })),
+          todos = [...novos, ...Nm].map((tp) => ({ ...tp, respostas: [...tp.respostas, ...d.respostas.filter((x) => x.topicoId === tp.id)] }));
+        (h(todos), (carregadoB.current = !0));
+        return !!(pf && dd.diagFeito && dd.priv);
+      },
       Y2 = () => {
-        (l(null),
+        (zBanco.sair(),
+          (carregadoB.current = !1),
+          (diagFeitoB.current = !1),
+          h(Nm),
+          l(null),
           i({ nome: "", email: "" }),
           m(R2),
           T(z2),
@@ -4995,10 +5053,15 @@
           voltar: () => o(n === "voluntario" ? "cadastro" : "objetivo"),
           criarVoluntario: () => o("cadastro"),
           entrar: (H, nm) => {
-            (i({ nome: nm || j2(H), email: H }),
+            let seguir = () =>
               n === "voluntario"
                 ? irPriv("inicio")
-                : (f(1), g("inicio"), irPriv("diagnostico")));
+                : (f(1), g("inicio"), irPriv("diagnostico"));
+            if (!zBanco.ativo) return (i({ nome: nm || j2(H), email: H }), seguir());
+            zBanco.carregar().then(
+              (d) => (d && aplicarBanco(d, H, nm) ? o("inicio") : seguir()),
+              () => (i({ nome: nm || j2(H), email: H }), seguir()),
+            );
           },
         });
         break;
@@ -5027,6 +5090,12 @@
           voltar: () => o("objetivo"),
           entrar: () => o("login"),
           enviar: (H) => {
+            // Com banco: cria a conta do voluntário. A conferência do registro continua simulada.
+            zBanco.ativo &&
+              zBanco.criarConta(H.email.trim(), H.senha, H.nome.trim()).then(
+                () => (carregadoB.current = !0),
+                (x) => console.warn("zElo banco:", x.message),
+              );
             (i({ nome: H.nome.trim(), email: H.email, area: H.area, registro: H.registro.trim() }),
               setPend((l0) => [
                 {
@@ -5095,9 +5164,8 @@
           topicos: y,
           abrir: kr,
           publicar: (H) => {
-            let ae = `t${Date.now()}`;
-            (h([
-              {
+            let ae = `t${Date.now()}`,
+              novoTp = {
                 id: ae,
                 titulo: H.titulo.trim(),
                 autor: s.nome,
@@ -5109,10 +5177,8 @@
                 ajudou: 0,
                 corpo: H.corpo.trim(),
                 respostas: [],
-              },
-              ...y,
-            ]),
-              kr(ae));
+              };
+            (zBanco.novoTopico(novoTp), h([novoTp, ...y]), kr(ae));
           },
         });
         break;
