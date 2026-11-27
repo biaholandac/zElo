@@ -1019,6 +1019,8 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
   align-self: stretch; margin: 0; padding-top: 20px; border-top: 1.5px solid var(--hero-linha);
   font-family: var(--fonte-titulo); font-size: 15px; font-weight: 600; font-style: italic; color: var(--hero-apoio);
 }
+/* Quando a assinatura pode cair em cima do círculo escuro (celular e notebooks baixos), ela usa o azul-petróleo mais forte, que passa de 4,5:1 sobre o #EBD794 */
+@media (max-width: 899px), (max-height: 760px) { .hero-assinatura { color: var(--hero-texto); } }
 @media (forced-colors: active) { .hero { border: 2px solid CanvasText; } .hero-circulo { display: none; } }
 /* Celular: o cartão amarelo já mostra a logo, então a barra do topo fica só com o tema */
 @media (max-width: 899px) {
