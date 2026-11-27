@@ -989,15 +989,57 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
 .kanban-cartao .agenda-acoes .btn { min-height: 40px; padding: 0 12px; font-size: var(--fs-pequeno); gap: 6px; }
 .kanban-cartao > p, .kanban-cartao .linha-texto p { margin: 0; }
 
-/* Primeira tela: o que é o zElo */
-.sobre-quem { margin-top: var(--space-3); max-width: 62ch; }
-.sobre-titulo { margin-top: var(--space-5); }
-.sobre-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-3); }
-@media (min-width: 700px) { .sobre-lista { grid-template-columns: 1fr 1fr; } }
-.sobre-item { display: flex; gap: 12px; align-items: flex-start; padding: var(--space-3) var(--space-4); background: var(--superficie); border: var(--borda-largura) solid var(--borda); border-radius: var(--raio-cartao); }
-.sobre-item strong { display: block; font-size: var(--fs-apoio); margin-bottom: 2px; }
-.sobre-item .apoio { display: block; font-size: var(--fs-pequeno); }
-.sobre-icone { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--ic-amarelo-bg); color: var(--ic-amarelo-fg); }
+/* Primeira tela: painel amarelo (hero) e escolha de perfil */
+.hero {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
+  background: var(--hero-bg); color: var(--hero-texto); border-radius: 32px;
+}
+.hero-circulo { position: absolute; border-radius: 50%; pointer-events: none; }
+.hero-circulo--claro { width: 360px; height: 360px; top: -150px; right: -110px; background: var(--hero-circulo-claro); }
+.hero-circulo--escuro { width: 250px; height: 250px; bottom: -120px; left: -90px; background: var(--hero-circulo-escuro); }
+.hero-conteudo {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 36px;
+  padding: 32px 24px; max-height: 100%; overflow-y: auto;
+}
+.hero .logo { width: 160px; background: var(--hero-texto); }
+.hero-textos { display: flex; flex-direction: column; gap: 18px; }
+.hero-titulo {
+  margin: 0; max-width: 365px; font-family: var(--fonte-titulo); font-size: 26px; font-weight: 800;
+  line-height: 1.18; letter-spacing: -0.015em; color: var(--hero-texto);
+}
+.hero-sub { margin: 0; font-family: var(--fonte-titulo); font-size: 18px; font-weight: 600; line-height: 1.55; color: var(--hero-apoio); }
+.hero-beneficios { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.hero-beneficios li {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--fonte-titulo); font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--hero-texto);
+}
+.hero-beneficios .ic { color: var(--hero-texto); }
+.hero-beneficios .ic * { stroke-width: 2.2; }
+.hero-assinatura {
+  align-self: stretch; margin: 0; padding-top: 20px; border-top: 1.5px solid var(--hero-linha);
+  font-family: var(--fonte-titulo); font-size: 15px; font-weight: 600; font-style: italic; color: var(--hero-apoio);
+}
+@media (forced-colors: active) { .hero { border: 2px solid CanvasText; } .hero-circulo { display: none; } }
+/* Celular: o cartão amarelo já mostra a logo, então a barra do topo fica só com o tema */
+@media (max-width: 899px) {
+  .app--hero .topo { background: var(--bg); border-bottom-color: transparent; }
+  .app--hero .topo-logo { visibility: hidden; }
+}
+/* Notebook: o painel ocupa a coluna da esquerda, fixo, e a escolha de perfil fica no meio da altura */
+@media (min-width: 900px) {
+  .app--hero { --hero-largura: min(500px, 44vw); grid-template-columns: var(--hero-largura) minmax(0, 1fr); }
+  .app--hero .coluna { display: none; }
+  .app--hero .conteudo { grid-column: 2; }
+  .app--hero main { display: flex; flex-direction: column; justify-content: center; }
+  .app--hero main > .hero {
+    position: fixed; top: 0; left: 0; z-index: 1; width: var(--hero-largura); max-width: none; height: 100vh; margin: 0; border-radius: 0;
+  }
+  .app--hero main > .entra { width: 100%; }
+  .app--hero .sobre-escolha { margin-top: 0; }
+  .hero-conteudo { padding: 64px 52px; }
+  .hero .logo { width: 210px; }
+  .hero-titulo { font-size: 30px; }
+}
 .sobre-escolha { font-size: var(--fs-secao); margin: var(--space-6) 0 var(--space-2); }
 .sobre-escolha + .apoio { margin-bottom: var(--space-4); }
 /* Pergunta da deficiência logo abaixo do nome */

@@ -131,6 +131,13 @@ html[data-letra="maior"] { font-size: 125%; }
   --acolhe-borda: #EFDDA0;
   --splash-bg: #F5E1A0;
   --splash-logo: #0F5F70;
+  /* Painel da abertura (hero) */
+  --hero-bg: #F2E2A8;
+  --hero-circulo-claro: #F8F0D0;
+  --hero-circulo-escuro: #EBD794;
+  --hero-linha: #E3CF86;
+  --hero-texto: #2D5F6E;
+  --hero-apoio: #3B6672;
   /* Ícones em círculo: tons suaves por tipo */
   --ic-azul-bg: #E3EFF1;
   --ic-azul-fg: #0B4A58;
@@ -215,6 +222,13 @@ html[data-letra="maior"] { font-size: 125%; }
   --acolhe-borda: #5E5332;
   --splash-bg: #F5E1A0;
   --splash-logo: #0F5F70;
+  /* Painel da abertura (hero) */
+  --hero-bg: #F2E2A8;
+  --hero-circulo-claro: #F8F0D0;
+  --hero-circulo-escuro: #EBD794;
+  --hero-linha: #E3CF86;
+  --hero-texto: #2D5F6E;
+  --hero-apoio: #3B6672;
   --ic-azul-bg: #17343B;
   --ic-azul-fg: #A9DDE7;
   --ic-amarelo-bg: #3A3420;
@@ -296,6 +310,12 @@ html[data-letra="maior"] { font-size: 125%; }
   --acolhe-borda: #000000;
   --splash-bg: #FFF3B0;
   --splash-logo: #000000;
+  --hero-bg: #FFF3B0;
+  --hero-circulo-claro: #FFF8D6;
+  --hero-circulo-escuro: #FFEB8A;
+  --hero-linha: #000000;
+  --hero-texto: #000000;
+  --hero-apoio: #000000;
   --ic-azul-bg: #FFFFFF;
   --ic-azul-fg: #000000;
   --ic-amarelo-bg: #FFF3B0;

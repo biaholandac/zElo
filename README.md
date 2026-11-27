@@ -4,10 +4,11 @@ zElo dá direção, ajuda e apoio para quem cuida de pessoas com deficiência e 
 
 Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade, o refinamento da interface de novembro de 2026 e a segunda rodada de sugestões da monitora Milena.
 
-Links:
+Links (atualizados em 27/11/2026, com a nova tela de abertura):
 
-- **Site com banco de dados (GitHub Pages):** https://biaholandac.github.io/zElo/ (contas, atendimentos e fórum ficam salvos no Supabase)
+- **Site com banco de dados (GitHub Pages):** https://biaholandac.github.io/zElo/ (contas, atendimentos e fórum ficam salvos no Supabase). Ele se atualiza sozinho quando uma mudança entra na `main`.
 - **Protótipo para apresentar, sem banco:** https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu (o QR code em `apresentacao/` abre este link)
+- **Código e histórico de versões:** https://github.com/biaholandac/zElo
 
 ## Como abrir
 
@@ -40,7 +41,6 @@ Antes de o app ir ao ar:
 - Troque `zLigarDeVerdade` para `!0` em `codigo/app-fonte.js`, para os botões de ligar abrirem a ligação.
 - Revise o texto da tela "Seus dados no zElo" (`zPrivacidade`). Ele é provisório e foi escrito sem inventar política. A política de privacidade e os termos de uso ainda precisam ser escritos.
 - Decida até quando a agenda fica aberta para marcar (`zMesesAbertos`, hoje 3 meses).
-- Revise o texto "Quem somos" da primeira tela (`FS`, em `codigo/app-fonte.js`). Ele é provisório.
 
 Depois de mudar qualquer arquivo em `codigo/`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
 
@@ -139,13 +139,22 @@ Como ligar:
 
 ## Ajustes do professor Gusto (novembro de 2026)
 
-- A primeira tela explica o que é o zElo, quem somos e por que usar, antes da escolha de perfil.
+- A primeira tela explica o que é o zElo antes da escolha de perfil (desde 27/11/2026 isso fica no painel amarelo, veja "Tela de abertura").
 - O painel da equipe saiu.
 - No cadastro do responsável, a pergunta da deficiência vem logo abaixo do nome da pessoa cuidada.
 - No Início, "Ver todas as orientações" fica ao lado de "Para você", e "Ver todos" dos profissionais abre direto Buscar especialistas.
 - QR code para a apresentação em `apresentacao/`.
 - Publicação automática no GitHub Pages (veja "Publicar no GitHub Pages").
 - Banco de dados com Supabase (veja "Banco de dados").
+
+## Tela de abertura (novembro de 2026)
+
+A primeira tela tem duas partes:
+
+- **Painel amarelo (esquerda no notebook, cartão no topo no celular).** Logo, o título "Cuidar fica mais leve quando ninguém cuida sozinho.", o resumo do zElo, três benefícios com ícone de check e a assinatura "Zelo é cuidado. Elo é conexão.". No notebook ele fica fixo, com 500px de largura e a altura da tela. Os dois círculos de fundo são só enfeite e ficam escondidos do leitor de tela. O título do painel é o único `h1` da página.
+- **Coluna da direita.** Começa direto em "Como você quer usar o zElo?" (agora `h2`, com o mesmo visual), centralizada na altura da tela no notebook.
+
+Saíram da primeira tela: "Boas-vindas ao zElo", o texto de descrição, "Quem somos" e "Por que usar o zElo" com os quatro cartões. As cores do painel ficam em `prototipo/tokens.css` (`--hero-*`), o layout em `prototipo/app.css` (classes `.hero`) e os textos em `FS`, em `codigo/app-fonte.js`.
 
 ## Como voltar a uma versão anterior
 
