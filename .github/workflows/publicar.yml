@@ -17,16 +17,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Dois passos separados, como no modelo do GitHub: o primeiro empacota a pasta e o segundo publica.
+  # Com os dois no mesmo passo, a publicação às vezes não encontrava o pacote recém-enviado.
+  empacotar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: prototipo
+
   publicar:
+    needs: empacotar
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: prototipo
       - id: deploy
         uses: actions/deploy-pages@v4
