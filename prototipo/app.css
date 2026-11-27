@@ -102,7 +102,7 @@ main:focus { outline: none; }
   padding: var(--space-4); border-top: var(--borda-largura) solid var(--borda);
   color: var(--rodape-fg); font-size: var(--fs-pequeno); text-align: center;
 }
-.app--menu .rodape { padding-bottom: calc(var(--barra) + 16px); }
+.app--menu .rodape { padding-bottom: calc(var(--barra) + 76px + env(safe-area-inset-bottom)); }
 
 /* Barra de navegação de baixo (celular) */
 .barra-baixo {
@@ -310,7 +310,7 @@ select.campo-entrada { appearance: none; padding-right: 44px; }
 /* ---------- Avisos ---------- */
 .alerta {
   display: flex; gap: var(--space-3); align-items: flex-start; padding: 12px 16px;
-  border-radius: var(--raio-controle); border: var(--borda-largura) solid; max-width: var(--medida); font-size: var(--fs-apoio); color: var(--texto);
+  border-radius: var(--raio-controle); border: var(--borda-largura) solid; font-size: var(--fs-apoio); color: var(--texto);
 }
 .alerta .ic { margin-top: 2px; }
 .alerta b { font-weight: 700; }
@@ -978,10 +978,6 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
 .cal-legenda { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: var(--space-3); font-size: var(--fs-pequeno); color: var(--texto-apoio); }
 .cal-legenda-livre { width: 14px; height: 14px; border-radius: 4px; background: var(--ic-verde-bg); border: 1px solid var(--ic-verde-fg); }
 .cal-legenda-sep { color: var(--borda-forte); }
-.cal-horas .horarios { margin-top: var(--space-2); }
-.cal-horas .h-pequeno { margin: 0; }
-.cal-dica { padding: var(--space-4); background: var(--superficie-2); border-radius: var(--raio-controle); }
-.cal-nota { margin-top: var(--space-4); font-size: var(--fs-pequeno); }
 
 /* Orientações: área com ícone */
 .cartao-dica-cat { background: var(--ic-amarelo-bg); color: var(--ic-amarelo-fg); border-color: transparent; }
@@ -1047,3 +1043,92 @@ p, .linha-titulo, .opcao { text-wrap: pretty; }
 /* Pergunta da deficiência logo abaixo do nome */
 .pergunta-abaixo { margin-top: var(--space-5); margin-bottom: var(--space-3); }
 .h-pergunta { font-size: var(--fs-secao); margin-bottom: 4px; }
+
+/* ---------- Rodada final (novembro de 2026) ---------- */
+/* Escala única de espaço: 4, 8, 12, 16, 20, 32, 40 e 64px (--space-1 a --space-8).
+   Dentro de um grupo: 16px. Entre seções: 32px ou 40px. */
+
+/* Aviso depois de um cartão: mesmo respiro e mesma largura */
+.artigo .leitura + .alerta, .leitura + .alerta { margin-top: var(--space-4); }
+.alerta-bloco > .alerta, .janela-corpo > .alerta { width: 100%; }
+
+/* Janela: corpo com espaço igual entre os blocos, rodapé sempre visível */
+.janela { max-height: min(92vh, 920px); }
+@media (min-width: 600px) { .janela { max-height: min(90vh, 920px); } }
+.janela-corpo { display: grid; gap: var(--space-4); align-content: start; overscroll-behavior: contain; }
+.janela-corpo > * { margin-top: 0; margin-bottom: 0; }
+.janela-corpo > .alerta-bloco { margin: 0; }
+.janela-rodape { flex: none; }
+.janela-rodape > .acoes { margin: 0; width: 100%; justify-content: flex-end; }
+.janela-falta { margin-right: auto; color: var(--texto-apoio); font-size: var(--fs-pequeno); }
+@media (max-width: 599px) {
+  .janela-falta { flex: 1 1 100%; margin: 0; }
+  .janela-rodape > .acoes .btn { flex: 1 1 auto; }
+}
+.janela-intro { max-width: var(--medida); }
+
+/* Agendar: dados do profissional em poucas linhas */
+.prof-resumo { margin: 0; padding: var(--space-3) var(--space-4); }
+.prof-resumo .avatar { flex: none; }
+.prof-dados { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: 2px; }
+.prof-bio { margin-top: var(--space-1); }
+.modo-escolha { margin: 0; }
+.modo-escolha .h-pequeno { margin: 0 0 var(--space-2); }
+.modo-escolha .segmentado button { white-space: normal; text-align: center; line-height: 1.25; padding-block: 8px; }
+
+/* Calendário e horários lado a lado, com a mesma altura */
+@media (min-width: 700px) { .agendar-cal { align-items: stretch; } }
+.cal-dia { aspect-ratio: auto; height: 44px; min-height: 0; }
+.cal-horas {
+  display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4);
+  background: var(--superficie-2); border-radius: var(--raio-cartao); min-height: 100%;
+}
+[data-theme="alto-contraste"] .cal-horas { border: var(--borda-largura) solid var(--borda); }
+.cal-horas .h-pequeno { margin: 0; }
+.cal-horas-sub { margin-top: calc(var(--space-2) * -1); font-size: var(--fs-pequeno); }
+.cal-horas .horarios { margin: 0; }
+.cal-dica { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); text-align: center; color: var(--texto-apoio); padding: var(--space-4) var(--space-2); }
+.cal-dica .ic { color: var(--texto-fraco); }
+.cal-nota { margin-top: auto; padding-top: var(--space-3); border-top: var(--borda-largura) solid var(--borda); font-size: var(--fs-pequeno); }
+
+/* Presencial ou online: a mesma etiqueta em todo o app */
+.modo-etiqueta {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 2px 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: var(--fs-pequeno); line-height: 1.3; border: var(--borda-largura) solid transparent;
+}
+.modo-etiqueta .ic { flex: none; }
+.modo-etiqueta b { font-weight: 800; }
+.modo-etiqueta--online { background: var(--ic-azul-bg); color: var(--ic-azul-fg); }
+.modo-etiqueta--presencial { background: var(--ic-amarelo-bg); color: var(--ic-amarelo-fg); }
+.modo-etiqueta span::before { content: "\00B7"; margin-right: 6px; }
+[data-theme="alto-contraste"] .modo-etiqueta { border-color: var(--borda); }
+.resumo dd .modo-etiqueta { margin-top: -2px; }
+.kanban-info:has(.modo-etiqueta) { margin: 2px 0; }
+
+/* Subpáginas de Atendimentos: as duas cabem no celular */
+@media (max-width: 599px) {
+  .subnav { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
+  .subnav-item { justify-content: center; padding: 6px 10px; text-align: center; line-height: 1.2; }
+  .subnav-item .contador { flex: none; }
+}
+
+/* Preciso de ajuda: nomes longos cabem no cartão */
+.situacao { padding: var(--space-3) var(--space-2); overflow-wrap: anywhere; hyphens: auto; }
+@media (min-width: 600px) { .situacao { font-size: var(--fs-apoio); } }
+
+/* Sala de vídeo: texto de apoio separado dos botões */
+.sala-nota { margin-top: var(--space-2); max-width: var(--medida); }
+.tela-sala .sala-controles + .painel-acao, .sala-controles + .painel-acao { margin-top: var(--space-4); }
+
+/* Cadastro de voluntário: as etapas seguem a largura do formulário */
+@media (min-width: 900px) { main:has(form #area) > .etapas-entrada { max-width: 760px; } }
+
+/* O botão Preciso de ajuda fica abaixo das janelas */
+.com-janela .ajuda-flutuante { z-index: 1; }
+/* Em telas baixas, o texto sobre o profissional aparece só no passo 2, para o calendário caber */
+@media (max-height: 899px) { .prof-resumo--passo1 .prof-bio { display: none; } }
+.kanban-info .modo-etiqueta .ic, .linha-meta .modo-etiqueta .ic, .resumo .modo-etiqueta .ic { color: currentColor; margin-top: 0; }
+main > .tela-sala-antes { max-width: 640px; }
+.tela-sala-antes .sala-previa { max-width: none; }
+/* Estado vazio logo abaixo do cartão de urgência ocupa a mesma largura */
+.cartao-urgente ~ .vazio { max-width: none; }

@@ -2,9 +2,9 @@
 
 zElo dá direção, ajuda e apoio para quem cuida de pessoas com deficiência e para quem quer ajudar.
 
-Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade, o refinamento da interface de novembro de 2026 e a segunda rodada de sugestões da monitora Milena.
+Este repositório guarda o protótipo navegável que funciona no celular e no notebook. Ele já inclui as correções da avaliação de usabilidade, o refinamento da interface de novembro de 2026 a segunda rodada de sugestões da monitora Milena e a rodada final de revisão.
 
-Links (atualizados em 27/11/2026, com a nova tela de abertura):
+Links (atualizados em 27/11/2026, com a rodada final de revisão):
 
 - **Site com banco de dados (GitHub Pages):** https://biaholandac.github.io/zElo/ (contas, atendimentos e fórum ficam salvos no Supabase). Ele se atualiza sozinho quando uma mudança entra na `main`.
 - **Protótipo para apresentar, sem banco:** https://claude.ai/artifact/6KU82zZ85Ty2uJRB3C8QWu (o QR code em `apresentacao/` abre este link)
@@ -39,7 +39,7 @@ Antes de o app ir ao ar:
 - Um profissional de saúde precisa revisar os passos de primeiros socorros (`zSituacoes` e as respostas de emergência em `codigo/ana-base.js`). Depois, preencha `revisadoPor` e `data` em `zSaudeRevisao`. Enquanto estiverem vazios, o app mostra "Aguardando revisão de profissional de saúde".
 - Defina o horário real da equipe de acolhimento em `zAcolhimento`, em `codigo/app-fonte.js`.
 - Troque `zLigarDeVerdade` para `!0` em `codigo/app-fonte.js`, para os botões de ligar abrirem a ligação.
-- Revise o texto da tela "Seus dados no zElo" (`zPrivacidade`). Ele é provisório e foi escrito sem inventar política. A política de privacidade e os termos de uso ainda precisam ser escritos.
+- Escreva a política de privacidade e os termos de uso. A tela "Seus dados no zElo" (`zPrivacidade`) explica os aceites em linguagem simples, mas ainda não tem o texto legal completo.
 - Decida até quando a agenda fica aberta para marcar (`zMesesAbertos`, hoje 3 meses).
 
 Depois de mudar qualquer arquivo em `codigo/`, rode `./montar.sh` para gerar `prototipo/app.js` de novo. Os arquivos `codigo/react-inicio.js` e `codigo/react-fim.js` são a biblioteca React e não precisam ser editados.
@@ -57,7 +57,7 @@ O refinamento de novembro de 2026 seguiu estas regras. Vale manter nas telas nov
 - **Sem enfeite.** Sem faixas decorativas, frases motivacionais, emoji ou degradê.
 - **Menu.** Início, Chat, Atendimentos, Fórum e Orientações, cada um com contador. Embaixo ficam "Sair do zElo" (pede confirmação) e "Preciso de ajuda". O topo mostra o nome da tela, o atalho de tema, o sino com contador e o Perfil. Telas fora do menu mostram "‹ Tela de origem" no topo.
 - **Quem cuida e quem é cuidado.** O responsável informa o nome da pessoa que cuida, e os textos usam esse nome.
-- **Fórum.** Respostas de profissionais vêm primeiro, em destaque, com "Verificado por [nome]".
+- **Fórum.** Respostas de profissionais vêm primeiro, em destaque, com a etiqueta "Profissional verificado".
 - **Texto.** Curto e em português do Brasil. Lista vazia diz o que fazer. Botão travado diz por quê.
 - **Retorno.** Botões mostram "Salvando…", "Enviando…" e outros enquanto trabalham, e a troca de tela mostra um esqueleto no formato do conteúdo.
 - **Mantidos:** o botão "Preciso de ajuda", o aviso do 192 e o alto contraste.
@@ -97,7 +97,7 @@ node codigo/gerar-icones.js
 
 Sugestões da monitora Milena (novembro de 2026), com as escolhas do grupo:
 
-- **Atendimentos.** A família remarca e cancela em Meus agendamentos. O voluntário tem a Minha agenda, com os próximos atendimentos (entrar na sala, remarcar, cancelar com motivo) e os dias e horários em que atende. O painel da equipe saiu do protótipo em novembro de 2026, a pedido do professor.
+- **Atendimentos.** A família remarca e cancela em Meus atendimentos. O voluntário tem a Minha agenda, com os próximos atendimentos (entrar na sala, remarcar, cancelar com motivo) e os dias e horários em que atende. O painel da equipe saiu do protótipo em novembro de 2026, a pedido do professor.
 - **Chamada online.** Acontece numa sala de vídeo dentro do zElo, sem instalar nada: teste de câmera e microfone, legendas, ajuda durante a chamada e nada é gravado. No app real, a ideia é usar o Jitsi Meet (código aberto e gratuito). Neste protótipo a chamada é simulada.
 - **Verificação dos voluntários.** O sistema consulta o número no conselho profissional e uma pessoa da equipe confere o documento antes de aprovar. Depois da decisão, o arquivo é apagado (LGPD). Guardamos só nome, número do registro e data. (Essa conferência acontece fora do app e não aparece no protótipo.)
 - **Notificações.** Sino no topo, com contador. Mostra respostas do fórum, lembretes e mudanças de atendimento, agrupados em Hoje, Ontem e Antes. Para o voluntário, mostra também o status do cadastro.
@@ -111,7 +111,7 @@ O que mudou e o que foi adaptado:
 - **Amarelo de volta, com equilíbrio.** Abertura amarela com a logo, coluna amarela na entrada, menu com fundo creme e item atual amarelo. O texto sobre o amarelo é escuro, para manter o contraste. No alto contraste o amarelo vira #FFF3B0 com texto preto.
 - **Margens.** A coluna central passou de 760px para 880px (telas com grade, de 960px para 1120px), e as margens laterais ficaram menores.
 - **Entrada.** Primeiro a pessoa escolhe o perfil, depois entra na conta e passa pela tela "Seus dados no zElo". Uma faixa de etapas mostra onde ela está. Na tela de privacidade, o aceite necessário fica separado dos opcionais, nada vem marcado e os opcionais não travam nada. Os opcionais mudam o app de verdade (cidade no fórum, guardar perguntas da Ana) e podem ser trocados em Perfil > Privacidade.
-- **Atendimentos.** "Buscar especialistas" e "Meus agendamentos" viraram subpáginas com navegação no topo. Meus agendamentos mostra três colunas: Próximos, Realizados e Cancelados. Um atendimento vai para Realizados quando a chamada termina na sala de vídeo.
+- **Atendimentos.** "Buscar especialistas" e "Meus agendamentos" viraram subpáginas com navegação no topo (na rodada final passaram a se chamar "Buscar profissionais" e "Meus atendimentos"). Meus atendimentos mostra três colunas: Próximos, Realizados e Cancelados. Um atendimento vai para Realizados quando a chamada termina na sala de vídeo.
 - **Agendar.** A janela mostra os dados do profissional (área, registro, onde atende, dias de atendimento) e um calendário do mês com setas para os outros meses. Os dias livres vêm só dos dias e horas que o profissional informou. Não há horário inventado.
 - **Preciso de ajuda.** "O que está acontecendo?" virou cartões com ícone, com a opção "Outra situação", que abre um campo para escrever e enviar ao acolhimento. As perguntas iniciais usam a mesma ideia de cartões com ícone.
 - **Não aplicado:** nada foi copiado do Flo. Usamos só a ideia de ter mais cor e ícones, com as cores e a logo do zElo.
@@ -142,7 +142,7 @@ Como ligar:
 - A primeira tela explica o que é o zElo antes da escolha de perfil (desde 27/11/2026 isso fica no painel amarelo, veja "Tela de abertura").
 - O painel da equipe saiu.
 - No cadastro do responsável, a pergunta da deficiência vem logo abaixo do nome da pessoa cuidada.
-- No Início, "Ver todas as orientações" fica ao lado de "Para você", e "Ver todos" dos profissionais abre direto Buscar especialistas.
+- No Início, "Ver todas as orientações" fica ao lado de "Para você", e "Ver todos" dos profissionais abre direto Buscar profissionais.
 - QR code para a apresentação em `apresentacao/`.
 - Publicação automática no GitHub Pages (veja "Publicar no GitHub Pages").
 - Banco de dados com Supabase (veja "Banco de dados").
@@ -155,6 +155,19 @@ A primeira tela tem duas partes:
 - **Coluna da direita.** Começa direto em "Como você quer usar o zElo?" (agora `h2`, com o mesmo visual), centralizada na altura da tela no notebook.
 
 Saíram da primeira tela: "Boas-vindas ao zElo", o texto de descrição, "Quem somos" e "Por que usar o zElo" com os quatro cartões. As cores do painel ficam em `prototipo/tokens.css` (`--hero-*`), o layout em `prototipo/app.css` (classes `.hero`) e os textos em `FS`, em `codigo/app-fonte.js`.
+
+## Rodada final de revisão (novembro de 2026)
+
+Revisão de todas as telas, nos dois perfis, em celular, tablet e notebook, nos três temas. A identidade visual não mudou e nenhuma função nova entrou.
+
+- **Espaçamento.** Uma escala só, dos tokens `--space-1` a `--space-8` (4, 8, 12, 16, 20, 32, 40 e 64px). Avisos depois de um cartão ficam a 16px dele e com a mesma largura. Era o caso do aviso "Isto não substitui um profissional de saúde" nas orientações.
+- **Janela de agendar e remarcar.** O calendário e o painel cinza de horários têm a mesma altura, sem sobra. O painel mostra o dia escolhido e os horários livres, ou uma dica quando nenhum dia foi escolhido. O rodapé com "Continuar" fica sempre visível, e a janela cabe em telas baixas de notebook.
+- **Fluxo de agendamento.** O subtítulo diz "Passo 1 de 2" ou "Passo 2 de 2" e o que fazer. Botão travado mostra o motivo logo acima ("Escolha presencial ou online.", "Escolha um dia no calendário.", "Escolha um horário."). "Voltar" fica ao lado do botão principal. Presencial e online têm etiquetas de cores diferentes em todas as telas (`zModoEtiqueta`). Para online, a confirmação explica como entrar: no dia, abrir Meus atendimentos e tocar em "Entrar na sala". Ao remarcar, o modo atual já vem escolhido.
+- **Mesmo nome para a mesma coisa.** "Buscar profissionais", "Meus atendimentos", "Agendar atendimento" e "Entrar na chamada" (dentro da sala) em todo o app e nas respostas da Ana.
+- **Textos.** Saíram o aviso amarelo de texto provisório da privacidade, frases sobre o protótipo e avisos repetidos. Ficaram os avisos que protegem a pessoa, como "não substitui um profissional de saúde", o botão "Preciso de ajuda" e o rodapé "Protótipo com dados fictícios".
+- **Teclado.** Ao abrir uma janela, o foco vai para o título dela. Tab fica dentro da janela, e Esc devolve o foco ao botão que a abriu.
+- **Celular.** A navegação de Atendimentos não corta mais os nomes, e o rodapé não fica mais escondido atrás do botão "Preciso de ajuda".
+- **Sair do zElo** pede confirmação também no Perfil.
 
 ## Como voltar a uma versão anterior
 
