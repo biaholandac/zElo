@@ -1178,6 +1178,7 @@
     setTema: st,
     atual: o,
     comMenu: e,
+    hero: hr,
     irInicio: t,
     irPara: n,
     contadores: l,
@@ -1232,7 +1233,7 @@
           ],
         });
     return (0, r.jsxs)("div", {
-      className: "app" + (e ? " app--menu" : " app--entrada"),
+      className: "app" + (e ? " app--menu" : " app--entrada") + (hr ? " app--hero" : ""),
       children: [
         // Anúncio para leitores de tela quando chega mensagem nova no Chat fora da tela do Chat
         (0, r.jsx)("div", {
@@ -1515,38 +1516,37 @@
         },
         id,
       );
-    return (0, r.jsxs)("section", {
+    // Painel amarelo da abertura (hero). No notebook fica fixo à esquerda; no celular vira um cartão no topo.
+    let hero = (0, r.jsxs)("div", {
+      className: "hero",
+      children: [
+        (0, r.jsx)("span", { className: "hero-circulo hero-circulo--claro", "aria-hidden": "true" }),
+        (0, r.jsx)("span", { className: "hero-circulo hero-circulo--escuro", "aria-hidden": "true" }),
+        (0, r.jsxs)("div", {
+          className: "hero-conteudo",
+          children: [
+            (0, r.jsx)(zLogo, {}),
+            (0, r.jsxs)("div", {
+              className: "hero-textos",
+              children: [
+                (0, r.jsx)("h1", { tabIndex: -1, className: "hero-titulo", children: "Cuidar fica mais leve quando ningu\xE9m cuida sozinho." }),
+                (0, r.jsx)("p", { className: "hero-sub", children: "O zElo re\xFAne pessoas com defici\xEAncia, quem cuida delas e profissionais de sa\xFAde volunt\xE1rios num s\xF3 lugar." }),
+              ],
+            }),
+            (0, r.jsx)("ul", {
+              className: "hero-beneficios",
+              children: ["Consultas sem custo, online ou presencial", "Respostas para as d\xFAvidas do dia a dia", "Uma comunidade que vive o mesmo que voc\xEA"].map((t0) =>
+                (0, r.jsxs)("li", { children: [(0, r.jsx)(la, { n: "confirmar", size: 22 }), t0] }, t0),
+              ),
+            }),
+            (0, r.jsx)("p", { className: "hero-assinatura", children: "Zelo \xE9 cuidado. Elo \xE9 conex\xE3o." }),
+          ],
+        }),
+      ],
+    });
+    return (0, r.jsxs)(r.Fragment, { children: [hero, (0, r.jsxs)("section", {
       className: "entra",
       children: [
-        (0, r.jsx)("h1", { tabIndex: -1, children: "Boas-vindas ao zElo" }),
-        (0, r.jsx)("p", {
-          className: "lead",
-          children: "O zElo d\xE1 dire\xE7\xE3o, ajuda e apoio para quem cuida de pessoas com defici\xEAncia, para a pr\xF3pria pessoa com defici\xEAncia e para profissionais de sa\xFAde que querem ajudar.",
-        }),
-        // Quem somos: texto provisório, para o grupo revisar
-        (0, r.jsx)("p", {
-          className: "apoio sobre-quem",
-          children: "Quem somos: um grupo de estudantes que criou o zElo para aproximar fam\xEDlias e profissionais volunt\xE1rios num s\xF3 lugar.",
-        }),
-        (0, r.jsx)("h2", { className: "h-pequeno sobre-titulo", id: "sobre-h", children: "Por que usar o zElo" }),
-        (0, r.jsx)("ul", {
-          className: "sobre-lista",
-          "aria-labelledby": "sobre-h",
-          children: [
-            ["verificado", "Consultas sem custo", "Com profissionais de sa\xFAde volunt\xE1rios, com o registro conferido. Online ou presencial."],
-            ["chat", "D\xFAvidas respondidas", "A Ana responde perguntas do dia a dia e indica a quem recorrer."],
-            ["forum", "Quem vive o mesmo", "No f\xF3rum voc\xEA troca experi\xEAncias com outras fam\xEDlias, e as respostas de profissionais aparecem primeiro."],
-            ["orientacoes", "Orienta\xE7\xF5es pr\xE1ticas", "Textos curtos para o cuidado em casa, escritos por profissionais."],
-          ].map(([ic, t0, d0]) =>
-            (0, r.jsxs)("li", {
-              className: "sobre-item",
-              children: [
-                (0, r.jsx)("span", { className: "sobre-icone", "aria-hidden": "true", children: (0, r.jsx)(la, { n: ic, size: 22 }) }),
-                (0, r.jsxs)("span", { children: [(0, r.jsx)("strong", { children: t0 }), (0, r.jsx)("span", { className: "apoio", children: d0 })] }),
-              ],
-            }, ic),
-          ),
-        }),
         (0, r.jsx)("h2", { className: "h-secao sobre-escolha", children: "Como voc\xEA quer usar o zElo?" }),
         (0, r.jsx)("p", { className: "apoio", children: "Escolha o seu perfil. Em seguida voc\xEA entra na conta e v\xEA como cuidamos dos seus dados." }),
         (0, r.jsxs)("div", {
@@ -1562,7 +1562,7 @@
           children: "O zElo orienta quest\xF5es de sa\xFAde. Para benef\xEDcios, documentos e escola, procure o CRAS ou a pr\xF3pria escola.",
         }),
       ],
-    });
+    })] });
   }
   function kS({ voltar: a, entrar: o, papel: pp, criarVoluntario: cv, modoInicial: mi }) {
     let [modo, setModo] = (0, L.useState)(mi || "entrar"),
@@ -5298,6 +5298,7 @@
           tema: v,
           atual: K2,
           comMenu: $2,
+          hero: a === "objetivo" && !esq,
           irInicio: Z2,
           irPara: bt,
           contadores: Q2,
